@@ -1,0 +1,2 @@
+#registrar(adsControllerRegister)
+registrar(drvAsynAdsPortRegisterCommands)

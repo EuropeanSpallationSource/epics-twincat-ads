@@ -1,0 +1,4 @@
+1. Must download and start TwinCAT plc program
+2. Must set limitswitches to true for test program.
+3. start with iocsh st.adsTest.cmd
+

@@ -1,0 +1,42 @@
+
+LockTimeout = 5000;
+WriteTimeout = 100;
+ReplyTimeout = 1000;
+ReadTimeout = 100;
+
+setGeneralErrorReset{
+	out "ControllerErrorReset()";
+	in "OK";
+}
+
+getGeneralErrorId{
+	out "Main.byByte?";
+	in "%f";
+}
+
+getGeneralErrorMessage{
+	out "ADSPORT=851/GetControllerErrorMessage()";
+	in "%s";
+}
+
+getTestADR{
+	out "ADSPORT=851/.ADR.16#4020,16#0,2,2?";
+	in "%f";
+}
+
+setTestADR{
+	out "ADSPORT=851/.ADR.16#4020,16#0,2,2=%d";
+	in "OK";
+	@init { getTestADR; }
+}
+
+setGeneralErrorId{
+	out "Main.byByte=%d";
+	in "OK";
+}
+
+getAxisStatus{
+	out "ADSPORT=851/Main.M1.stAxisStatus?";
+	in "%s";
+}
+
