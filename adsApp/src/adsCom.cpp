@@ -497,10 +497,12 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
 	break;
       case ADST_BIGTYPE:
         if(strcmp(info->symDataType,DUT_AXIS_STATUS)==0){
-          RETURN_VAR_NAME_IF_NEEDED;
+          //RETURN_VAR_NAME_IF_NEEDED;
+          cmd_buf_printf(asciiBuffer,"%s=",info->variableName); //Always output variable name for stAxisStatus
           STAXISSTATUSSTRUCT * stAxisData;
           stAxisData=(STAXISSTATUSSTRUCT*)binaryBuffer;
-          if(stAxisData->bEnable){bytesProcessed=info->byteSize;
+
+          if(stAxisData->bEnable){
             cmd_buf_printf(asciiBuffer,"1,");
           }
           else{
@@ -578,10 +580,10 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
             cmd_buf_printf(asciiBuffer,"0,");
           }
           if(stAxisData->bBusy){
-            cmd_buf_printf(asciiBuffer,"1");
+            cmd_buf_printf(asciiBuffer,"1;");
           }
           else{
-            cmd_buf_printf(asciiBuffer,"0");
+            cmd_buf_printf(asciiBuffer,"0;");
           }
           LOGINFO4("Binary 2 ASCII ADST_BIGTYPE, type: %s\n", info->symDataType);
           bytesProcessed=info->byteSize;
