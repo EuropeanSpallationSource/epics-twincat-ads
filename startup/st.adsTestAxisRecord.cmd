@@ -33,8 +33,8 @@ epicsEnvSet("PREFIX",        "$(SM_PREFIX=IOC2:)")
 epicsEnvSet("AXISCONFIG",    "")
 epicsEnvSet("EGU",           "mm")
 epicsEnvSet("PREC",          "3")
-epicsEnvSet("VELO",          "25.0")
-epicsEnvSet("JVEL",          "10")
+epicsEnvSet("VELO",          "360.0")
+epicsEnvSet("JVEL",          "100")
 #JAR defaults to VELO/ACCL
 epicsEnvSet("JAR",           "0.0")
 epicsEnvSet("ACCL",          "1")
@@ -56,7 +56,7 @@ dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME)
 #epicsEnvSet "R" "$(R=Test)" 
 
 #General 
-dbLoadTemplate("adsGeneral.substitutions")
+#dbLoadTemplate("adsGeneral.substitutions")
 
 #One motion axis status	
 #dbLoadTemplate("DUT_AxisStatus.substitutions")
