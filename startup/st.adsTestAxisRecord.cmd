@@ -1,6 +1,6 @@
-require asyn
+require asyn,4.27.0
 require streamdevice
-require axis,10.0.3
+require axis,10.0.7
 require ads,anderssandstrom
 
 ## Configure devices
@@ -44,8 +44,8 @@ epicsEnvSet("MOTOR_NAME",    "xl")
 epicsEnvSet("R",             "xl-")
 epicsEnvSet("DESC",          "Left Blade")
 epicsEnvSet("AXIS_NO",       "1")
-epicsEnvSet("DLLM",          "$(SM_DLLM=-20)")
-epicsEnvSet("DHLM",          "$(SM_DHLM=130)")
+epicsEnvSet("DLLM",          "$(SM_DLLM=0)")
+epicsEnvSet("DHLM",          "$(SM_DHLM=0)")
 epicsEnvSet("HOMEPROC",      "$(SM_HOMEPROC=3)")
 
 EthercatMCCreateAxis("MCU1", "${AXIS_NO}", "6", "")
