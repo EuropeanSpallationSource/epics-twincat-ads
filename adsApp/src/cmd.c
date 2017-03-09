@@ -63,6 +63,24 @@ static int addToBuffer(ecmcOutputBufferType *buffer,const char *addText, size_t 
   buffer->buffer[buffer->bytesUsed] = '\0';
   return 0;
 }
+/*****************************************************************************/
+
+static int removeFromBuffer(ecmcOutputBufferType *buffer,size_t len)
+{
+  if(buffer==NULL){
+    return __LINE__;
+  }
+
+  int bytesToMove= buffer->bytesUsed-len;
+  if(bytesToMove<0){
+    return __LINE__;
+  }
+
+  memmove(&buffer->buffer[0],&buffer->buffer[len],bytesToMove);
+  buffer->bytesUsed=bytesToMove;
+  buffer->buffer[buffer->bytesUsed] = '\0';
+  return 0;
+}
 
 /*****************************************************************************/
 
@@ -328,17 +346,27 @@ int CMDwriteIt(const char *inbuf, size_t inlen)
 /* from MCU into EPICS */
 int CMDreadIt(char *outbuf, size_t outlen)
 {
-  LOGINFO4("%s():Read command.\n",__FUNCTION__);
-  int ret;
-  if (!outbuf || !outlen) return -1;
-  ret = snprintf(outbuf, outlen, "%s", getEpicsBuffer()->buffer);
-  if (ret < 0) return ret;
-  if (PRINT_STDOUT_BIT1() && stdlog) {
-    fprintf(stdlog,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
-    cmd_dump_to_std(outbuf, strlen(outbuf));
-    fprintf(stdlog,"\"\n");
-  }
+  //printf("************BEFORE READ: BYTES LEFT IN BUFFER:  %d.\n",getEpicsBuffer()->bytesUsed);
+   int ret;
+   if (!outbuf || !outlen) return -1;
+   ret = snprintf(outbuf, outlen, "%s", getEpicsBuffer()->buffer);
 
-  clearBuffer(getEpicsBuffer());
-  return 0;
+   if (ret < 0){
+     clearBuffer(getEpicsBuffer());
+     return ret;
+   }
+
+   if (PRINT_STDOUT_BIT1() && stdlog) {
+     fprintf(stdlog,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
+     cmd_dump_to_std(outbuf, strlen(outbuf));
+     fprintf(stdlog,"\"\n");
+   }
+
+   //printf("************BYTES SENT:%s#\n",outbuf);
+   if(ret>=outlen){
+     ret=outlen-1; //snprintf max utilize buffer size minus one.
+   }
+   removeFromBuffer(getEpicsBuffer(),ret);
+   //printf("************AFTER READ: BYTES LEFT IN BUFFER:  %d.\n",getEpicsBuffer()->bytesUsed);
+   return 0;
 }
