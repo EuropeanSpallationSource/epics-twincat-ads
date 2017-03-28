@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL2535_v0_00" Id="{ce760548-2540-4df4-9a65-dbb6a5bf26fa}">
+    <Declaration><![CDATA[///EL2535 | 2-channel pulse width current terminals 24 V DC
+FUNCTION_BLOCK EL2535_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="FB_EL2904_v1_00" Id="{a6c463d1-f26b-41fc-9d82-0d5d0956f9a6}">
+    <Declaration><![CDATA[///EL2904 | 4-channel digital output terminal, TwinSAFE, 24 V DC, 0.5 A
+FUNCTION_BLOCK FB_EL2904_v1_00
+VAR_INPUT
+	En: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	bDo_1: BOOL;
+	bDo_2: BOOL;
+	bDo_3: BOOL;
+	bDo_4: BOOL;
+	bError: BOOL;
+	sState: STRING;
+	sDiag: STRING;
+END_VAR
+VAR
+	Message_X_Info_Data_State AT %I*: USINT;
+	Message_X_Info_Data_Diag AT %I*: USINT;
+	Message_X_Output_Safe_Data AT %I*: BYTE;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+IF En THEN
+	IF bError=FALSE THEN
+		CASE Message_X_Info_Data_State OF
+		0:
+			sState:='Undefined';
+		100:
+			sState:='RESET';
+		101:
+			sState:='SESSION';
+		102:
+			sState:='CONNECTION';
+		103:
+			sState:='PARAMETER';
+		104:
+			sState:='DATA';
+		105:
+			sState:='SHUTDOWN';
+		ELSE	
+			sState:='Unknown';
+		END_CASE
+
+		sDiag:=USINT_TO_STRING(Message_X_Info_Data_Diag);
+
+		bDo_1:=Message_X_Output_Safe_Data.0;
+		bDo_2:=Message_X_Output_Safe_Data.1;
+		bDo_3:=Message_X_Output_Safe_Data.2;
+		bDo_4:=Message_X_Output_Safe_Data.3;
+	ELSE
+		sState:='';
+		sDiag:='';
+
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

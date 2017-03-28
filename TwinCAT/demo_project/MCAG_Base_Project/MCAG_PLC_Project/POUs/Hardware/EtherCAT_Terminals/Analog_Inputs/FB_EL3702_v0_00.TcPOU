@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="FB_EL3702_v0_00" Id="{3143a394-ae62-437e-8e32-34f8281b77f5}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_EL3702_v0_00
+VAR CONSTANT
+	cDcOversampling: INT := 1;
+	///200 samples/period
+	cBufferSize: INT := 1000;
+END_VAR
+VAR_INPUT
+	En: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	aBufferCh1Data AT %Q*: ARRAY[0..(cBufferSize - 1)] OF INT;
+	aBufferCh2Data AT %Q*: ARRAY[0..(cBufferSize - 1)] OF INT;
+	aBufferDcTime AT %Q*: ARRAY[0..(cBufferSize - 1)] OF UDINT;
+	bError: BOOL;
+	bCh1BufferOK: BOOL;
+	bCh2BufferOK: BOOL;
+	bTimeBufferOk: BOOL;
+END_VAR
+VAR
+	iCounter: INT;
+	nOldDcTimeNextLatch: UDINT;
+	nDcTimeDiff: LREAL;
+	nIndex: INT;
+	CH1_Status AT %I*: UINT;
+	CH1_Samples AT %I*: ARRAY[0..(cDcOversampling - 1)] OF INT;
+	CH2_Status AT %I*: UINT;
+	CH2_Samples AT %I*: ARRAY[0..(cDcOversampling - 1)] OF INT;
+	AI_NextSync1Time_StartTimeNextLatch AT %I*: UDINT;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+	nMemOP: UDINT;
+	temp: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+bCh1BufferOK:=FALSE;
+bCh2BufferOK:=FALSE;
+bTimeBufferOk:=FALSE;
+bError:=FALSE;
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	iCounter:=iCounter+1;
+	bError:=TRUE;
+	RETURN;
+END_IF
+
+
+IF En THEN
+	IF NOT bError THEN	
+	
+		//Move old values to beginning of buffer		
+		nMemOP:=MEMMOVE(
+			destAddr:= ADR(aBufferCh1Data[0]),
+			srcAddr:= ADR(aBufferCh1Data[cDcOversampling]),
+			n:= INT_TO_UDINT((cBuffersize-cDcOversampling)*SIZEOF(aBufferCh1Data[0])));
+		
+		nMemOP:=MEMMOVE(
+			destAddr:= ADR(aBufferCh2Data[0]),
+			srcAddr:= ADR(aBufferCh2Data[cDcOversampling]),
+			n:= INT_TO_UDINT((cBuffersize-cDcOversampling)*SIZEOF(aBufferCh2Data[0])));
+	
+			
+			//No scaling just copy new values to end of buffer
+			nMemOP:=MEMMOVE(
+			destAddr:= ADR(aBufferCh1Data[cBuffersize-cDcOversampling]),
+			srcAddr:= ADR(CH1_Samples[0]),
+			n:= INT_TO_UDINT((cDcOversampling)*SIZEOF(CH1_Samples[0])));
+			
+			//No scaling just copy new values to end of buffer
+			nMemOP:=MEMMOVE(
+			destAddr:= ADR(aBufferCh2Data[cBuffersize-cDcOversampling]),
+			srcAddr:= ADR(CH2_Samples[0]),
+			n:= INT_TO_UDINT((cDcOversampling)*SIZEOF(CH2_Samples[0])));
+			bCh1BufferOK:=TRUE;
+			bCh2BufferOK:=TRUE;
+		
+//Scaling of values
+(*
+		FOR nIndex:=cDcOversampling-1 TO 0 BY -1 DO
+			aBufferL1Voltage[nIndex]:=INT_TO_LREAL(L1_Voltage_Samples_U1_Samples[cDcOversampling-1-nIndex])*0.01251259; (*410V/32767=0.01251259*)
+			aBufferL1Current[nIndex]:=INT_TO_LREAL(L1_Current_Samples_I1_Samples[cDcOversampling-1-nIndex])*0.00004578*fTransformerGain; (*1.5A/32767=0.00004578*)
+			aBufferL2Voltage[nIndex]:=INT_TO_LREAL(L2_Voltage_Samples_U2_Samples[cDcOversampling-1-nIndex])*0.01251259; (*410V/32767=0.01251259*)
+			aBufferL2Current[nIndex]:=INT_TO_LREAL(L2_Current_Samples_I2_Samples[cDcOversampling-1-nIndex])*0.00004578*fTransformerGain; (*1.5A/32767=0.00004578*)
+			aBufferL3Voltage[nIndex]:=INT_TO_LREAL(L3_Voltage_Samples_U3_Samples[cDcOversampling-1-nIndex])*0.01251259; (*410V/32767=0.01251259*)
+			aBufferL3Current[nIndex]:=INT_TO_LREAL(L3_Current_Samples_I3_Samples[cDcOversampling-1-nIndex])*0.00004578*fTransformerGain; (*1.5A/32767=0.00004578*)
+		END_FOR
+*)
+		
+		(*Store DC-time in buffer*)
+		nMemOP:=MEMMOVE(
+			destAddr:= ADR(aBufferDcTime[0]),
+			srcAddr:= ADR(aBufferDcTime[cDcOversampling]),
+			n:= INT_TO_UDINT((cBuffersize-cDcOversampling)*SIZEOF(aBufferDcTime[0]))); //UDINT = 4 byte
+			
+		nDcTimeDiff:=UDINT_TO_LREAL(AI_NextSync1Time_StartTimeNextLatch-nOldDcTimeNextLatch);
+		
+		IF nDcTimeDiff<>0 THEN
+			FOR nIndex:=1 TO cDcOversampling DO
+				aBufferDcTime[cBufferSize-cDcOversampling+nIndex-1]:=nOldDcTimeNextLatch+LREAL_TO_UDINT((nIndex*nDcTimeDiff/cDcOversampling));
+			END_FOR
+			bTimeBufferOk:=TRUE;
+		ELSE
+			bError:=TRUE;
+			FOR nIndex:=1 TO cDcOversampling DO
+				aBufferDcTime[cBufferSize-nIndex]:=0;
+			END_FOR
+			bTimeBufferOk:=FALSE;
+		END_IF
+		
+		nOldDcTimeNextLatch:=AI_NextSync1Time_StartTimeNextLatch;
+		
+	END_IF
+END_IF
+]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

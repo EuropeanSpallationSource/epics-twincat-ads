@@ -4,12 +4,13 @@ require streamdevice,2.7.1
 require ads,anderssandstrom
 
 ##############################################################################
-# Demo file to communicate with TwinCAT over ADS 
+# Demo file to run one axis without motor record. 
 # 
 # 1. The ams adress of this linux client must be added to the TwinCAT ads router.
 #    Systems->routes->add route, use ip of linux plus ".1.1"=> "192.168.88.44.1.1"
-# 2. A PLC project with certain variables needs to be executing (see demo project)
-# 3. Start with: iocsh st.adsTest.cmd
+# 2. A PLC project with an instance of FB_DriveVirtual, (in "Main.M1"), must be 
+#    loaded in the PLC. See demo twincat project.
+# 3. Start with: iocsh st.ads1AxisNoMotorRecord.cmd
 # 
 ##############################################################################
 ############# Configure device (<ASYN PORT>, <IP_of_PLC>,<AMS_of_PLC>,<Default_ADS_Port>,<Not_used>,<Not_used>,<Not_used>):
@@ -26,6 +27,10 @@ asynSetTraceInfoMask("ADS_1", -1, 15)
 
 #General 
 dbLoadRecords("adsTest.db","P=ADS_IOC:,PORT=ADS_1")
+
+#One motion axis status	
+dbLoadTemplate("DUT_AxisStatus.substitutions")
+dbLoadTemplate("FB_DriveVirtual.substitutions")
 
 #var streamDebug 1
 

@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL9576_v1_00" Id="{a09e3dbe-a73f-4048-b43b-252510391861}">
+    <Declaration><![CDATA[///EL9576 | Brake terminal (vap and resistor)
+FUNCTION_BLOCK EL9576_v1_00
+VAR_INPUT
+	En: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	bError: BOOL;	
+	OverTemperature: BOOL;
+	I2TError : BOOL;
+	I2TWarning : BOOL;
+	OverVoltage  : BOOL;
+	UnderVoltage : BOOL;
+	ChopperOn : BOOL;
+	DCLinkVoltage : LREAL;
+	DutyCycle  : LREAL;
+	ResistorCurrent : LREAL;
+	
+END_VAR
+VAR
+	BCTOverTemperature AT %I*: BOOL;
+	BCTI2TError AT %I*: BOOL;
+	BCTI2TWarning AT %I*: BOOL;
+	BCTOverVoltage  AT %I*: BOOL;
+	BCTUnderVoltage  AT %I*: BOOL;
+	BCTChopperOn  AT %I*: BOOL;
+	BCTDCLinkVoltage AT %I*: UDINT;
+	BCTDutyCycle  AT %I*: USINT;
+	BCTResistorCurrent AT %I*: UDINT;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8 OR BCTI2TError OR BCTI2TWarning OR BCTOverTemperature OR BCTOverVoltage OR BCTUnderVoltage) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+OverTemperature:=BCTOverTemperature;
+I2TError:=BCTI2TError;
+I2TWarning:=BCTI2TWarning;
+OverVoltage:=BCTOverVoltage;
+UnderVoltage:=bctUnderVoltage;
+ChopperOn:=bctChopperOn;
+DCLinkVoltage:=UDINT_TO_LREAL(bctDCLinkVoltage);
+DutyCycle:=USINT_TO_LREAL(BCTDutyCycle);
+ResistorCurrent:=UDINT_TO_LREAL(BCTResistorCurrent);
+
+
+
+]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

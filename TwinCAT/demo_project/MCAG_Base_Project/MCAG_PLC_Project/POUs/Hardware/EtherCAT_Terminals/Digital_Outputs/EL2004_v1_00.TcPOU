@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL2004_v1_00" Id="{eff1e46d-0d78-424e-95a4-34120511cd9e}">
+    <Declaration><![CDATA[///EL2004 | 4-channel digital output terminal 24 V DC, 0.5 A
+FUNCTION_BLOCK EL2004_v1_00
+VAR_INPUT
+	En: BOOL;
+	bDo_1: BOOL;
+	bDo_2: BOOL;
+	bDo_3: BOOL;
+	bDo_4: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	bError: BOOL;
+END_VAR
+VAR
+	Channel_1_Output AT %Q*: BOOL;
+	Channel_2_Output AT %Q*: BOOL;
+	Channel_3_Output AT %Q*: BOOL;
+	Channel_4_Output AT %Q*: BOOL;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+IF En THEN
+	IF bError=FALSE THEN
+		Channel_1_Output:=bDo_1;
+		Channel_2_Output:=bDo_2;
+		Channel_3_Output:=bDo_3;
+		Channel_4_Output:=bDo_4;
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

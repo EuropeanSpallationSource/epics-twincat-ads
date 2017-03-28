@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL1104_v1_00" Id="{d698c95c-e3b1-45de-92df-948ff81dc9ca}">
+    <Declaration><![CDATA[///EL1104 | 4-channel digital input terminals 24 V DC, 3 ms, 24 V and 0 V sensor supply
+FUNCTION_BLOCK EL1104_v1_00
+VAR_INPUT
+	En: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	bDi_1: BOOL;
+	bDi_2: BOOL;
+	bDi_3: BOOL;
+	bDi_4: BOOL;
+	bError: BOOL;
+END_VAR
+VAR
+	Channel_1_Input AT %I*: BOOL;
+	Channel_2_Input AT %I*: BOOL;
+	Channel_3_Input AT %I*: BOOL;
+	Channel_4_Input AT %I*: BOOL;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+IF En THEN
+	IF bError=FALSE THEN
+		bDi_1:=Channel_1_Input;
+		bDi_2:=Channel_2_Input;
+		bDi_3:=Channel_3_Input;
+		bDi_4:=Channel_4_Input;
+	ELSE
+		bDi_1:=FALSE;
+		bDi_2:=FALSE;
+		bDi_3:=FALSE;
+		bDi_4:=FALSE;
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

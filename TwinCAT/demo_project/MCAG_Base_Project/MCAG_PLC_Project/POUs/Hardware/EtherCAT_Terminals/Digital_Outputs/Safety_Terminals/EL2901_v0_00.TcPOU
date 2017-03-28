@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL2901_v0_00" Id="{4fef0973-994c-4c76-aadd-89bd8c2fcf6e}">
+    <Declaration><![CDATA[///EL2901 | Potential supply terminal, TwinSAFE, 24 V DC, 10 A
+FUNCTION_BLOCK EL2901_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

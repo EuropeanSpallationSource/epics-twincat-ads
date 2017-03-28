@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_ReadFloatParameter" Id="{22824561-5f6a-4eee-b9ab-549db6e77c17}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ReadFloatParameter
+VAR_INPUT
+	bExecute: BOOL;
+	///16#4000=Axisdata, 16#5000=Encoderdata, 16#6000=Controldata, 16#7000=Drivedata
+	nDeviceGroup: UDINT;
+	nIndexOffset: UDINT;
+END_VAR
+VAR_OUTPUT
+	nData: LREAL;
+	bBusy: BOOL;
+	bDone: BOOL;
+	bError: BOOL;
+	nErrorId: UDINT;
+END_VAR
+VAR_IN_OUT
+	Axis: AXIS_REF;
+END_VAR
+VAR
+	nState: UINT;
+	fbADSREAD: ADSREAD;
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*Sequence to read parameter in Nc*)
+CASE nState OF
+0:  (*Start sequence. Wait until bExecute is TRUE*)
+	IF bExecute THEN
+		bBusy:=TRUE;
+		bError:=FALSE;
+		nErrorId:=0;
+		nState:=10;
+	END_IF
+
+10: (*Read parameter in Nc*)
+	fbADSREAD(
+		PORT:=500,
+		IDXGRP:=nDeviceGroup+Axis.NcToPlc.AxisId,
+		IDXOFFS:=nIndexOffset,
+		LEN:=SIZEOF(nData),
+		DESTADDR:=ADR(nData),
+		READ:=TRUE);
+
+	(*Wait until it's done or if an error occurs*)
+	IF NOT fbADSREAD.ERR THEN
+		IF NOT fbADSREAD.BUSY THEN
+			fbADSREAD(READ:=FALSE);
+			nState:=20;
+		END_IF
+	ELSE
+		nErrorId:=fbADSREAD.ERRID;
+		nState:=999;
+	END_IF
+
+20: (*Sequense is done. Waits until bExecute is FALSE*)
+	bBusy:=FALSE;
+	bDone:=TRUE;
+	IF NOT bExecute THEN
+		bDone:=FALSE;
+		nState:=0;
+	END_IF
+
+999: (*Error in sequence*)
+	bError:=TRUE;
+	bBusy:=FALSE;
+	bDone:=FALSE;
+	fbADSREAD(READ:=FALSE);
+	IF NOT bExecute THEN
+		nState:=0;
+	END_IF
+
+END_CASE
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>
