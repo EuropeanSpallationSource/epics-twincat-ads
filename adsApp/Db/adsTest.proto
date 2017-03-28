@@ -1,0 +1,88 @@
+
+LockTimeout = 5000;
+WriteTimeout = 100;
+ReplyTimeout = 1000;
+ReadTimeout = 100;
+
+getTestADR{
+	out "ADSPORT=851/.ADR.16#4020,16#0,2,2?";
+	in "%f";
+}
+
+setTestADR{
+	out "ADSPORT=851/.ADR.16#4020,16#0,2,2=%d";
+	in "OK";
+	@init { getTestADR; }
+}
+
+getAxisStatus{
+	out "ADSPORT=851/Main.M1.stAxisStatus?";
+	in "%s";
+}
+
+getITest{
+        out "Main.iTest?";
+	in "%d";
+}
+
+setITest{
+        out "Main.iTest=%d";
+	in "OK";
+}
+
+getFTest{
+        out "Main.fTest?";
+	in "%f";
+}
+
+setFTest{
+        out "Main.fTest=%f";
+	in "OK";
+       	@init { getFTest; }
+}
+
+getAmplitude{
+        out "Main.fAmplitude?";
+	in "%f";
+}
+
+setAmplitude{
+        out "Main.fAmplitude=%f";
+	in "OK";
+       	@init { getAmplitude; }
+}
+
+getSTest{
+        width = 100;
+        out "Main.sTest?";
+	in "%#s";
+}
+
+getFTestArray{
+        Separator = ",";
+        out "Main.fTestArray?";
+	in "%f";
+}
+
+setFTestArray{
+        Separator = ",";
+        out "Main.fTestArray=%f";
+	in "OK";
+       	@init { getFTestArray; }
+}
+
+getGeneralErrorId{
+	out "Main.iTestError?";
+	in "%d";
+}
+
+setGeneralErrorId{
+	out "Main.iTestError=%d";
+	in "OK";
+        @init { getGeneralErrorId; }
+}
+
+
+
+
+
