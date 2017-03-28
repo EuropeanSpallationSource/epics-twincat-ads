@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL1502_v0_00" Id="{7092b2ed-aeaa-4b82-b965-97399022e57b}">
+    <Declaration><![CDATA[///EL1502 | 1 or 2-channel, up/down counter with output 24 V DC, 100 kHz 32 bit
+FUNCTION_BLOCK EL1502_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

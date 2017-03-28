@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL2902_v0_00" Id="{780e7f23-9c93-465a-8965-e5bf0ecffc55}">
+    <Declaration><![CDATA[///EL2902 | 2-channel digital output terminal, TwinSAFE, 24 V DC, 2.3 A
+FUNCTION_BLOCK EL2902_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="FB_EL1252_v1_00" Id="{902e7a3a-0f77-427e-9116-f5ce72ae4251}">
+    <Declaration><![CDATA[///EL1252 | XFC, 2-channel digital input terminal with time stamp
+FUNCTION_BLOCK FB_EL1252_v1_00
+VAR_INPUT
+	En: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	bDi_1: BOOL;
+	bDi_2: BOOL;
+	nDcTimeOnLatchPos_1: ULINT;
+	nDcTimeOnLatchNeg_1: ULINT;
+	nDcTimeOnLatchPos_2: ULINT;
+	nDcTimeOnLatchNeg_2: ULINT;
+	bError: BOOL;
+END_VAR
+VAR
+	Channel_1_Input AT %I*: BOOL;
+	Channel_2_Input AT %I*: BOOL;
+	Latch_LatchPos1 AT %I*: ULINT;
+	Latch_LatchNeg1 AT %I*: ULINT;
+	Latch_LatchPos2 AT %I*: ULINT;
+	Latch_LatchNeg2 AT %I*: ULINT;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+IF En THEN
+	IF bError=FALSE THEN
+		bDi_1:=Channel_1_Input;
+		bDi_2:=Channel_2_Input;
+		nDcTimeOnLatchPos_1:=Latch_LatchPos1;
+		nDcTimeOnLatchNeg_1:=Latch_LatchNeg1;
+		nDcTimeOnLatchPos_2:=Latch_LatchPos2;
+		nDcTimeOnLatchNeg_2:=Latch_LatchNeg2;
+	ELSE
+		bDi_1:=FALSE;
+		bDi_2:=FALSE;
+		nDcTimeOnLatchPos_1:=0;
+		nDcTimeOnLatchNeg_1:=0;
+		nDcTimeOnLatchPos_2:=0;
+		nDcTimeOnLatchNeg_2:=0;
+	END_IF
+END_IF
+]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

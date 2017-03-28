@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <DUT Name="dutEL2521_Ctrl" Id="{4f7afc95-d93a-4274-9d93-084eb736d49f}">
+    <Declaration><![CDATA[TYPE dutEL2521_Ctrl :
+STRUCT
+	///The control word (CW) is located in the output process image, and is transmitted from the controller to the terminal.
+	///CW.0 FREQ_SEL 0bin / 1bin  Rapid change of the base frequency (only if the ramp function is inactive):
+	///0bin = Base frequency 1 (object 8001:02)
+	///1bin = Base frequency 2 (object 8001:03) 
+	FREQ_SEL: BOOL;
+	///CW.1 RAMP_DIS 1bin Operation of the ramp function is cancelled, in spite of object 8000:06 being active; if travel distance control is active, it is interrupted by this bit 
+	RAMP_DIS: BOOL;
+	///CW.2 GO_COUNTER 1bin  If travel distance control is active (object 8000:0A), then a pre-set counter value is approached when the bit is set 
+	GO_COUNTER: BOOL;
+	///CW.5 CNT_CLR 1bin The contents of the counter is cleared or set (object 8000:0B) by this bit. 
+	///Any overflow or underflow bits that might be set are also cleared by this bit. 
+	///The process can be edge triggered or level triggered (object 8000:05). 
+	CNT_CLR: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

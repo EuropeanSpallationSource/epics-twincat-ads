@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL1262_v0_00" Id="{71013e38-8a84-41a1-8711-92d41ae9502b}">
+    <Declaration><![CDATA[///EL1262 | XFC, 2-channel digital input terminal with oversampling
+FUNCTION_BLOCK EL1262_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

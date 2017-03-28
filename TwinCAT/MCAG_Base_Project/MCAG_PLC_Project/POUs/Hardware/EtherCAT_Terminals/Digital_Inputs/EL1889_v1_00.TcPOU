@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL1889_v1_00" Id="{d59c8d6e-b089-4e13-936a-9c6c29ae3c6a}">
+    <Declaration><![CDATA[///EL1889 | HD EtherCAT Terminal, 16-channel digital input 24 V DC, 3 ms, 0 V (ground) switching
+FUNCTION_BLOCK EL1889_v1_00
+VAR_INPUT
+	En: BOOL;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	bDi_1: BOOL;
+	bDi_2: BOOL;
+	bDi_3: BOOL;
+	bDi_4: BOOL;
+	bDi_5: BOOL;
+	bDi_6: BOOL;
+	bDi_7: BOOL;
+	bDi_8: BOOL;
+	bDi_9: BOOL;
+	bDi_10: BOOL;
+	bDi_11: BOOL;
+	bDi_12: BOOL;
+	bDi_13: BOOL;
+	bDi_14: BOOL;
+	bDi_15: BOOL;
+	bDi_16: BOOL;
+	bError: BOOL;
+END_VAR
+VAR
+	Channel_1_Input AT %I*: BOOL;
+	Channel_2_Input AT %I*: BOOL;
+	Channel_3_Input AT %I*: BOOL;
+	Channel_4_Input AT %I*: BOOL;
+	Channel_5_Input AT %I*: BOOL;
+	Channel_6_Input AT %I*: BOOL;
+	Channel_7_Input AT %I*: BOOL;
+	Channel_8_Input AT %I*: BOOL;
+	Channel_9_Input AT %I*: BOOL;
+	Channel_10_Input AT %I*: BOOL;
+	Channel_11_Input AT %I*: BOOL;
+	Channel_12_Input AT %I*: BOOL;
+	Channel_13_Input AT %I*: BOOL;
+	Channel_14_Input AT %I*: BOOL;
+	Channel_15_Input AT %I*: BOOL;
+	Channel_16_Input AT %I*: BOOL;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+IF En THEN
+	IF bError=FALSE THEN
+		bDi_1:=Channel_1_Input;
+		bDi_2:=Channel_2_Input;
+		bDi_3:=Channel_3_Input;
+		bDi_4:=Channel_4_Input;
+		bDi_5:=Channel_5_Input;
+		bDi_6:=Channel_6_Input;
+		bDi_7:=Channel_7_Input;
+		bDi_8:=Channel_8_Input;
+		bDi_9:=Channel_9_Input;
+		bDi_10:=Channel_10_Input;
+		bDi_11:=Channel_11_Input;
+		bDi_12:=Channel_12_Input;
+		bDi_13:=Channel_13_Input;
+		bDi_14:=Channel_14_Input;
+		bDi_15:=Channel_15_Input;
+		bDi_16:=Channel_16_Input;
+	ELSE
+		bDi_1:=FALSE;
+		bDi_2:=FALSE;
+		bDi_3:=FALSE;
+		bDi_4:=FALSE;
+		bDi_5:=FALSE;
+		bDi_6:=FALSE;
+		bDi_7:=FALSE;
+		bDi_8:=FALSE;
+		bDi_9:=FALSE;
+		bDi_10:=FALSE;
+		bDi_11:=FALSE;
+		bDi_12:=FALSE;
+		bDi_13:=FALSE;
+		bDi_14:=FALSE;
+		bDi_15:=FALSE;
+		bDi_16:=FALSE;
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

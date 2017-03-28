@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL2521_v1_00" Id="{97e7edc7-e83d-4450-bd3d-79c67a206e67}">
+    <Declaration><![CDATA[///EL2521 | 1-channel pulse train output terminal RS422/24 V DC
+FUNCTION_BLOCK EL2521_v1_00
+VAR_INPUT
+	En: BOOL;
+	Ctrl: dutEL2521_Ctrl;
+	nFrequency: INT;
+END_VAR
+VAR_OUTPUT
+	EnO: BOOL;
+	Status: dutEL2521_Status;
+	nCounter: UINT;
+	bError: BOOL;
+END_VAR
+VAR
+	Inputs_Status AT %I*: UINT;
+	Inputs_Data_In AT %I*: UINT;
+	Outputs_Ctrl AT %Q*: UINT;
+	Outputs_Data_Out AT %Q*: UINT;
+	WcState_WcState AT %I*: BOOL;
+	InfoData_State AT %I*: UINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[EnO:=En;
+
+IF En AND (WcState_WcState OR InfoData_State<>16#8) THEN
+	bError:=TRUE;
+ELSE
+	bError:=FALSE;
+END_IF
+
+IF En THEN
+	IF bError=FALSE THEN
+		Status.SEL_ACK:=Inputs_Status.0;
+		Status.RAMP_ACTIVE:=Inputs_Status.1;
+		Status.UNDERFLOW:=Inputs_Status.2;
+		Status.OVERFLOW:=Inputs_Status.3;
+		Status.INPUT_T:=Inputs_Status.4;
+		Status.INPUT_Z:=Inputs_Status.5;
+		Status.ERROR:=Inputs_Status.6;
+		nCounter:=Inputs_Data_In;
+		Outputs_Ctrl.0:=Ctrl.FREQ_SEL;
+		Outputs_Ctrl.1:=Ctrl.RAMP_DIS;
+		Outputs_Ctrl.2:=Ctrl.GO_COUNTER;
+		Outputs_Ctrl.5:=Ctrl.CNT_CLR;
+		Outputs_Data_Out:=INT_TO_UINT(nFrequency);
+	END_IF
+END_IF
+]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL1258_v0_00" Id="{ee9484d5-3596-4bc6-b9d7-d633d1311bfa}">
+    <Declaration><![CDATA[///EL1258 | XFC, 8-channel digital input terminal with time stamp
+FUNCTION_BLOCK EL1258_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

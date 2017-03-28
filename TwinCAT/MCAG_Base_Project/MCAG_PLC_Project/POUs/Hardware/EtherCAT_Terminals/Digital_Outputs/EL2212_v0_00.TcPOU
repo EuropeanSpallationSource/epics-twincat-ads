@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
+  <POU Name="EL2212_v0_00" Id="{c3a3961b-00cb-4aeb-b8eb-814cfe163f2a}">
+    <Declaration><![CDATA[///EL2212 | XFC, 2-channel digital output terminal 24…72 V DC with overexcitation
+FUNCTION_BLOCK EL2212_v0_00
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>
