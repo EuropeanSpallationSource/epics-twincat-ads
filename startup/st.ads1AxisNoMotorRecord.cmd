@@ -10,7 +10,7 @@ require ads,anderssandstrom
 #    Systems->routes->add route, use ip of linux plus ".1.1"=> "192.168.88.44.1.1"
 # 2. A PLC project with an instance of FB_DriveVirtual, (in "Main.M1"), must be 
 #    loaded in the PLC. See demo twincat project.
-# 3. Start with: iocsh st.1AxisNoMotorRecord.cmd
+# 3. Start with: iocsh st.ads1AxisNoMotorRecord.cmd
 # 
 ##############################################################################
 ############# Configure device (<ASYN PORT>, <IP_of_PLC>,<AMS_of_PLC>,<Default_ADS_Port>,<Not_used>,<Not_used>,<Not_used>):
@@ -26,7 +26,7 @@ asynSetTraceInfoMask("ADS_1", -1, 15)
 ############# Load records (Stream device):
 
 #General 
-dbLoadTemplate("adsGeneral.substitutions")
+dbLoadRecords("adsTest.db","P=ADS_IOC:,PORT=ADS_1")
 
 #One motion axis status	
 dbLoadTemplate("DUT_AxisStatus.substitutions")
