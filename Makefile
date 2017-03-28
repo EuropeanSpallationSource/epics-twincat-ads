@@ -30,5 +30,7 @@ TEMPLATES = \
   adsApp/Db/adsGeneral.template \
   adsApp/Db/DUT_AxisStatus_v0_01.template\
   adsApp/Db/FB_DriveVirtual_v1_01.template\
+  adsApp/Db/adsTest.db\
+
 
 
