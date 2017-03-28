@@ -4,6 +4,7 @@ builddir/
 adsApp/.*
 .*
 *.bak
-TwinCAT/demo_project/MCAG_Base_Project/_Boot
-TwinCAT/demo_project/MCAG_Base_Project/_Configure
+TwinCAT/demo_project/MCAG_Base_Project/_Boot*
+TwinCAT/demo_project/MCAG_Base_Project/_Configure*
+TwinCAT/demo_project/MCAG_Base_Project/MCAG_PLC_Project/_CompileInfo*
 
