@@ -42,8 +42,9 @@ iIndex:=iIndex+1;
 IF iIndex>99 THEN
 	iIndex:=0;
 END_IF
-
-fTestArray[iIndex]:=fTest;]]></ST>
+//Make memmove to get continious signal!
+MEMMOVE(destAddr:=ADR(fTestArray[0]),srcAddr:=ADR(fTestArray[1]),n:=99*8);
+fTestArray[99]:=fTest;]]></ST>
     </Implementation>
     <Action Name="ACT" Id="{d90d5e50-7562-49a7-958d-fc203dcb8912}">
       <Implementation>
