@@ -1,5 +1,7 @@
 EXCLUDE_VERSIONS=3.14.12.5
 
+PROJECT=ads
+
 include ${EPICS_ENV_PATH}/module.Makefile
 
 USR_DEPENDENCIES = asyn,4.27.0
