@@ -1,2 +1,19 @@
-# Default no CRLF conversion
-* -text
+#Which files need CRLF handling
+
+# TwinCAT files are defined in 
+# TwinCAT/.gitattributes
+
+# Default is auto
+* text=auto
+
+# We can help Git, because we now about some file extensions
+*.bat  text eol=crlf
+# cmd as used for EPICS, not for Windows
+*.cmd  text eol=lf
+*.gif  -text
+*.opi  -text
+*.png  -text
+*.ppt* -text  
+*.py   text eol=lf
+*.sh   text eol=lf
+
