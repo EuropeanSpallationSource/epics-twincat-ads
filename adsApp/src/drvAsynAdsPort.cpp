@@ -45,29 +45,35 @@ typedef struct {
   char              *portName;
   asynUser          *pasynUser;        /* Not currently used */
 
+  epicsMutexId       mutexId;
   asynInterface      common;
   asynInterface      octet;
+  int                connected;
+  char *ipaddr;
+  char *amsaddr;
+  unsigned int amsport;
 } adsController_t;
 
 
-const char *portName_;
-const char *ipaddr_;
-const char *amsaddr_;
-unsigned int amsport_;
-unsigned int priority_;
-int noAutoConnect_;
-int noProcessEos_;
 
 /*
  * Close a connection
  */
 static void
-closeConnection(asynUser *pasynUser,adsController_t *adsController_p)
+closeConnection(asynUser *pasynUser,adsController_t *adsController_p, const char *why, int error)
 {
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
-            "%s close connection\n",
-            adsController_p->portName);
+            "%s close connection (%s,0x%x)\n",
+            adsController_p->portName, why, error);
   adsDisconnect();
+  adsController_p->connected = 0;
+#if 0
+  /* TODO: prevent a reconnect */
+  if (!(tty->flags & FLAG_CONNECT_PER_TRANSACTION) ||
+      (tty->flags & FLAG_SHUTDOWN))
+    pasynManager->exceptionDisconnect(pasynUser);
+#endif
+
 }
 
 /*Beginning of asynCommon methods*/
@@ -102,12 +108,30 @@ static asynStatus
 connectIt(void *drvPvt, asynUser *pasynUser)
 
 {
-  (void)drvPvt;
+  adsController_t *adsController_p = (adsController_t *)drvPvt;
+  epicsMutexLockStatus mutexLockStatus;
+
+  int res;
+  int connectOK;
+
   (void)pasynUser;
-  if(adsConnect(ipaddr_,amsaddr_,amsport_)<0)
+  mutexLockStatus = epicsMutexLock(adsController_p->mutexId);
+  if (mutexLockStatus != epicsMutexLockOK) {
     return asynError;
-  else
+  }
+
+  if (adsController_p->connected) {
+    epicsMutexUnlock(adsController_p->mutexId);
     return asynSuccess;
+  }
+  /* adsConnect() returns 0 if failed */
+  res = adsConnect(adsController_p->ipaddr,adsController_p->amsaddr,
+                   adsController_p->amsport);
+  connectOK =  res >= 0;
+  if (connectOK) adsController_p->connected = 1;
+  epicsMutexUnlock(adsController_p->mutexId);
+
+  return connectOK ? asynSuccess : asynError;
 }
 
 static asynStatus
@@ -127,7 +151,7 @@ asynCommonDisconnect(void *drvPvt, asynUser *pasynUser)
   assert(adsController_p);
   printf("DDDDDDDDD %s/%s:%d\n",
          __FILE__, __FUNCTION__, __LINE__);
-  closeConnection(pasynUser, adsController_p);
+  closeConnection(pasynUser, adsController_p, "asynCommonDisconnect", 0);
   adsDisconnect();
   return asynSuccess;
 }
@@ -141,6 +165,8 @@ static asynStatus writeIt(void *drvPvt, asynUser *pasynUser,
   adsController_t *adsController_p = (adsController_t *)drvPvt;
   size_t thisWrite = 0;
   asynStatus status = asynError;
+  int error;
+  epicsMutexLockStatus mutexLockStatus;
 
   assert(adsController_p);
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
@@ -151,14 +177,20 @@ static asynStatus writeIt(void *drvPvt, asynUser *pasynUser,
               (unsigned long)numchars);
   *nbytesTransfered = 0;
 
-  if (numchars == 0){
+  if (numchars == 0) {
     return asynSuccess;
   }
-  if (!(CMDwriteIt(data, numchars))) {
+  mutexLockStatus = epicsMutexLock(adsController_p->mutexId);
+  if (mutexLockStatus != epicsMutexLockOK) return(asynError);
+  error = CMDwriteIt(data, numchars);
+  if (error) {
+    closeConnection(pasynUser, adsController_p, "WriteIt", error);
+  } else {
     thisWrite = numchars;
     *nbytesTransfered = thisWrite;
     status = asynSuccess;
   }
+  epicsMutexUnlock(adsController_p->mutexId);
 
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
             "%s wrote %lu return %s.\n",
@@ -179,6 +211,7 @@ static asynStatus readIt(void *drvPvt,
   size_t thisRead = 0;
   int reason = 0;
   asynStatus status = asynSuccess;
+  epicsMutexLockStatus mutexLockStatus;
 
   assert(adsController_p);
 
@@ -186,7 +219,10 @@ static asynStatus readIt(void *drvPvt,
    * Feed what writeIt() gave us into the MCU
    */
   *data = '\0';
+  mutexLockStatus = epicsMutexLock(adsController_p->mutexId);
+  if (mutexLockStatus != epicsMutexLockOK) return(asynError);
   if (CMDreadIt(data, maxchars)) status = asynError;
+  epicsMutexUnlock(adsController_p->mutexId);
   if (status == asynSuccess) {
     thisRead = strlen(data);
     *nbytesTransfered = thisRead;
@@ -229,6 +265,8 @@ adsController_pCleanup(adsController_t *adsController_p)
 {
   if (adsController_p) {
     free(adsController_p->portName);
+    free(adsController_p->ipaddr);
+    free(adsController_p->amsaddr);
     free(adsController_p);
   }
 }
@@ -254,26 +292,18 @@ drvAsynAdsPortConfigure(const char *portName,
                         int noAutoConnect,
                         int noProcessEos)
 {
-  portName_=portName;
-  ipaddr_=ipaddr;
-  amsaddr_=amsaddr;
-  amsport_=amsport;
-  priority_=priority;
-  noAutoConnect_=noAutoConnect;
-  noProcessEos_=noProcessEos;
-
-
   adsController_t *adsController_p;
   asynInterface *pasynInterface;
   asynStatus status;
   size_t nbytes;
   void *allocp;
   asynOctet *pasynOctet;
-  printf("%s/%s:%d port=%s ipaddr=%s amsaddr=%s priority=%u noAutoConnect=%d noProcessEos=%d\n",
+  printf("%s/%s:%d asynport=%s ipaddr=%s amsaddr=%s amsport=%u priority=%u noAutoConnect=%d noProcessEos=%d\n",
          __FILE__, __FUNCTION__, __LINE__,
          portName ? portName : "",
          ipaddr,
 	 amsaddr,
+         amsport,
          priority,
          noAutoConnect,
          noProcessEos);
@@ -289,6 +319,16 @@ drvAsynAdsPortConfigure(const char *portName,
   allocp = callocMustSucceed(1, nbytes,
                              "drvAsynAdsPortConfigure()");
   adsController_p = (adsController_t *)allocp;
+
+  adsController_p->ipaddr = epicsStrDup(ipaddr);
+  adsController_p->amsaddr = epicsStrDup(amsaddr);
+  adsController_p->amsport = amsport;
+
+  adsController_p->mutexId = epicsMutexCreate();
+  if (!adsController_p->mutexId) {
+    printf("ERROR: epicsMutexCreate failure %s\n", portName);
+    return -1;
+  }
 
   pasynOctet = (asynOctet *)(adsController_p+1);
   adsController_p->portName = epicsStrDup(portName);
