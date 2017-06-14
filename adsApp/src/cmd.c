@@ -303,6 +303,7 @@ int CMDwriteIt(const char *inbuf, size_t inlen)
   LOGINFO4("%s():Write command.\n",__FUNCTION__);
   int had_cr = 0;
   int had_lf = 0;
+  int errorCode;
   char *new_buf = (char *)inbuf;
   if (!inbuf || !inlen) return -1;
 
@@ -326,20 +327,14 @@ int CMDwriteIt(const char *inbuf, size_t inlen)
       inlen--;
     }
   }
-  int errorCode=cmd_handle_input_line(new_buf,getEpicsBuffer());
-  if(errorCode){
-    RETURN_ERROR_OR_DIE(getEpicsBuffer(),__LINE__, "%s/%s:%d cmd_EAT returned error: %x.",
-           __FILE__, __FUNCTION__, __LINE__,errorCode);
-  }
-
+  errorCode = cmd_handle_input_line(new_buf,getEpicsBuffer());
   free(new_buf);
 
-  errorCode=cmd_buf_printf(getEpicsBuffer(),"%s%s",had_cr ? "\r" : "", had_lf ? "\n" : "");
-  if(errorCode){
-    RETURN_ERROR_OR_DIE(getEpicsBuffer(),__LINE__, "%s/%s:%d cmd_buf_printf returned error: %x.",
-           __FILE__, __FUNCTION__, __LINE__,errorCode);
+  if (errorCode) {
+    RETURN_ERROR_OR_DIE(getEpicsBuffer(),__LINE__, "%s/%s:%d cmd_buf_printf returned error: 0x%x.",
+                        __FILE__, __FUNCTION__, __LINE__,errorCode);
   }
-
+  cmd_buf_printf(getEpicsBuffer(),"%s%s",had_cr ? "\r" : "", had_lf ? "\n" : "");
   return 0;
 }
 

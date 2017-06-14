@@ -1,0 +1,48 @@
+EXCLUDE_VERSIONS=3.14.12.5
+
+PROJECT=ads
+
+
+include ${EPICS_ENV_PATH}/module.Makefile
+
+USR_DEPENDENCIES = asyn,4.31.0
+
+
+# from ADS/Makefile:
+USR_CXXFLAGS += -std=c++11
+#ADS uses pedantic and compiles OK; EPICS does not
+#USR_CXXFLAGS += -pedantic
+USR_CXXFLAGS += -Wall
+USR_CPPFLAGS += -I ../../ADS/AdsLib/
+
+# Temporally removed to speed up 
+EXCLUDE_ARCHS += eldk
+
+ADSSOURCES = \
+  ADS/AdsLib/AdsDef.cpp \
+  ADS/AdsLib/AdsLib.cpp \
+  ADS/AdsLib/AmsConnection.cpp \
+  ADS/AdsLib/AmsPort.cpp \
+  ADS/AdsLib/AmsRouter.cpp \
+  ADS/AdsLib/Log.cpp \
+  ADS/AdsLib/NotificationDispatcher.cpp \
+  ADS/AdsLib/Sockets.cpp \
+  ADS/AdsLib/Frame.cpp \
+
+
+SOURCES = \
+  adsApp/src/adsCom.cpp \
+  adsApp/src/drvAsynAdsPort.cpp \
+  adsApp/src/cmd.c \
+  adsApp/src/cmd_EAT.c \
+  ${ADSSOURCES}
+
+
+TEMPLATES = \
+  adsApp/Db/adsGeneral.template \
+  adsApp/Db/DUT_AxisStatus_v0_01.template\
+  adsApp/Db/FB_DriveVirtual_v1_01.template\
+  adsApp/Db/adsTest.db\
+
+
+

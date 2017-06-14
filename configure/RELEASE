@@ -21,13 +21,18 @@
 
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-# If using the sequencer, point SNCSEQ at its top directory:
-#SNCSEQ=$(EPICS_BASE)/../modules/soft/seq
-
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/opt/codac-4.1/epics/base
+# Note: We take EPICS base from a shell variable by default
+EPICS_BASE ?= 
+-include $(TOP)/../configure/EPICS_BASE.$(EPICS_HOST_ARCH)
+
 
 ASYN=$(EPICS_BASE)/../modules/asyn
+#If you want to do motion control:
+# We use the "axis" module. Uncomment the following line:
+AXIS=$(EPICS_BASE)/../modules/axis
+
+
 # Set RULES here if you want to take build rules from somewhere
 # other than EPICS_BASE:
 #RULES=/path/to/epics/support/module/rules/x-y
