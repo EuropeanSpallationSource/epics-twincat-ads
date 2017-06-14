@@ -21,6 +21,152 @@ static int returnVarName=0;
   }                                                            \
   while(0)                                                     \
 
+extern "C" {
+  const char *AdsErrorToString(long error)
+  {
+    switch (error) {
+    case GLOBALERR_TARGET_PORT:
+      return "GLOBALERR_TARGET_PORT";
+    case GLOBALERR_MISSING_ROUTE:
+      return "GLOBALERR_MISSING_ROUTE";
+    case GLOBALERR_NO_MEMORY:
+      return "GLOBALERR_NO_MEMORY";
+    case GLOBALERR_TCP_SEND:
+      return "GLOBALERR_TCP_SEND";
+    case ADSERR_DEVICE_ERROR:
+      return "ADSERR_DEVICE_ERROR";
+    case ADSERR_DEVICE_SRVNOTSUPP:
+      return "ADSERR_DEVICE_SRVNOTSUPP";
+    case ADSERR_DEVICE_INVALIDGRP:
+      return "ADSERR_DEVICE_INVALIDGRP";
+    case ADSERR_DEVICE_INVALIDOFFSET:
+      return "ADSERR_DEVICE_INVALIDOFFSET";
+    case ADSERR_DEVICE_INVALIDACCESS:
+      return "ADSERR_DEVICE_INVALIDACCESS";
+    case ADSERR_DEVICE_INVALIDSIZE:
+      return "ADSERR_DEVICE_INVALIDSIZE";
+    case ADSERR_DEVICE_INVALIDDATA:
+      return "ADSERR_DEVICE_INVALIDDATA";
+    case ADSERR_DEVICE_NOTREADY:
+      return "ADSERR_DEVICE_NOTREADY";
+    case ADSERR_DEVICE_BUSY:
+      return "ADSERR_DEVICE_BUSY";
+    case ADSERR_DEVICE_INVALIDCONTEXT:
+      return "ADSERR_DEVICE_INVALIDCONTEXT";
+    case ADSERR_DEVICE_NOMEMORY:
+      return "ADSERR_DEVICE_NOMEMORY";
+    case ADSERR_DEVICE_INVALIDPARM:
+      return "ADSERR_DEVICE_INVALIDPARM";
+    case ADSERR_DEVICE_NOTFOUND:
+      return "ADSERR_DEVICE_NOTFOUND";
+    case ADSERR_DEVICE_SYNTAX:
+      return "ADSERR_DEVICE_SYNTAX";
+    case ADSERR_DEVICE_INCOMPATIBLE:
+      return "ADSERR_DEVICE_INCOMPATIBLE";
+    case ADSERR_DEVICE_EXISTS:
+      return "ADSERR_DEVICE_EXISTS";
+    case ADSERR_DEVICE_SYMBOLNOTFOUND:
+      return "ADSERR_DEVICE_SYMBOLNOTFOUND";
+    case ADSERR_DEVICE_SYMBOLVERSIONINVALID:
+      return "ADSERR_DEVICE_SYMBOLVERSIONINVALID";
+    case ADSERR_DEVICE_INVALIDSTATE:
+      return "ADSERR_DEVICE_INVALIDSTATE";
+    case ADSERR_DEVICE_TRANSMODENOTSUPP:
+      return "ADSERR_DEVICE_TRANSMODENOTSUPP";
+    case ADSERR_DEVICE_NOTIFYHNDINVALID:
+      return "ADSERR_DEVICE_NOTIFYHNDINVALID";
+    case ADSERR_DEVICE_CLIENTUNKNOWN:
+      return "ADSERR_DEVICE_CLIENTUNKNOWN";
+    case ADSERR_DEVICE_NOMOREHDLS:
+      return "ADSERR_DEVICE_NOMOREHDLS";
+    case ADSERR_DEVICE_INVALIDWATCHSIZE:
+      return "ADSERR_DEVICE_INVALIDWATCHSIZE";
+    case ADSERR_DEVICE_NOTINIT:
+      return "ADSERR_DEVICE_NOTINIT";
+    case ADSERR_DEVICE_TIMEOUT:
+      return "ADSERR_DEVICE_TIMEOUT";
+    case ADSERR_DEVICE_NOINTERFACE:
+      return "ADSERR_DEVICE_NOINTERFACE";
+    case ADSERR_DEVICE_INVALIDINTERFACE:
+      return "ADSERR_DEVICE_INVALIDINTERFACE";
+    case ADSERR_DEVICE_INVALIDCLSID:
+      return "ADSERR_DEVICE_INVALIDCLSID";
+    case ADSERR_DEVICE_INVALIDOBJID:
+      return "ADSERR_DEVICE_INVALIDOBJID";
+    case ADSERR_DEVICE_PENDING:
+      return "ADSERR_DEVICE_PENDING";
+    case ADSERR_DEVICE_ABORTED:
+      return "ADSERR_DEVICE_ABORTED";
+    case ADSERR_DEVICE_WARNING:
+      return "ADSERR_DEVICE_WARNING";
+    case ADSERR_DEVICE_INVALIDARRAYIDX:
+      return "ADSERR_DEVICE_INVALIDARRAYIDX";
+    case ADSERR_DEVICE_SYMBOLNOTACTIVE:
+      return "ADSERR_DEVICE_SYMBOLNOTACTIVE";
+    case ADSERR_DEVICE_ACCESSDENIED:
+      return "ADSERR_DEVICE_ACCESSDENIED";
+    case ADSERR_DEVICE_LICENSENOTFOUND:
+      return "ADSERR_DEVICE_LICENSENOTFOUND";
+    case ADSERR_DEVICE_LICENSEEXPIRED:
+      return "ADSERR_DEVICE_LICENSEEXPIRED";
+    case ADSERR_DEVICE_LICENSEEXCEEDED:
+      return "ADSERR_DEVICE_LICENSEEXCEEDED";
+    case ADSERR_DEVICE_LICENSEINVALID:
+      return "ADSERR_DEVICE_LICENSEINVALID";
+    case ADSERR_DEVICE_LICENSESYSTEMID:
+      return "ADSERR_DEVICE_LICENSESYSTEMID";
+    case ADSERR_DEVICE_LICENSENOTIMELIMIT:
+      return "ADSERR_DEVICE_LICENSENOTIMELIMIT";
+    case ADSERR_DEVICE_LICENSEFUTUREISSUE:
+      return "ADSERR_DEVICE_LICENSEFUTUREISSUE";
+    case ADSERR_DEVICE_LICENSETIMETOLONG:
+      return "ADSERR_DEVICE_LICENSETIMETOLONG";
+    case ADSERR_DEVICE_EXCEPTION:
+      return "ADSERR_DEVICE_EXCEPTION";
+    case ADSERR_DEVICE_LICENSEDUPLICATED:
+      return "ADSERR_DEVICE_LICENSEDUPLICATED";
+    case ADSERR_DEVICE_SIGNATUREINVALID:
+      return "ADSERR_DEVICE_SIGNATUREINVALID";
+    case ADSERR_DEVICE_CERTIFICATEINVALID:
+      return "ADSERR_DEVICE_CERTIFICATEINVALID";
+    case ADSERR_CLIENT_ERROR:
+      return "ADSERR_CLIENT_ERROR";
+    case ADSERR_CLIENT_INVALIDPARM:
+      return "ADSERR_CLIENT_INVALIDPARM";
+    case ADSERR_CLIENT_LISTEMPTY:
+      return "ADSERR_CLIENT_LISTEMPTY";
+    case ADSERR_CLIENT_VARUSED:
+      return "ADSERR_CLIENT_VARUSED";
+    case ADSERR_CLIENT_DUPLINVOKEID:
+      return "ADSERR_CLIENT_DUPLINVOKEID";
+    case ADSERR_CLIENT_SYNCTIMEOUT:
+      return "ADSERR_CLIENT_SYNCTIMEOUT";
+    case ADSERR_CLIENT_W32ERROR:
+      return "ADSERR_CLIENT_W32ERROR";
+    case ADSERR_CLIENT_TIMEOUTINVALID:
+      return "ADSERR_CLIENT_TIMEOUTINVALID";
+    case ADSERR_CLIENT_PORTNOTOPEN:
+      return "ADSERR_CLIENT_PORTNOTOPEN";
+    case ADSERR_CLIENT_NOAMSADDR:
+      return "ADSERR_CLIENT_NOAMSADDR";
+    case ADSERR_CLIENT_SYNCINTERNAL:
+      return "ADSERR_CLIENT_SYNCINTERNAL";
+    case ADSERR_CLIENT_ADDHASH:
+      return "ADSERR_CLIENT_ADDHASH";
+    case ADSERR_CLIENT_REMOVEHASH:
+      return "ADSERR_CLIENT_REMOVEHASH";
+    case ADSERR_CLIENT_NOMORESYM:
+      return "ADSERR_CLIENT_NOMORESYM";
+    case ADSERR_CLIENT_SYNCRESINVALID:
+      return "ADSERR_CLIENT_SYNCRESINVALID";
+    case ADSERR_CLIENT_SYNCPORTLOCKED:
+      return "ADSERR_CLIENT_SYNCPORTLOCKED";
+    default:
+      return "ADSERR_ERROR_UNKNOWN";
+    }
+  }
+}
+
 
 static void NotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
@@ -329,7 +475,8 @@ int getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *in
   info->symComment= info->symDataType+offset2;
 
   if (status) {
-    LOGERR("Read of symbol info for %s failed with: %ld\n",variableAddr , status);
+    LOGERR("Read of symbol info for %s failed with: %s (0x%lx)\n",variableAddr,
+           AdsErrorToString(status), status);
     return status;
   }
 
@@ -746,7 +893,7 @@ int adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType
 
   int errorCode=getSymInfoByName(amsPort,variableAddr,&info);
   if(errorCode){
-    LOGERR("%s(): getSymInfoByName error:%d\n", __FUNCTION__,errorCode);
+    LOGERR("%s(): getSymInfoByName error:0x%x\n", __FUNCTION__,errorCode);
     return errorCode;
   }
 
