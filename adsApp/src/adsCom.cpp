@@ -891,13 +891,19 @@ int adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType
   long secs_used,micros_used;
   gettimeofday(&start, NULL);
 
-  int errorCode=getSymInfoByName(amsPort,variableAddr,&info);
-  if(errorCode){
-    LOGERR("%s(): getSymInfoByName error:0x%x\n", __FUNCTION__,errorCode);
-    return errorCode;
+  long errorCode=getSymInfoByName(amsPort,variableAddr,&info);
+  switch (errorCode) {
+    case ADSERR_DEVICE_SYMBOLNOTFOUND:
+      snprintf(outBuffer->buffer, sizeof(outBuffer->buffer),
+               "%s: %s (0x%lx)",
+               variableAddr, AdsErrorToString(errorCode), errorCode);
+      return 0;
+    case 0:
+      break;
+    default:
+      LOGERR("%s(): getSymInfoByName error:0x%lx\n", __FUNCTION__,errorCode);
+      return errorCode;
   }
-
-
   int status=adsReadByGroupOffset(amsPort,&info,outBuffer);
   gettimeofday(&end, NULL);
   secs_used=(end.tv_sec - start.tv_sec); //avoid overflow by subtracting first

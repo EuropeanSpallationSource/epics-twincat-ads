@@ -153,7 +153,8 @@ static int motorHandleADS_ADR(const char *arg, uint16_t adsport,ecmcOutputBuffer
 
 int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
 {
-  const char *myarg = myarg_1;
+  //const char *myarg = myarg_1;
+  int err_code;
 
   LOGINFO4("INPUT TO motorHandleOnearg: %s \n",myarg_1);
 
@@ -181,7 +182,7 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
   if(adr) {
     myarg_1 = adr;
 
-    int err_code = motorHandleADS_ADR(myarg_1,adsport,buffer);
+    err_code = motorHandleADS_ADR(myarg_1,adsport,buffer);
     if (err_code == -1) return 0;
     if (err_code == 0) {
       return 0;
@@ -216,7 +217,7 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
     //Copy variable name
     strncpy(variableName,myarg_1,adr-myarg_1);
     adr++; //Jump over '='
-    int err_code=adsWriteByName(adsport,variableName,adr,buffer);
+    err_code = adsWriteByName(adsport,variableName,adr,buffer);
     if (err_code) {
       RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
 	                  __FILE__, __FUNCTION__, __LINE__,
@@ -228,27 +229,24 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
   }
 
   //symbolic read
-  adr=strchr(myarg_1, '?');
-  if(adr)
+  adr = strchr(myarg_1, '?');
+  if (adr)
   {
     //Copy variable name
     strncpy(variableName,myarg_1,adr-myarg_1);
     variableName[adr-myarg_1]=0;
-    int err_code=adsReadByName(adsport,variableName,buffer);
+    err_code = adsReadByName(adsport,variableName,buffer);
     if (err_code) {
-      RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
-	                  __FILE__, __FUNCTION__, __LINE__,
-	                  myarg_1,
-	                  err_code);
+      RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=0x%x",
+                          __FILE__, __FUNCTION__, __LINE__,
+                          myarg_1,
+                          err_code);
     }
     return 0;
   }
-
-
-  /* if we come here, we do not understand the command */
-  RETURN_ERROR_OR_DIE(buffer,__LINE__,"%s/%s:%d line=%s",
-                __FILE__, __FUNCTION__, __LINE__,
-                myarg);
+  /*  if we come here, it is a bad command */
+  cmd_buf_printf(buffer,"Error bad command");
+  return 0;
 }
 
 int cmd_EAT(int argc, const char *argv[], const char *sepv[],ecmcOutputBufferType *buffer)
@@ -273,9 +271,9 @@ int cmd_EAT(int argc, const char *argv[], const char *sepv[],ecmcOutputBufferTyp
   for (i = 1; i <= argc; i++) {
     int errorCode=motorHandleOneArg(argv[i],buffer);
     if(errorCode){
-      RETURN_ERROR_OR_DIE(buffer,errorCode, "%s/%s:%d motorHandleOneArg returned errorcode: %d\n",
+      RETURN_ERROR_OR_DIE(buffer,errorCode, "%s/%s:%d motorHandleOneArg returned errorcode: 0x%x\n",
 	                __FILE__, __FUNCTION__, __LINE__,
-	                errorCode);
+                          errorCode);
     }
     cmd_buf_printf(buffer,"%s", sepv[i]);
     if (PRINT_STDOUT_BIT6()) {
