@@ -4,7 +4,7 @@ PROJECT=ads
 
 include ${EPICS_ENV_PATH}/module.Makefile
 
-USR_DEPENDENCIES = asyn,4.27.0
+USR_DEPENDENCIES = asyn,4.31.0
 
 
 USR_CXXFLAGS += -std=c++11
