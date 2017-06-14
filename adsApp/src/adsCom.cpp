@@ -898,6 +898,14 @@ int adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType
                "%s: %s (0x%lx)",
                variableAddr, AdsErrorToString(errorCode), errorCode);
       return 0;
+  case ADSERR_CLIENT_SYNCTIMEOUT:
+    /* retry once */
+    errorCode=getSymInfoByName(amsPort,variableAddr,&info);
+    if (errorCode) {
+      LOGERR("%s(): getSymInfoByName#2 error:0x%lx\n", __FUNCTION__,errorCode);
+      return errorCode;
+    }
+    break;
     case 0:
       break;
     default:
