@@ -22,7 +22,7 @@ ads_DBD += adsController.dbd
 #ads_DBD += xxx.dbd
 ifdef AXIS
 ads_DBD += axisSupport.dbd
-ads_DBD += EthercatMCController.dbd
+ads_DBD += EthercatMCSupport.dbd
 #ads_DBD += axis.dbd
 endif
 ads_DBD += asyn.dbd
@@ -32,7 +32,7 @@ ads_DBD += drvAsynIPPort.dbd
 ads_LIBS += asyn
 ifdef AXIS
 ads_LIBS += axis
-ads_LIBS += EthercatMC
+ads_LIBS += EthercatMCSupport
 endif
 #ads_LIBS += AdsLib-Linux.o
 
