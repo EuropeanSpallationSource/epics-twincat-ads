@@ -158,9 +158,6 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
 
   LOGINFO4("INPUT TO motorHandleOnearg: %s \n",myarg_1);
 
-  if(buffer->buffer==NULL){
-    return __LINE__;
-  }
   uint16_t adsport=0; //should actually be called amsport ( 851 for first plc as default) ...
 
   /* ADSPORT= */
