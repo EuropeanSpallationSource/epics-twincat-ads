@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sys/time.h>
 #include <string.h>
+#include <inttypes.h>
 
 static long adsPort=0; //handle
 static uint16_t defaultAmsPort=0; //Port number for module (851 for PLC 1)
@@ -562,7 +563,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         int64_t *ADST_INT64Var;
         ADST_INT64Var=((int64_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"% PRId64",*ADST_INT64Var);
-        LOGINFO4("Binary 2 ASCII ADST_INT64, value: %ld\n", *ADST_INT64Var);
+        LOGINFO4("Binary 2 ASCII ADST_INT64, value: %" PRId64 "\n", *ADST_INT64Var);
         bytesPerDataPoint=8;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -598,7 +599,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         uint64_t *ADST_UINT64Var;
         ADST_UINT64Var=((uint64_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"% PRIu64",*ADST_UINT64Var);
-        LOGINFO4("Binary 2 ASCII ADST_UINT64, value: %lu\n", *ADST_UINT64Var);
+        LOGINFO4("Binary 2 ASCII ADST_UINT64, value: %" PRIu64 "\n", *ADST_UINT64Var);
         bytesPerDataPoint=8;
         bytesProcessed+=bytesPerDataPoint;
         break;
