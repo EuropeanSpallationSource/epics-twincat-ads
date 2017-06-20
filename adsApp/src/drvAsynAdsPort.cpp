@@ -212,6 +212,7 @@ static asynStatus readIt(void *drvPvt,
   int reason = 0;
   asynStatus status = asynSuccess;
   epicsMutexLockStatus mutexLockStatus;
+  long readStatus;
 
   assert(adsController_p);
 
@@ -221,9 +222,15 @@ static asynStatus readIt(void *drvPvt,
   *data = '\0';
   mutexLockStatus = epicsMutexLock(adsController_p->mutexId);
   if (mutexLockStatus != epicsMutexLockOK) return(asynError);
-  if (CMDreadIt(data, maxchars)) status = asynError;
+  readStatus = CMDreadIt(data, maxchars);
   epicsMutexUnlock(adsController_p->mutexId);
-  if (status == asynSuccess) {
+  if (readStatus) {
+    status = asynError;
+    asynPrint(pasynUser, ASYN_TRACE_ERROR|ASYN_TRACEIO_DRIVER,
+              "%s readStatus=0x%lx\n",
+              adsController_p->portName,
+              readStatus);
+  } else {
     thisRead = strlen(data);
     *nbytesTransfered = thisRead;
     /* May be not enough space ? */
@@ -234,12 +241,12 @@ static asynStatus readIt(void *drvPvt,
     if (thisRead == 0 && pasynUser->timeout == 0){
       status = asynTimeout;
     }
+    *nbytesTransfered = thisRead;
+    asynPrint(pasynUser, ASYN_TRACE_FLOW,
+              "%s thisRead=%lu data=\"%s\"\n",
+              adsController_p->portName,
+              (unsigned long)thisRead, data);
   }
-  *nbytesTransfered = thisRead;
-  asynPrint(pasynUser, ASYN_TRACE_FLOW,
-            "%s thisRead=%lu data=\"%s\"\n",
-            adsController_p->portName,
-            (unsigned long)thisRead, data);
   return status;
 }
 

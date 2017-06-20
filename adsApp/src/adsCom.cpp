@@ -439,7 +439,7 @@ int adsDisconnect()
 
 }
 
-int getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *info)
+long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *info)
 {
   //TODO: Some information is corrupt in the return of this function (all stings). However the needed data is OK...
   AmsAddr amsServer;
@@ -874,7 +874,7 @@ int ascii2binary(const char *asciiBuffer,uint16_t dataType,void *binaryBuffer, u
   return error;
 }
 
-int adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType *outBuffer)
+long adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType *outBuffer)
 {
   SYMINFOSTRUCT info;
   memset(&info,0,sizeof(info));
@@ -901,17 +901,27 @@ int adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType
       return 0;
   case ADSERR_CLIENT_SYNCTIMEOUT:
     /* retry once */
-    errorCode=getSymInfoByName(amsPort,variableAddr,&info);
+    errorCode
+      =getSymInfoByName(amsPort,variableAddr,&info);
     if (errorCode) {
       LOGERR("%s(): getSymInfoByName#2 error:0x%lx\n", __FUNCTION__,errorCode);
       return errorCode;
     }
     break;
-    case 0:
+  case ADSERR_CLIENT_PORTNOTOPEN:
+    LOGERR("%s(): getSymInfoByName error:0x%lx\n", __FUNCTION__,errorCode);
+    snprintf(outBuffer->buffer, sizeof(outBuffer->buffer),
+             "%s: %s (0x%lx)",
+             variableAddr, AdsErrorToString(errorCode), errorCode);
+    return errorCode;
+  case 0:
       break;
-    default:
-      LOGERR("%s(): getSymInfoByName error:0x%lx\n", __FUNCTION__,errorCode);
-      return errorCode;
+  default:
+    LOGERR("%s(): getSymInfoByName error:0x%lx\n", __FUNCTION__,errorCode);
+    snprintf(outBuffer->buffer, sizeof(outBuffer->buffer),
+             "%s: %s (0x%lx)",
+             variableAddr, AdsErrorToString(errorCode), errorCode);
+    return 0;
   }
   int status=adsReadByGroupOffset(amsPort,&info,outBuffer);
   gettimeofday(&end, NULL);
