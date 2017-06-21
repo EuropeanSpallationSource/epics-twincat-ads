@@ -292,9 +292,9 @@ static const struct asynCommon drvAsynAdsPortAsynCommon = {
  */
 epicsShareFunc int
 drvAsynAdsPortConfigure(const char *portName,
-			const char *ipaddr,
-			const char *amsaddr,
-			unsigned int amsport,
+                        const char *ipaddr,
+                        const char *amsaddr,
+                        unsigned int amsport,
                         unsigned int priority,
                         int noAutoConnect,
                         int noProcessEos)
@@ -309,7 +309,7 @@ drvAsynAdsPortConfigure(const char *portName,
          __FILE__, __FUNCTION__, __LINE__,
          portName ? portName : "",
          ipaddr,
-	 amsaddr,
+         amsaddr,
          amsport,
          priority,
          noAutoConnect,

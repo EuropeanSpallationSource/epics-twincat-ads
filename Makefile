@@ -14,7 +14,10 @@ ADSSOURCES = \
   ADS/AdsLib/Frame.cpp \
 
 # download ADS if needed
-build: ${ADSSOURCES}
+build: ${ADSSOURCES} checkws
+
+checkws:
+	./checkws.sh
 
 ${ADSSOURCES}:
 	${PWD}/tools/downloadADS.sh
@@ -34,3 +37,5 @@ else
 include Makefile.epics
 endif
 
+
+.PHONY: checkws

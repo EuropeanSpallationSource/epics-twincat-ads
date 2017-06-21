@@ -44,7 +44,7 @@
   do {                                                   \
     int iRet=function;                                   \
     if(iRet){                                            \
-	cmd_buf_printf(buffer,"Error: %d", iRet);        \
+        cmd_buf_printf(buffer,"Error: %d", iRet);        \
       return 0;                                          \
     }                                                    \
     cmd_buf_printf(buffer,"%lf", fValue);                \
@@ -56,7 +56,7 @@
   do {                                                   \
     int iRet=function;                                   \
     if(iRet){                                            \
-	cmd_buf_printf(buffer,"Error: %d", iRet);        \
+        cmd_buf_printf(buffer,"Error: %d", iRet);        \
       return 0;                                          \
     }                                                    \
     cmd_buf_printf(buffer,"%"PRIu64"", i64Value);        \
@@ -119,8 +119,8 @@ static int motorHandleADS_ADR(const char *arg, uint16_t adsport,ecmcOutputBuffer
       RETURN_ERROR_OR_DIE(buffer,error,"%s/%s:%d myarg_1=%s err_code=%d",
                 __FILE__, __FUNCTION__, __LINE__,
                 myarg_1,
-		error);
-	return error;
+                error);
+        return error;
     }
     cmd_buf_printf(buffer,"OK");
     return 0;
@@ -142,9 +142,9 @@ static int motorHandleADS_ADR(const char *arg, uint16_t adsport,ecmcOutputBuffer
       RETURN_ERROR_OR_DIE(buffer,error,"%s/%s:%d myarg_1=%s err_code=%d",
                 __FILE__, __FUNCTION__, __LINE__,
                 myarg_1,
-		error);
+                error);
 
-	return error;
+        return error;
     }
     return 0;
   }
@@ -217,9 +217,9 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
     err_code = adsWriteByName(adsport,variableName,adr,buffer);
     if (err_code) {
       RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
-	                  __FILE__, __FUNCTION__, __LINE__,
-	                  myarg_1,
-	                  err_code);
+                          __FILE__, __FUNCTION__, __LINE__,
+                          myarg_1,
+                          err_code);
     }
     cmd_buf_printf(buffer,"OK");
     return 0;
@@ -263,7 +263,7 @@ int cmd_EAT(int argc, const char *argv[], const char *sepv[],ecmcOutputBufferTyp
     int errorCode=motorHandleOneArg(argv[i],buffer);
     if(errorCode){
       RETURN_ERROR_OR_DIE(buffer,errorCode, "%s/%s:%d motorHandleOneArg returned errorcode: 0x%x\n",
-	                __FILE__, __FUNCTION__, __LINE__,
+                        __FILE__, __FUNCTION__, __LINE__,
                           errorCode);
     }
     cmd_buf_printf(buffer,"%s", sepv[i]);

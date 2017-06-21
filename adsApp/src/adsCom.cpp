@@ -345,14 +345,14 @@ void runExample()
 
     // add local route to your EtherCAT Master
     if (AdsAddRoute(remoteNetId, remoteIpV4)) {
-	std::cout<< "Adding ADS route failed, did you specified valid addresses?\n";
+        std::cout<< "Adding ADS route failed, did you specified valid addresses?\n";
         return;
     }
 
     // open a new ADS port
     const long port = AdsPortOpenEx();
     if (!port) {
-	std::cout << "Open ADS port failed\n";
+        std::cout << "Open ADS port failed\n";
         return;
     }
 
@@ -365,7 +365,7 @@ void runExample()
 
     const long closeStatus = AdsPortCloseEx(port);
     if (closeStatus) {
-	std::cout << "Close ADS port failed with: " << std::dec << closeStatus << '\n';
+        std::cout << "Close ADS port failed with: " << std::dec << closeStatus << '\n';
     }
 
 #ifdef _WIN32
@@ -391,12 +391,12 @@ int adsConnect(const char *ipaddr,const char *amsaddr, int amsport)
     return ADS_COM_ERROR_INVALID_AMS_PORT;
   }
   int nvals = sscanf(amsaddr, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
-		     &remoteNetId.b[0],
-		     &remoteNetId.b[1],
-		     &remoteNetId.b[2],
-		     &remoteNetId.b[3],
-		     &remoteNetId.b[4],
-		     &remoteNetId.b[5]);
+                     &remoteNetId.b[0],
+                     &remoteNetId.b[1],
+                     &remoteNetId.b[2],
+                     &remoteNetId.b[3],
+                     &remoteNetId.b[4],
+                     &remoteNetId.b[5]);
   if (nvals != 6) {
     LOGERR("Invalid AMS address: %s. Did you specify a valid address? Error number: %d\n", amsaddr,ADS_COM_ERROR_INVALID_AMS_ADDRESS);
     reset();
@@ -453,13 +453,13 @@ long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *i
 
   const long status = AdsSyncReadWriteReqEx2(adsPort,
                                              &amsServer,
-					     ADSIGRP_SYM_INFOBYNAMEEX,
+                                             ADSIGRP_SYM_INFOBYNAMEEX,
                                              0,
                                              sizeof(SYMINFOSTRUCT),
                                              info,
-					     strlen(variableAddr),
-					     variableAddr,
-					     &bytesRead);
+                                             strlen(variableAddr),
+                                             variableAddr,
+                                             &bytesRead);
 
   LOGINFO4("Total bytes read: %d\n",bytesRead);
 
@@ -488,7 +488,7 @@ long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *i
     unsigned char* byte_array = (unsigned char*)info;
 
     while (i < n){
-	LOGINFO4("%02X",(unsigned)byte_array[i]);
+        LOGINFO4("%02X",(unsigned)byte_array[i]);
       i++;
     }
 
@@ -496,7 +496,7 @@ long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *i
     i =0;
     while (i < n)
     {
-	LOGINFO4("%c",(unsigned)byte_array[i]);
+        LOGINFO4("%c",(unsigned)byte_array[i]);
       i++;
     }
     LOGINFO4("\n");
@@ -519,7 +519,7 @@ long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *i
 }
 
 int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *info,
-		 ecmcOutputBufferType *asciiBuffer)
+                 ecmcOutputBufferType *asciiBuffer)
 {
   uint32_t bytesProcessed=0;
   int cycles=0;
@@ -532,7 +532,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
     }
     switch(info->adsDataType){
       case ADST_INT8:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         int8_t *ADST_INT8Var;
         ADST_INT8Var=((int8_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%hhd",*ADST_INT8Var);
@@ -541,7 +541,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_INT16:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         int16_t *ADST_INT16Var;
         ADST_INT16Var=((int16_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%d",*ADST_INT16Var);
@@ -550,7 +550,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_INT32:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         int32_t *ADST_INT32Var;
         ADST_INT32Var=((int32_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%d",*ADST_INT32Var);
@@ -559,7 +559,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_INT64:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         int64_t *ADST_INT64Var;
         ADST_INT64Var=((int64_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"% PRId64",*ADST_INT64Var);
@@ -568,7 +568,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_UINT8:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         uint8_t *ADST_UINT8Var;
         ADST_UINT8Var=((uint8_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%hhu",*ADST_UINT8Var);
@@ -577,7 +577,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_UINT16:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         uint16_t *ADST_UINT16Var;
         ADST_UINT16Var=((uint16_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%d",*ADST_UINT16Var);
@@ -586,7 +586,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_UINT32:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         uint32_t *ADST_UINT32Var;
         ADST_UINT32Var=((uint32_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%d",*ADST_UINT32Var);
@@ -595,7 +595,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_UINT64:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         uint64_t *ADST_UINT64Var;
         ADST_UINT64Var=((uint64_t*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"% PRIu64",*ADST_UINT64Var);
@@ -604,7 +604,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_REAL32:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         float *ADST_REAL32Var;
         ADST_REAL32Var=((float*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%f",*ADST_REAL32Var);
@@ -613,7 +613,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_REAL64:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         double *ADST_REAL64Var;
         ADST_REAL64Var=((double*)binaryBuffer)+cycles;
         cmd_buf_printf(asciiBuffer,"%lf",*ADST_REAL64Var);
@@ -622,7 +622,7 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_BIT:
-	RETURN_VAR_NAME_IF_NEEDED;
+        RETURN_VAR_NAME_IF_NEEDED;
         char *charVar;
         charVar=((char*)binaryBuffer)+cycles;
         if(*charVar==1){
@@ -636,13 +636,13 @@ int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *i
         LOGINFO4("Binary 2 ASCII ADST_BIT, value: %c\n", *charVar);
         break;
       case ADST_STRING:
-	RETURN_VAR_NAME_IF_NEEDED;
-  	char *ADST_STRINGVar;
-	ADST_STRINGVar = (char*)binaryBuffer;
+        RETURN_VAR_NAME_IF_NEEDED;
+        char *ADST_STRINGVar;
+        ADST_STRINGVar = (char*)binaryBuffer;
         cmd_buf_printf(asciiBuffer,"%s",ADST_STRINGVar);
         LOGINFO4("Binary 2 ASCII ADST_STRING, value: %s\n", ADST_STRINGVar);
         bytesProcessed=info->byteSize;
-	break;
+        break;
       case ADST_BIGTYPE:
         if(strcmp(info->symDataType,DUT_AXIS_STATUS)==0){
           //RETURN_VAR_NAME_IF_NEEDED;
@@ -847,12 +847,12 @@ int ascii2binary(const char *asciiBuffer,uint16_t dataType,void *binaryBuffer, u
         *bytesProcessed+=bytesPerDataPoint;
         break;
       case ADST_STRING:
-	char *stringVar;
-	stringVar=((char*)binaryBuffer);
+        char *stringVar;
+        stringVar=((char*)binaryBuffer);
         converted = sscanf( asciiBuffer, "%s", stringVar);
         bytesPerDataPoint=1; //TODO: Check if each bit takes one byte or actually only one bit?!
         *bytesProcessed=binaryBufferSize;
-	break;
+        break;
       default:
         std::cout  << "Data type: " << std::dec << dataType << " not implemented" << '\n';
         error=ADS_COM_ERROR_INVALID_DATA_TYPE;
@@ -867,7 +867,7 @@ int ascii2binary(const char *asciiBuffer,uint16_t dataType,void *binaryBuffer, u
     cycles++;
     asciiBuffer= strchr( asciiBuffer, ',' ) ;
     if(asciiBuffer){
-	asciiBuffer++;
+        asciiBuffer++;
     }
 
   } while(asciiBuffer !=NULL  && converted != 0 && !error);
