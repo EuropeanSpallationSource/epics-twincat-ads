@@ -233,13 +233,7 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
     strncpy(variableName,myarg_1,adr-myarg_1);
     variableName[adr-myarg_1]=0;
     err_code = adsReadByName(adsport,variableName,buffer);
-    if (err_code) {
-      RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=0x%x",
-                          __FILE__, __FUNCTION__, __LINE__,
-                          myarg_1,
-                          err_code);
-    }
-    return 0;
+    return err_code;
   }
   /*  if we come here, it is a bad command */
   cmd_buf_printf(buffer,"Error bad command");

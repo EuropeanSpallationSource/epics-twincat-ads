@@ -14,7 +14,7 @@ EthercatMCCreateController("$(MOTOR_PORT)", "$(ASYN_PORT)", "32", "200", "1000")
 #define ASYN_TRACE_WARNING   0x0020
 #define ASYN_TRACE_INFO      0x0040
 asynSetTraceMask("$(ASYN_PORT)", -1, 0x41)
-asynSetTraceMask("$(ASYN_PORT)", -1, 0xFF)
+#asynSetTraceMask("$(ASYN_PORT)", -1, 0xFF)
 
 
 asynSetTraceIOMask("$(ASYN_PORT)", -1, 2)

@@ -895,32 +895,25 @@ long adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferTyp
   long errorCode=getSymInfoByName(amsPort,variableAddr,&info);
   switch (errorCode) {
     case ADSERR_DEVICE_SYMBOLNOTFOUND:
-      snprintf(outBuffer->buffer, sizeof(outBuffer->buffer),
-               "%s: %s (0x%lx)",
-               variableAddr, AdsErrorToString(errorCode), errorCode);
+      cmd_buf_printf(outBuffer, "%s (0x%lx)",
+                     AdsErrorToString(errorCode), errorCode);
       return 0;
   case ADSERR_CLIENT_SYNCTIMEOUT:
     /* retry once */
-    errorCode
-      =getSymInfoByName(amsPort,variableAddr,&info);
+    errorCode = getSymInfoByName(amsPort,variableAddr,&info);
     if (errorCode) {
-      LOGERR("%s(): getSymInfoByName#2 error:0x%lx\n", __FUNCTION__,errorCode);
       return errorCode;
     }
     break;
   case ADSERR_CLIENT_PORTNOTOPEN:
-    LOGERR("%s(): getSymInfoByName error:0x%lx\n", __FUNCTION__,errorCode);
-    snprintf(outBuffer->buffer, sizeof(outBuffer->buffer),
-             "%s: %s (0x%lx)",
-             variableAddr, AdsErrorToString(errorCode), errorCode);
+    cmd_buf_printf(outBuffer, "%s (0x%lx)",
+                   AdsErrorToString(errorCode), errorCode);
     return errorCode;
   case 0:
       break;
   default:
-    LOGERR("%s(): getSymInfoByName error:0x%lx\n", __FUNCTION__,errorCode);
-    snprintf(outBuffer->buffer, sizeof(outBuffer->buffer),
-             "%s: %s (0x%lx)",
-             variableAddr, AdsErrorToString(errorCode), errorCode);
+    cmd_buf_printf(outBuffer, "%s (0x%lx)",
+                   AdsErrorToString(errorCode), errorCode);
     return 0;
   }
   int status=adsReadByGroupOffset(amsPort,&info,outBuffer);
@@ -929,11 +922,7 @@ long adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferTyp
   micros_used= ((secs_used*1000000) + end.tv_usec) - (start.tv_usec);
   LOGINFO4("Name: micros_used: %ld\n",micros_used);
 
-  if (status) {
-    return status;
-  }
-
-  return 0;
+  return status;
 }
 
 int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, ecmcOutputBufferType *outBuffer)
