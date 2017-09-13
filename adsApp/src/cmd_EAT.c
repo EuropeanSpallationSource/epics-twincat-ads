@@ -155,6 +155,7 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
 {
   //const char *myarg = myarg_1;
   int err_code;
+  static const char * const sFeaturesQ_str = ".THIS.sFeatures?";
 
   LOGINFO4("INPUT TO motorHandleOnearg: %s \n",myarg_1);
 
@@ -173,6 +174,17 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
     myarg_1=strchr(myarg_1, '/');
     myarg_1++;
   }
+  /* .THIS.sFeatures? */
+  if (0 == strcmp(myarg_1, sFeaturesQ_str)) {
+#ifdef DUT_AXIS_STATUS
+    const char *feature_str = "ads;stv1";
+#else
+    const char *feature_str = "ads";
+#endif
+    cmd_buf_printf(buffer, "%s", feature_str);
+    return 0;
+  }
+
 
   /*.ADR.*/
   char *adr=strstr(myarg_1, ".ADR.");
