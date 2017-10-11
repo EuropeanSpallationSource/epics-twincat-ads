@@ -1,0 +1,3 @@
+[submodule "ADS"]
+	path = ADS
+	url = https://github.com/EuropeanSpallationSource/ADS.git
