@@ -49,6 +49,7 @@ shift
 
 if test -z "$1"; then
   echo >&2 $0 " <ip> missing"
+  echo >&2 example: $0 $MOTORCFG 192.168.88.60 5.40.216.206.1.1
   echo >&2 example: $0 $MOTORCFG 192.168.88.65 5.39.66.76.1.1
   exit 1
 fi
