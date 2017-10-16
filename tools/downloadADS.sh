@@ -1,16 +1,16 @@
 #!/bin/sh
-ADSCOMMIT=35058e7ed6c2666af5ee6f390a170f32b11143
 echo "$0 PWD=$PWD"
 
-if test -d ADS; then
-  echo "Note: ADS is already cloned"
-else
-  (
-    git submodule update
-    (
-        cd ADS &&
-        (git remote -v | grep Beckhoff) ||
-        git remote add Beckhoff https://github.com/Beckhoff/ADS.git
-    )
-  )
+if ! test -e ADS/AdsLib/AdsLib.h; then
+(
+	git rm --cached ADS || :
+	git submodule deinit ADS || :
+	mv ADS ADS.$$ || :
+	git submodule add -f https://github.com/Beckhoff/ADS.git ADS || :
+	cd ADS &&
+	(
+			git reset --hard || :
+	)
+	git add ADS
+)
 fi
