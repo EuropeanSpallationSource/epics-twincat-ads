@@ -12,9 +12,12 @@ ADSSOURCES = \
   ADS/AdsLib/NotificationDispatcher.cpp \
   ADS/AdsLib/Sockets.cpp \
   ADS/AdsLib/Frame.cpp \
+  ADS/AdsLib/AdsLib.h
 
 # download ADS if needed
 build: ${ADSSOURCES} checkws
+
+install: ${ADSSOURCES} checkws
 
 checkws:
 	./checkws.sh
