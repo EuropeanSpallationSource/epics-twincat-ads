@@ -10,7 +10,6 @@
 #include <math.h>
 
 #include "cmd.h"
-#include "gitversion.h"
 
 #include <epicsTypes.h>
 #include <epicsTime.h>
@@ -22,6 +21,8 @@
 
 #include <epicsExport.h>
 
+#include "adsCom.h"
+
 
 static const char *driverName="adsAsynPortDriver";
 
@@ -31,24 +32,25 @@ static const char *driverName="adsAsynPortDriver";
   * \param[in] maxPoints The maximum  number of points in the volt and time arrays */
 //adsAsynPortDriver::adsAsynPortDriver(const char *portName/*, int maxPoints*/,int paramTableSize,int autoConnect,int priority)
 adsAsynPortDriver::adsAsynPortDriver(const char *portName,
-					 const char *ipaddr,
-		                         const char *amsaddr,
-		                         unsigned int amsport,
-		                         unsigned int priority,
-		                         int noAutoConnect,
-		                         int noProcessEos)
-                 : asynPortDriver(portName,
-                    1, /* maxAddr */ 
-		    paramTableSize,
-                    asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask, /* Interface mask */
-		    asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask,  /* Interrupt mask */
-		    ASYN_CANBLOCK, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
-		    autoConnect, /* Autoconnect */
-		    priority, /* Default priority */
-                    0) /* Default stack size*/    
+                                     const char *ipaddr,
+                                     const char *amsaddr,
+                                     unsigned int amsport,
+                                     int paramTableSize,
+                                     unsigned int priority,
+                                     int autoConnect,
+                                     int noProcessEos)
+                    :asynPortDriver(portName,
+                                   1, /* maxAddr */
+                                   paramTableSize,
+                                   asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask, /* Interface mask */
+                                   asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask,  /* Interrupt mask */
+                                   ASYN_CANBLOCK, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
+                                   autoConnect, /* Autoconnect */
+                                   priority, /* Default priority */
+                                   0) /* Default stack size*/
 {
   eventId_ = epicsEventCreate(epicsEventEmpty);
-  setCfgData(portName,ipaddr,amsaddr,amsport,priority,noAutoConnect,noProcessEos);
+  setCfgData(portName,ipaddr,amsaddr,amsport,priority,autoConnect,noProcessEos);
 }
 
 void adsAsynPortDriver::report(FILE *fp, int details)
@@ -70,7 +72,7 @@ asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
 
   int error=adsDisconnect();
   if (error){
-    asynPrint(pPrintOutAsynUser, ASYN_TRACE_ERROR,"adsAsynPortDriver::disconnect: ERROR: Disconnect failed (0x%x).\n",error);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"adsAsynPortDriver::disconnect: ERROR: Disconnect failed (0x%x).\n",error);
     return asynError;
   }
   return asynSuccess;
@@ -97,8 +99,8 @@ asynStatus adsAsynPortDriver::connectIt( asynUser *pasynUser)
   //}
 
   /* adsConnect() returns 0 if failed */
-  res = adsConnect(adsController_p->ipaddr,adsController_p->amsaddr,
-                   adsController_p->amsport);
+  res = adsConnect(ipaddr_,amsaddr_,amsport_);
+
   connectOK =  res >= 0;
   //if (connectOK) adsController_p->connected = 1;
   //epicsMutexUnlock(adsController_p->mutexId);
@@ -192,13 +194,13 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
 
 asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
@@ -209,41 +211,41 @@ asynUser *adsAsynPortDriver::getTraceAsynUser()
 
 asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser, epicsInt8 *value,size_t nElements, size_t *nIn)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readInt16Array(asynUser *pasynUser, epicsInt16 *value,size_t nElements, size_t *nIn)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements, size_t *nIn)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readFloat32Array(asynUser *pasynUser, epicsFloat32 *value,size_t nElements, size_t *nIn)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,size_t nElements, size_t *nIn)
 {
-  status = asynSuccess;
+  asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::setCfgData(const char *portName,
-					 const char *ipaddr,
-		                         const char *amsaddr,
-		                         unsigned int amsport,
-		                         unsigned int priority,
-		                         int noAutoConnect,
-		                         int noProcessEos)
+                                         const char *ipaddr,
+                                         const char *amsaddr,
+                                         unsigned int amsport,
+                                         unsigned int priority,
+                                         int noAutoConnect,
+                                         int noProcessEos)
 {
   portName_=portName;
   ipaddr_=ipaddr;
@@ -252,6 +254,7 @@ asynStatus adsAsynPortDriver::setCfgData(const char *portName,
   priority_=priority;
   noAutoConnect_=noAutoConnect;
   noProcessEos_=noProcessEos;
+  return asynSuccess;
 }
 
 
@@ -265,47 +268,39 @@ extern "C" {
    */
   epicsShareFunc int
   adsAsynPortDriverConfigure(const char *portName,
-                          const char *ipaddr,
-                          const char *amsaddr,
-                          unsigned int amsport,
-                          unsigned int priority,
-                          int noAutoConnect,
-                          int noProcessEos)
+                             const char *ipaddr,
+                             const char *amsaddr,
+                             unsigned int amsport,
+                             unsigned int asynParamTableSize,
+                             unsigned int priority,
+                             int noAutoConnect,
+                             int noProcessEos)
   {
 
-  if (!portName) {
-    printf("drvAsynAdsPortConfigure bad portName: %s\n",
-           portName ? portName : "");
-    return -1;
-  }
-  if (!ipaddr) {
-    printf("drvAsynAdsPortConfigure bad ipaddr: %s\n",
-	   ipaddr ? ipaddr : "");
-    return -1;
-  }
-  if (!amsaddr) {
-    printf("drvAsynAdsPortConfigure bad amsaddr: %s\n",
-	   amsaddr ? amsaddr : "");
-    return -1;
-  }
-
-  adsAsynPortObj=new adsAsynPortDriver(portName,paramTableSize,disableAutoConnect==0,priority);
-  if(adsAsynPortObj){
-    asynUser *traceUser= adsAsynPortObj->getTraceAsynUser();
-    if(!traceUser){
-      printf("adsAsynPortDriverConfigure: ERROR: Failed to retrieve asynUser for trace. \n");
-      return (asynError);
+    if (!portName) {
+      printf("drvAsynAdsPortConfigure bad portName: %s\n",
+             portName ? portName : "");
+      return -1;
+    }
+    if (!ipaddr) {
+      printf("drvAsynAdsPortConfigure bad ipaddr: %s\n",ipaddr ? ipaddr : "");
+      return -1;
+    }
+    if (!amsaddr) {
+      printf("drvAsynAdsPortConfigure bad amsaddr: %s\n",amsaddr ? amsaddr : "");
+      return -1;
     }
 
-    pPrintOutAsynUser = pasynManager->duplicateAsynUser(traceUser, 0, 0);
-
-    if(!pPrintOutAsynUser){
-      printf("adsAsynPortDriverConfigure: ERROR: Failed to duplicate asynUser for trace. \n");
-      return (asynError);
+    adsAsynPortObj=new adsAsynPortDriver(portName,ipaddr,amsaddr,amsport,asynParamTableSize,priority,noAutoConnect==0,noProcessEos);
+    if(adsAsynPortObj){
+      asynUser *traceUser= adsAsynPortObj->getTraceAsynUser();
+      if(!traceUser){
+        printf("adsAsynPortDriverConfigure: ERROR: Failed to retrieve asynUser for trace. \n");
+        return (asynError);
+      }
     }
     //Connect needed?
     return 0;
-
   }
 
   /*
@@ -315,28 +310,28 @@ extern "C" {
   static const iocshArg adsAsynPortDriverConfigureArg1 = { "ip-addr",iocshArgString};
   static const iocshArg adsAsynPortDriverConfigureArg2 = { "ams-addr",iocshArgString};
   static const iocshArg adsAsynPortDriverConfigureArg3 = { "default-ams-port",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg4 = { "priority",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg5 = { "disable auto-connect",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg6 = { "noProcessEos",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg4 = { "asyn param table size",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg5 = { "priority",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg6 = { "disable auto-connect",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg7 = { "noProcessEos",iocshArgInt};
   static const iocshArg *adsAsynPortDriverConfigureArgs[] = {
     &adsAsynPortDriverConfigureArg0, &adsAsynPortDriverConfigureArg1,
     &adsAsynPortDriverConfigureArg2, &adsAsynPortDriverConfigureArg3,
     &adsAsynPortDriverConfigureArg4, &adsAsynPortDriverConfigureArg5,
-    &adsAsynPortDriverConfigureArg6};
+    &adsAsynPortDriverConfigureArg6,&adsAsynPortDriverConfigureArg7};
   static const iocshFuncDef adsAsynPortDriverConfigureFuncDef =
-    {"adsAsynPortDriverConfigure",7,adsAsynPortDriverConfigureArgs};
+    {"adsAsynPortDriverConfigure",8,adsAsynPortDriverConfigureArgs};
 
   static void adsAsynPortDriverConfigureCallFunc(const iocshArgBuf *args)
   {
-    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival);
+    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival);
   }
 
   /*
    * This routine is called before multitasking has started, so there's
    * no race condition in the test/set of firstTime.
    */
-  static void
-  adsAsynPortDriverRegister(void)
+  static void adsAsynPortDriverRegister(void)
   {
     iocshRegister(&adsAsynPortDriverConfigureFuncDef,adsAsynPortDriverConfigureCallFunc);
   }

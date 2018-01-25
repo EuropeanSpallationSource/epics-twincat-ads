@@ -1,16 +1,4 @@
-/*
- * adsAsynPortDriver.h
- * 
- * Asyn driver that inherits from the asynPortDriver class to demonstrate its use.
- * It simulates a digital scope looking at a 1kHz 1000-point noisy sine wave.  Controls are
- * provided for time/division, volts/division, volt offset, trigger delay, noise amplitude, update time,
- * and run/stop.
- * Readbacks are provides for the waveform data, min, max and mean values.
- *
- * Author: Mark Rivers
- *
- * Created Feb. 5, 2009
- */
+
 #ifndef ASYNPORTDRIVER_H_
 #define ASYNPORTDRIVER_H_
 
@@ -19,7 +7,15 @@
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
-    adsAsynPortDriver(const char *portName,int paramTableSize,int autoConnect,int priority);
+    //adsAsynPortDriver(const char *portName,int paramTableSize,int autoConnect,int priority);
+    adsAsynPortDriver(const char *portName,
+                      const char *ipaddr,
+                      const char *amsaddr,
+                      unsigned int amsport,
+                      int paramTableSize,
+                      unsigned int priority,
+                      int autoConnect,
+                      int noProcessEos);
     virtual void report(FILE *fp, int details);
     virtual asynStatus disconnect(asynUser *pasynUser);
     virtual asynStatus connect(asynUser *pasynUser);
@@ -41,9 +37,9 @@ public:
                           int noProcessEos);
     asynUser *getTraceAsynUser();
 protected:
- 
+
 private:
-    asynStatus adsAsynPortDriver::connectIt( asynUser *pasynUser);
+    asynStatus connectIt( asynUser *pasynUser);
     epicsEventId eventId_;
     const char *portName_;
     const char *ipaddr_;
