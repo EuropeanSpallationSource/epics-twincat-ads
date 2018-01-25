@@ -297,7 +297,7 @@ int cmd_handle_input_line(const char *input_line, adsOutputBufferType *buffer)
 /* from EPICS into MCU */
 int CMDwriteIt(const char *inbuf, size_t inlen)
 {
-  LOGINFO("%s():Write command: %s.\n",__FUNCTION__,inbuf);
+  LOGINFO4("%s():Write command: %s.\n",__FUNCTION__,inbuf);
   int had_cr = 0;
   int had_lf = 0;
   int errorCode;
@@ -338,29 +338,29 @@ int CMDwriteIt(const char *inbuf, size_t inlen)
 /* from MCU into EPICS */
 int CMDreadIt(char *outbuf, size_t outlen)
 {
-  printf("************BEFORE READ: BYTES LEFT IN BUFFER:  %d, string: %s.\n",getEpicsBuffer()->bytesUsed,getEpicsBuffer()->buffer);
-  printf("************BEFORE READ: BYTES LEFT IN BUFFER: Output buffer size  %d.\n",outlen);
-   int ret;
-   if (!outbuf || !outlen) return -1;
-   ret = snprintf(outbuf, outlen+1, "%s", getEpicsBuffer()->buffer);
+  //printf("************BEFORE READ: BYTES LEFT IN BUFFER:  %d, string: %s.\n",getEpicsBuffer()->bytesUsed,getEpicsBuffer()->buffer);
+  //printf("************BEFORE READ: BYTES LEFT IN BUFFER: Output buffer size  %d.\n",outlen);
+  int ret;
+  if (!outbuf || !outlen) return -1;
+  ret = snprintf(outbuf, outlen+1, "%s", getEpicsBuffer()->buffer);
 
-   if (ret < 0){
-     clearBuffer(getEpicsBuffer());
-     return ret;
-   }
+  if (ret < 0){
+    clearBuffer(getEpicsBuffer());
+    return ret;
+  }
 
-   if (PRINT_STDOUT_BIT1() && stdout) {
-     fprintf(stdout,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
-     cmd_dump_to_std(outbuf, strlen(outbuf));
-     fprintf(stdout,"\"\n");
-   }
+  if (PRINT_STDOUT_BIT1() && stdout) {
+    fprintf(stdout,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
+    cmd_dump_to_std(outbuf, strlen(outbuf));
+    fprintf(stdout,"\"\n");
+  }
 
-   printf("************BYTES SENT:%s#\n",outbuf);
-   if(ret>=outlen+1){
-     ret=outlen; //snprintf max utilize buffer size minus one.
-   }
-   removeFromBuffer(getEpicsBuffer(),ret);
-   printf("************AFTER READ: BYTES LEFT IN BUFFER:  %d, string: %s.\n",getEpicsBuffer()->bytesUsed,getEpicsBuffer()->buffer);
-   printf("************AFTER READ: BYTES LEFT IN BUFFER:  Bytes written: %d.\n",ret);
-   return 0;
+  //printf("************BYTES SENT:%s#\n",outbuf);
+  if(ret>=outlen+1){
+    ret=outlen;
+  }
+  removeFromBuffer(getEpicsBuffer(),ret);
+  //printf("************AFTER READ: BYTES LEFT IN BUFFER:  %d, string: %s.\n",getEpicsBuffer()->bytesUsed,getEpicsBuffer()->buffer);
+  //printf("************AFTER READ: BYTES LEFT IN BUFFER:  Bytes written: %d.\n",ret);
+  return 0;
 }

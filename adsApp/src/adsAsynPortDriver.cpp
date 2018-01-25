@@ -120,58 +120,59 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
   return status;
 }
 
-
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
-
   const char* functionName = "readOctet";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
 
   size_t thisRead = 0;
   int reason = 0;
   asynStatus status = asynSuccess;
 
-   /*
-    * Feed what writeIt() gave us into the MCU
-    */
+  *value = '\0';
+  lock();
+  int error=CMDreadIt(value, maxChars);
+  if (error) {
+    status = asynError;
+    asynPrint(pasynUser, ASYN_TRACE_ERROR,
+              "%s:%s: error, CMDreadIt failed (0x%x).\n",
+              driverName, functionName, error);
+    unlock();
+    return asynError;
+  }
 
-   *value = '\0';
-   //lock();
-   if (CMDreadIt(value, maxChars)) status = asynError;
-   if (status == asynSuccess) {
-     thisRead = strlen(value);
-     *nActual = thisRead;
-     /* May be not enough space ? */
-     //printf("readOctet: thisread: %d\n",thisRead);
-     if (thisRead > maxChars-1) {
-       reason |= ASYN_EOM_CNT;
-     }
-     else{
-       reason |= ASYN_EOM_EOS;
-     }
+  thisRead = strlen(value);
+  *nActual = thisRead;
 
-     if (thisRead == 0 && pasynUser->timeout == 0){
-       status = asynTimeout;
-     }
-   }
-   else{printf("FAIL");}
+  /* May be not enough space ? */
+  if (thisRead > maxChars-1) {
+    reason |= ASYN_EOM_CNT;
+  }
+  else{
+    reason |= ASYN_EOM_EOS;
+  }
 
-   if (eomReason) *eomReason = reason;
+  if (thisRead == 0 && pasynUser->timeout == 0){
+    status = asynTimeout;
+  }
 
-   *nActual = thisRead;
-   asynPrint(pasynUser, ASYN_TRACE_FLOW,
+  if (eomReason){
+    *eomReason = reason;
+  }
+
+  *nActual = thisRead;
+  asynPrint(pasynUser, ASYN_TRACE_FLOW,
              "%s thisRead=%lu data=\"%s\"\n",
              portName,
              (unsigned long)thisRead, value);
-   //unlock();
-   return status;
+  unlock();
+  return status;
 }
 
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
 {
 
-  const char* functionName = "readOctet";
+  const char* functionName = "writeOctet";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   size_t thisWrite = 0;
