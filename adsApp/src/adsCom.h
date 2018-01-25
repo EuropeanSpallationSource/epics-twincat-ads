@@ -83,10 +83,10 @@ typedef struct {
   char bBusy;
 } STAXISSTATUSSTRUCT;
 
-long adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType *outBuffer);
-int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, ecmcOutputBufferType *outBuffer);
-int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToWrite,ecmcOutputBufferType *outBuffer);
-int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize,const char *asciiValueToWrite,ecmcOutputBufferType *asciiResponseBuffer);
+long adsReadByName(uint16_t amsPort,const char *variableAddr,adsOutputBufferType *outBuffer);
+int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, adsOutputBufferType *outBuffer);
+int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToWrite,adsOutputBufferType *outBuffer);
+int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize,const char *asciiValueToWrite,adsOutputBufferType *asciiResponseBuffer);
 int adsConnect(const char *ipaddr,const char *amsaddr, int amsport);
 int adsDisconnect();
 

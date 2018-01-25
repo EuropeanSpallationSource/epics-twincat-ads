@@ -519,7 +519,7 @@ long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *i
 }
 
 int binary2ascii(void *binaryBuffer, uint32_t binaryBufferSize, SYMINFOSTRUCT *info,
-                 ecmcOutputBufferType *asciiBuffer)
+                 adsOutputBufferType *asciiBuffer)
 {
   uint32_t bytesProcessed=0;
   int cycles=0;
@@ -874,7 +874,7 @@ int ascii2binary(const char *asciiBuffer,uint16_t dataType,void *binaryBuffer, u
   return error;
 }
 
-long adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferType *outBuffer)
+long adsReadByName(uint16_t amsPort,const char *variableAddr,adsOutputBufferType *outBuffer)
 {
   SYMINFOSTRUCT info;
   memset(&info,0,sizeof(info));
@@ -925,7 +925,7 @@ long adsReadByName(uint16_t amsPort,const char *variableAddr,ecmcOutputBufferTyp
   return status;
 }
 
-int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, ecmcOutputBufferType *outBuffer)
+int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, adsOutputBufferType *outBuffer)
 {
   uint32_t bytesRead;
   uint8_t adsReadBuffer[BUFFER_SIZE];
@@ -969,7 +969,7 @@ int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, ecmcOutputBufferT
   return 0;
 }
 
-int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToWrite,ecmcOutputBufferType *outBuffer)
+int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToWrite,adsOutputBufferType *outBuffer)
 {
   SYMINFOSTRUCT info;
 
@@ -1006,7 +1006,7 @@ int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToW
   return 0;
 }
 
-int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize, const char *asciiValueToWrite,ecmcOutputBufferType *asciiResponseBuffer)
+int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize, const char *asciiValueToWrite,adsOutputBufferType *asciiResponseBuffer)
 {
   uint32_t bytesToWrite=0;
   uint8_t binaryBuffer[BUFFER_SIZE];
