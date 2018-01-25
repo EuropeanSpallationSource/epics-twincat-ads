@@ -26,11 +26,7 @@
 
 static const char *driverName="adsAsynPortDriver";
 
-/** Constructor for the adsAsynPortDriver class.
-  * Calls constructor for the asynPortDriver base class.
-  * \param[in] portName The name of the asyn port driver to be created.
-  * \param[in] maxPoints The maximum  number of points in the volt and time arrays */
-//adsAsynPortDriver::adsAsynPortDriver(const char *portName/*, int maxPoints*/,int paramTableSize,int autoConnect,int priority)
+// Constructor for the adsAsynPortDriver class.
 adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      const char *ipaddr,
                                      const char *amsaddr,
@@ -62,7 +58,9 @@ void adsAsynPortDriver::report(FILE *fp, int details)
 
 asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
 {
-  printf("%s/%s:%d: Disconnecting ADS....\n",__FILE__, __FUNCTION__, __LINE__);
+  const char* functionName = "disconnect";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
 //  #if 0
     /* TODO: prevent a reconnect */
 //    if (!(tty->flags & FLAG_CONNECT_PER_TRANSACTION) ||
@@ -81,6 +79,7 @@ asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
 asynStatus adsAsynPortDriver::connectIt( asynUser *pasynUser)
 
 {
+
   //epicsMutexLockStatus mutexLockStatus;
   int res;
   int connectOK;
@@ -112,6 +111,9 @@ asynStatus adsAsynPortDriver::connectIt( asynUser *pasynUser)
 
 asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 {
+  const char* functionName = "connect";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = connectIt(pasynUser);
   if (status == asynSuccess)
     pasynManager->exceptionConnect(pasynUser);
@@ -121,6 +123,9 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
+  const char* functionName = "readOctet";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   size_t thisRead = 0;
   int reason = 0;
   asynStatus status = asynSuccess;
@@ -163,12 +168,15 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
 
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
 {
+  const char* functionName = "writeOctet";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   size_t thisWrite = 0;
   asynStatus status = asynError;
 
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
             "%s write.\n", /*ecmcController_p->*/portName);
-  asynPrintIO(pasynUser, ASYN_TRACEIO_DRIVER, value, maxChars,
+  asynPrintIO(pasynUser, ASYN_TRACE_INFO, value, maxChars,
               "%s write %lu\n",
               portName,
               (unsigned long)maxChars);
@@ -194,12 +202,18 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
 
 asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
+  const char* functionName = "writeInt32";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
+  const char* functionName = "writeFloat64";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
@@ -211,30 +225,45 @@ asynUser *adsAsynPortDriver::getTraceAsynUser()
 
 asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser, epicsInt8 *value,size_t nElements, size_t *nIn)
 {
+  const char* functionName = "readInt8Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readInt16Array(asynUser *pasynUser, epicsInt16 *value,size_t nElements, size_t *nIn)
 {
+  const char* functionName = "readInt16Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements, size_t *nIn)
 {
+  const char* functionName = "readInt32Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readFloat32Array(asynUser *pasynUser, epicsFloat32 *value,size_t nElements, size_t *nIn)
 {
+  const char* functionName = "readFloat32Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
 
 asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,size_t nElements, size_t *nIn)
 {
+  const char* functionName = "readFloat64Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   asynStatus status = asynSuccess;
   return status;
 }
@@ -261,6 +290,8 @@ asynStatus adsAsynPortDriver::setCfgData(const char *portName,
 /* Configuration routine.  Called directly, or from the iocsh function below */
 
 extern "C" {
+
+  asynUser *pPrintOutAsynUser;
 
   static adsAsynPortDriver *adsAsynPortObj;
   /*
@@ -298,9 +329,11 @@ extern "C" {
         printf("adsAsynPortDriverConfigure: ERROR: Failed to retrieve asynUser for trace. \n");
         return (asynError);
       }
+      pPrintOutAsynUser=traceUser;
+      adsAsynPortObj->connect(traceUser);
     }
-    //Connect needed?
-    return 0;
+
+    return asynSuccess;
   }
 
   /*
@@ -318,7 +351,8 @@ extern "C" {
     &adsAsynPortDriverConfigureArg0, &adsAsynPortDriverConfigureArg1,
     &adsAsynPortDriverConfigureArg2, &adsAsynPortDriverConfigureArg3,
     &adsAsynPortDriverConfigureArg4, &adsAsynPortDriverConfigureArg5,
-    &adsAsynPortDriverConfigureArg6,&adsAsynPortDriverConfigureArg7};
+    &adsAsynPortDriverConfigureArg6, &adsAsynPortDriverConfigureArg7};
+
   static const iocshFuncDef adsAsynPortDriverConfigureFuncDef =
     {"adsAsynPortDriverConfigure",8,adsAsynPortDriverConfigureArgs};
 
@@ -331,6 +365,7 @@ extern "C" {
    * This routine is called before multitasking has started, so there's
    * no race condition in the test/set of firstTime.
    */
+
   static void adsAsynPortDriverRegister(void)
   {
     iocshRegister(&adsAsynPortDriverConfigureFuncDef,adsAsynPortDriverConfigureCallFunc);
