@@ -124,7 +124,7 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
   const char* functionName = "readOctet";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: 1\n", driverName, functionName);
 
   size_t thisRead = 0;
   int reason = 0;
@@ -138,6 +138,7 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
   //lock();
   if (CMDreadIt(value, maxChars)) status = asynError;
   if (status == asynSuccess) {
+    asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: 2\n", driverName, functionName);
     thisRead = strlen(value);
     *nActual = thisRead;
     /* May be not enough space ? */
@@ -153,15 +154,15 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
       status = asynTimeout;
     }
   }
-  else{printf("FAIL");}
+  else{
+    printf("FAIL");
+  }
 
   if (eomReason) *eomReason = reason;
 
   *nActual = thisRead;
-  asynPrint(pasynUser, ASYN_TRACE_FLOW,
-            "%s thisRead=%lu data=\"%s\"\n",
-            portName,
-            (unsigned long)thisRead, value);
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: 3: datalength= %lu, data=%s\n", driverName, functionName,(unsigned long)thisRead,value);
+
   //unlock();
   return status;
 }
