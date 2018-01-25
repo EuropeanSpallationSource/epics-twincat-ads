@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-  int cmd_EAT(int argc, const char *argv[], const char *seperator[],ecmcOutputBufferType *buffer);
-  int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer);
+  int cmd_EAT(int argc, const char *argv[], const char *seperator[],adsOutputBufferType *buffer);
+  int motorHandleOneArg(const char *myarg_1,adsOutputBufferType *buffer);
 
 #ifdef __cplusplus
 }

@@ -54,7 +54,8 @@ typedef struct {
   unsigned int amsport;
 } adsController_t;
 
-
+/* global asynUser for Printing */
+extern asynUser *pPrintOutAsynUser;
 
 /*
  * Close a connection
@@ -395,6 +396,9 @@ drvAsynAdsPortConfigure(const char *portName,
     cleanup(adsController_p);
     return -1;
   }
+
+  pPrintOutAsynUser = pasynManager->duplicateAsynUser(adsController_p->pasynUser, 0, 0);
+
   /*
    * Register for cleanup
    */

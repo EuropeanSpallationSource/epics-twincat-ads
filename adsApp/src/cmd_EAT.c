@@ -84,7 +84,7 @@ static const char * const ADSPORT_equals_str = "ADSPORT=";
 /*
   ADSPORT=501/.ADR.16#5001,16#B,2,2=1;
 */
-static int motorHandleADS_ADR(const char *arg, uint16_t adsport,ecmcOutputBufferType *buffer)
+static int motorHandleADS_ADR(const char *arg, uint16_t adsport,adsOutputBufferType *buffer)
 {
   const char *myarg_1 = NULL;
   unsigned group_no = 0;
@@ -151,7 +151,7 @@ static int motorHandleADS_ADR(const char *arg, uint16_t adsport,ecmcOutputBuffer
   return __LINE__;
 }
 
-int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
+int motorHandleOneArg(const char *myarg_1,adsOutputBufferType *buffer)
 {
   //const char *myarg = myarg_1;
   int err_code;
@@ -252,7 +252,7 @@ int motorHandleOneArg(const char *myarg_1,ecmcOutputBufferType *buffer)
   return 0;
 }
 
-int cmd_EAT(int argc, const char *argv[], const char *sepv[],ecmcOutputBufferType *buffer)
+int cmd_EAT(int argc, const char *argv[], const char *sepv[],adsOutputBufferType *buffer)
 {
   const char *myargline = (argc > 0) ? argv[0] : "";
   int i;

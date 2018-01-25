@@ -13,13 +13,13 @@ unsigned int debug_print_flags = 0;//65535;
 unsigned int die_on_error_flags = 1;
 unsigned int argv0_semicolon_is_sep = 0;
 
-static ecmcOutputBufferType outputBuffer = {ADS_CMD_BUFFER_SIZE,0};
+static adsOutputBufferType outputBuffer = {ADS_CMD_BUFFER_SIZE,0};
 
-static int addToBuffer(ecmcOutputBufferType *buffer,const char *addText, size_t addLength);
+static int addToBuffer(adsOutputBufferType *buffer,const char *addText, size_t addLength);
 
 /*****************************************************************************/
 
-static int cmd_buf_vprintf(ecmcOutputBufferType *buffer,  const char* format, va_list arg)
+static int cmd_buf_vprintf(adsOutputBufferType *buffer,  const char* format, va_list arg)
 {
   const static size_t len = 4096;
 
@@ -34,7 +34,7 @@ static int cmd_buf_vprintf(ecmcOutputBufferType *buffer,  const char* format, va
 
 /*****************************************************************************/
 
-int cmd_buf_printf(ecmcOutputBufferType *buffer,const char *format, ...)
+int cmd_buf_printf(adsOutputBufferType *buffer,const char *format, ...)
 {
   if(buffer==NULL){
     return __LINE__;
@@ -48,7 +48,7 @@ int cmd_buf_printf(ecmcOutputBufferType *buffer,const char *format, ...)
 
 /*****************************************************************************/
 
-static int addToBuffer(ecmcOutputBufferType *buffer,const char *addText, size_t addLength)
+static int addToBuffer(adsOutputBufferType *buffer,const char *addText, size_t addLength)
 {
   if(buffer==NULL){
     return __LINE__;
@@ -65,7 +65,7 @@ static int addToBuffer(ecmcOutputBufferType *buffer,const char *addText, size_t 
 }
 /*****************************************************************************/
 
-static int removeFromBuffer(ecmcOutputBufferType *buffer,size_t len)
+static int removeFromBuffer(adsOutputBufferType *buffer,size_t len)
 {
   if(buffer==NULL){
     return __LINE__;
@@ -84,7 +84,7 @@ static int removeFromBuffer(ecmcOutputBufferType *buffer,size_t len)
 
 /*****************************************************************************/
 
-int clearBuffer(ecmcOutputBufferType *buffer)
+int clearBuffer(adsOutputBufferType *buffer)
 {
   if(buffer==NULL){
     return __LINE__;
@@ -94,7 +94,7 @@ int clearBuffer(ecmcOutputBufferType *buffer)
   return 0;
 }
 
-static ecmcOutputBufferType *getEpicsBuffer()
+static adsOutputBufferType *getEpicsBuffer()
 {
   return &outputBuffer;
 }
@@ -104,26 +104,23 @@ static ecmcOutputBufferType *getEpicsBuffer()
 void cmd_dump_to_std(const char *buf, unsigned len)
 {
   unsigned int i;
-  if (!stdlog) {
-    return;
-  }
   for (i=0; i < len; i++) {
     int ch = buf[i];
     switch (ch) {
       case '\t':
-        fprintf(stdlog,"\\t");
+        fprintf(stdout,"\\t");
         break;
       case '\r':
-        fprintf(stdlog,"\\r");
+        fprintf(stdout,"\\r");
         break;
       case '\n':
-        fprintf(stdlog,"\\n");
+        fprintf(stdout,"\\n");
         break;
       default:
         if (isprint(ch))
-          fprintf(stdlog,"%c", ch);
+          fprintf(stdout,"%c", ch);
         else
-          fprintf(stdlog,"\\%03o", ch);
+          fprintf(stdout,"\\%03o", ch);
     }
   }
 }
@@ -224,11 +221,11 @@ static int create_argv_sepv(const char *line,
   if (PRINT_STDOUT_BIT2()) {
     int i;
     /****  Print what we have */
-    fprintf(stdlog, "%s/%s:%d argc=%d calloc_len=%u\n",
+    fprintf(stdout, "%s/%s:%d argc=%d calloc_len=%u\n",
             __FILE__, __FUNCTION__, __LINE__,
             argc, (unsigned)calloc_len);
     for(i=0; i <= argc;i++) {
-      fprintf(stdlog, "%s/%s:%d argv[%d]=\"%s\" sepv[%d]=\"%s\"\n",
+      fprintf(stdout, "%s/%s:%d argv[%d]=\"%s\" sepv[%d]=\"%s\"\n",
               __FILE__, __FUNCTION__, __LINE__,
               i, argv[i] ? argv[i] : "NULL",
               i, sepv[i] ? sepv[i] : "NULL");
@@ -239,7 +236,7 @@ static int create_argv_sepv(const char *line,
 }
 
 /*****************************************************************************/
-int cmd_handle_input_line(const char *input_line, ecmcOutputBufferType *buffer)
+int cmd_handle_input_line(const char *input_line, adsOutputBufferType *buffer)
 {
   static unsigned int counter;
   const char **my_argv = NULL;
@@ -259,7 +256,7 @@ int cmd_handle_input_line(const char *input_line, ecmcOutputBufferType *buffer)
     }
   }
   else if ((argc > 1) && (0 == strcmp(argv1, "bye"))) {
-    fprintf(stdlog, "%s/%s:%d bye\n", __FILE__, __FUNCTION__, __LINE__);
+    fprintf(stdout, "%s/%s:%d bye\n", __FILE__, __FUNCTION__, __LINE__);
     return 1;
   }
   else if ((argc > 1) && (0 == strcmp(argv1, "kill"))) {
@@ -290,7 +287,7 @@ int cmd_handle_input_line(const char *input_line, ecmcOutputBufferType *buffer)
     free(my_sepv);
   }
   if (PRINT_STDOUT_BIT2()) {
-    fprintf(stdlog, "%s/%s:%d (%u)\n",
+    fprintf(stdout, "%s/%s:%d (%u)\n",
             __FILE__, __FUNCTION__, __LINE__,
             counter++);
   }
@@ -307,10 +304,10 @@ int CMDwriteIt(const char *inbuf, size_t inlen)
   char *new_buf = (char *)inbuf;
   if (!inbuf || !inlen) return -1;
 
-  if (PRINT_STDOUT_BIT1() && stdlog) {
-    fprintf(stdlog,"%s/%s:%d IN=\"", __FILE__, __FUNCTION__, __LINE__);
+  if (PRINT_STDOUT_BIT1() && stdout) {
+    fprintf(stdout,"%s/%s:%d IN=\"", __FILE__, __FUNCTION__, __LINE__);
     cmd_dump_to_std(inbuf, inlen);
-    fprintf(stdlog,"\"\n");
+    fprintf(stdout,"\"\n");
   }
 
   new_buf = malloc(inlen + 1);
@@ -351,10 +348,10 @@ int CMDreadIt(char *outbuf, size_t outlen)
      return ret;
    }
 
-   if (PRINT_STDOUT_BIT1() && stdlog) {
-     fprintf(stdlog,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
+   if (PRINT_STDOUT_BIT1() && stdout) {
+     fprintf(stdout,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
      cmd_dump_to_std(outbuf, strlen(outbuf));
-     fprintf(stdlog,"\"\n");
+     fprintf(stdout,"\"\n");
    }
 
    //printf("************BYTES SENT:%s#\n",outbuf);
