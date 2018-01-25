@@ -35,6 +35,7 @@ SOURCES = \
   adsApp/src/drvAsynAdsPort.cpp \
   adsApp/src/cmd.c \
   adsApp/src/cmd_EAT.c \
+  adsApp/src/adsAsynPortDriver.cpp \
   ${ADSSOURCES}
 
 
