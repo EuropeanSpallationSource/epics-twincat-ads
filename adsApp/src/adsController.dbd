@@ -1,2 +1,3 @@
 #registrar(adsControllerRegister)
 registrar(drvAsynAdsPortRegisterCommands)
+registrar(adsAsynPortDriverRegister)
