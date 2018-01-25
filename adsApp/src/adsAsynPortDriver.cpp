@@ -123,53 +123,55 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
+
   const char* functionName = "readOctet";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: 1\n", driverName, functionName);
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
 
   size_t thisRead = 0;
   int reason = 0;
   asynStatus status = asynSuccess;
 
-  /*
-   * Feed what writeIt() gave us into the MCU
-   */
+   /*
+    * Feed what writeIt() gave us into the MCU
+    */
 
-  *value = '\0';
-  //lock();
-  if (CMDreadIt(value, maxChars)) status = asynError;
-  if (status == asynSuccess) {
-    asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: 2\n", driverName, functionName);
-    thisRead = strlen(value);
-    *nActual = thisRead;
-    /* May be not enough space ? */
-    //printf("readOctet: thisread: %d\n",thisRead);
-    if (thisRead > maxChars-1) {
-      reason |= ASYN_EOM_CNT;
-    }
-    else{
-      reason |= ASYN_EOM_EOS;
-    }
+   *value = '\0';
+   //lock();
+   if (CMDreadIt(value, maxChars)) status = asynError;
+   if (status == asynSuccess) {
+     thisRead = strlen(value);
+     *nActual = thisRead;
+     /* May be not enough space ? */
+     //printf("readOctet: thisread: %d\n",thisRead);
+     if (thisRead > maxChars-1) {
+       reason |= ASYN_EOM_CNT;
+     }
+     else{
+       reason |= ASYN_EOM_EOS;
+     }
 
-    if (thisRead == 0 && pasynUser->timeout == 0){
-      status = asynTimeout;
-    }
-  }
-  else{
-    printf("FAIL");
-  }
+     if (thisRead == 0 && pasynUser->timeout == 0){
+       status = asynTimeout;
+     }
+   }
+   else{printf("FAIL");}
 
-  if (eomReason) *eomReason = reason;
+   if (eomReason) *eomReason = reason;
 
-  *nActual = thisRead;
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: 3: datalength= %lu, data=%s\n", driverName, functionName,(unsigned long)thisRead,value);
-
-  //unlock();
-  return status;
+   *nActual = thisRead;
+   asynPrint(pasynUser, ASYN_TRACE_FLOW,
+             "%s thisRead=%lu data=\"%s\"\n",
+             portName,
+             (unsigned long)thisRead, value);
+   //unlock();
+   return status;
 }
 
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
 {
-  const char* functionName = "writeOctet";
+
+  const char* functionName = "readOctet";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   size_t thisWrite = 0;
@@ -177,7 +179,7 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
 
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
             "%s write.\n", /*ecmcController_p->*/portName);
-  asynPrintIO(pasynUser, ASYN_TRACE_INFO, value, maxChars,
+  asynPrintIO(pasynUser, ASYN_TRACEIO_DRIVER, value, maxChars,
               "%s write %lu\n",
               portName,
               (unsigned long)maxChars);
