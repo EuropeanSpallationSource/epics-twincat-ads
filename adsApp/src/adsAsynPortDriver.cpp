@@ -47,6 +47,8 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
 {
   eventId_ = epicsEventCreate(epicsEventEmpty);
   setCfgData(portName,ipaddr,amsaddr,amsport,priority,autoConnect,noProcessEos);
+  //pParamTable_=new asynParamString_t[paramTableSize];
+  //paramTableSize_=paramTableSize;
 }
 
 void adsAsynPortDriver::report(FILE *fp, int details)
@@ -79,7 +81,6 @@ asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
 asynStatus adsAsynPortDriver::connectIt( asynUser *pasynUser)
 
 {
-
   //epicsMutexLockStatus mutexLockStatus;
   int res;
   int connectOK;
@@ -115,15 +116,88 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   asynStatus status = connectIt(pasynUser);
-  if (status == asynSuccess)
-    pasynManager->exceptionConnect(pasynUser);
+  if (status == asynSuccess){
+    //pasynManager->exceptionConnect(pasynUser);
+    asynPortDriver::connect(pasynUser);
+  }
+
   return status;
+}
+
+asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvInfo,const char **pptypeName,size_t *psize)
+{
+  printf("####################################\n");
+  const char* functionName = "drvUserCreate";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: drvInfo=%s. HEPP\n", driverName, functionName,drvInfo);
+
+  asynInterface *pasynInterface = pasynManager->findInterface(pasynUser,asynCommonType,1);
+
+
+  printf("%s pinterface %p drvPvt %p\n",pasynInterface->interfaceType, pasynInterface->pinterface,pasynInterface->drvPvt);
+
+  //asynCommon *pasynCommon = (asynCommon *)pasynInterface->pinterface;
+  //void *drvPvt = pasynInterface->drvPvt;
+  //int isConnected;
+
+  const char *data;
+  size_t writeSize=1024;
+
+  asynStatus status=drvUserGetType(pasynUser,&data,&writeSize);
+
+  printf("STATUS = %d, data= %s, size=%d\n",status,data,writeSize);
+
+
+//char *errorMessage;
+//int errorMessageSize;
+///* timeout must be set by the user */
+//double timeout; /* Timeout for I/O operations*/
+//void *userPvt;
+//void *userData;
+///* The following is for use by driver */
+//void *drvUser;
+///* The following is normally set by driver via asynDrvUser->create() */
+//int reason;
+//epicsTimeStamp timestamp;
+///* The following are for additional information from method calls */
+//int auxStatus; /* For auxillary status*/
+//int alarmStatus; /* Typically for EPICS record alarm status */
+//int alarmSeverity; /* Typically for EPICS record alarm severity */
+
+  //int yesNo=-1;
+  //pasynManager->isConnected(pasynUser, &yesNo);
+
+  //printf("HHHHHHHHHHHHHHHHHHHHHH CONNECTED: %d\n",yesNo);
+  int index=0;
+  status=findParam(drvInfo,&index);
+  if(status==asynSuccess){
+    printf("PAARMETER INDEX FOUND AT: %d for %s. \n",index,drvInfo);
+  }
+  else{
+    printf("PAARMETER INDEX NOT FOUND for %s.\n",drvInfo);
+    status=createParam(drvInfo,asynParamFloat64,&index);
+    if(status==asynSuccess){
+      printf("PARAMETER CREATED AT: %d for %s. \n",index,drvInfo);
+    }
+    else{
+      printf("CREATE PARAMETER FAILED for %s.\n",drvInfo);
+    }
+  }
+
+  printf("pasynUser->errorMessage=%s.\n",pasynUser->errorMessage);
+  printf("pasynUser->timeout=%lf.\n",pasynUser->timeout);
+  printf("pasynUser->reason=%d.\n",pasynUser->reason);
+  printf("pasynUser->auxStatus=%d.\n",pasynUser->auxStatus);
+  printf("pasynUser->alarmStatus=%d.\n",pasynUser->alarmStatus);
+  printf("pasynUser->alarmSeverity=%d.\n",pasynUser->alarmSeverity);
+
+  //return this->drvUserCreateParam(pasynUser, drvInfo, pptypeName, psize,pParamTable_, paramTableSize_);
+  return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
+  //return asynSuccess;
 }
 
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
   const char* functionName = "readOctet";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   size_t thisRead = 0;
   int reason = 0;
@@ -166,6 +240,8 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
              portName,
              (unsigned long)thisRead, value);
   unlock();
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:%s\n", driverName, functionName,value);
+
   return status;
 }
 
@@ -173,7 +249,7 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
 {
 
   const char* functionName = "writeOctet";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: %s\n", driverName, functionName,value);
 
   size_t thisWrite = 0;
   asynStatus status = asynError;
@@ -202,6 +278,22 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
             (unsigned long)*nActual,
             pasynManager->strStatus(status));
   return status;
+}
+
+asynStatus adsAsynPortDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *value)
+{
+  const char* functionName = "readFloat64";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  int function = pasynUser->reason;
+  const char *paramName;
+  getParamName(function, &paramName);
+
+
+  printf("readFloat64: %s, %d\n",paramName,function);
+  asynStatus status = asynSuccess;
+  return status;
+
 }
 
 asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
