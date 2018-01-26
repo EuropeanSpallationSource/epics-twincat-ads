@@ -126,6 +126,7 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 
 asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvInfo,const char **pptypeName,size_t *psize)
 {
+  asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
   printf("####################################\n");
   const char* functionName = "drvUserCreate";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: drvInfo=%s. HEPP\n", driverName, functionName,drvInfo);
@@ -191,8 +192,8 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   printf("pasynUser->alarmSeverity=%d.\n",pasynUser->alarmSeverity);
 
   //return this->drvUserCreateParam(pasynUser, drvInfo, pptypeName, psize,pParamTable_, paramTableSize_);
-  return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
-  //return asynSuccess;
+  //return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
+  return asynSuccess;
 }
 
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
@@ -288,7 +289,7 @@ asynStatus adsAsynPortDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *val
   int function = pasynUser->reason;
   const char *paramName;
   getParamName(function, &paramName);
-
+  *value=101.01999;
 
   printf("readFloat64: %s, %d\n",paramName,function);
   asynStatus status = asynSuccess;
