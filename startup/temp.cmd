@@ -20,14 +20,12 @@ adsAsynPortDriverConfigure("ADS_1","192.168.88.60","5.40.216.206.1.1",851,1000, 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
 
-asynSetTraceMask("ADS_1", -1, 0x41)
+asynSetTraceMask("ADS_1", -1, 0xFF)
 asynSetTraceIOMask("ADS_1", -1, 0xFF)
 asynSetTraceInfoMask("ADS_1", -1, 15)
 
 #############################################################################
 ############# Load records (Stream device):
-#dbLoadRecords("adsTest.db","P=ADS_IOC:,PORT=ADS_1")
-dbLoadRecords("adsTestAsyn.db","P=ADS_IOC:,PORT=ADS_1")
 
-#var streamDebug 1
+dbLoadRecords("adsTestAsyn.db","P=ADS_IOC:,PORT=ADS_1")
 

@@ -4,11 +4,15 @@
 
 #include "asynPortDriver.h"
 #include <epicsEvent.h>
+#include <dbCommon.h>
+#include <dbBase.h>
+#include <dbAccess.h>
 
-typedef struct {
-  int param;
-  const char *paramString;
-} asynParamString_t;
+
+//typedef struct devPvtCommon{
+//  dbCommon *pr;
+//  asynUser *pasynUser;
+//}devPvtCommon;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
@@ -43,9 +47,11 @@ public:
                           int noAutoConnect,
                           int noProcessEos);
     asynUser *getTraceAsynUser();
+    void setDbBase(DBBASE *pdbbase);
 protected:
 
 private:
+    void dbDumpRecords();
     asynStatus connectIt( asynUser *pasynUser);
     epicsEventId eventId_;
     const char *portName_;
@@ -55,6 +61,7 @@ private:
     unsigned int priority_;
     int noAutoConnect_;
     int noProcessEos_;
+    DBBASE *pdbBase_;
 };
 
 #endif /* ASYNPORTDRIVER_H_ */
