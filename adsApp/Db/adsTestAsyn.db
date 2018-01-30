@@ -1,12 +1,12 @@
 # Test db file for ads communication. 
 # Macros and templates have been avoided in order to focus on showing the functionality.
 
-#record(ao,"$(P)GetFTest"){
-#   field(PINI, "1")
-#   field(DTYP, "asynFloat64")
-#   field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest")
-#   field(PREC, "3")
-#}
+record(ao,"$(P)SetFTest"){
+   field(PINI, "1")
+   field(DTYP, "asynFloat64")
+   field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest2")
+   field(PREC, "3")
+}
 
 record(ai,"$(P)GetFTest2"){
    field(PINI, "1")

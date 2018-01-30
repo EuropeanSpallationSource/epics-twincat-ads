@@ -47,7 +47,6 @@ public:
     virtual asynStatus readInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements, size_t *nIn);
     virtual asynStatus readFloat32Array(asynUser *pasynUser, epicsFloat32 *value,size_t nElements, size_t *nIn);
     virtual asynStatus readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,size_t nElements, size_t *nIn);
-    asynStatus addParamsFromDrvInfo(const char *drvInfo);
     asynStatus setCfgData(const char *portName,
                           const char *ipaddr,
                           const char *amsaddr,
@@ -60,6 +59,9 @@ public:
 protected:
 
 private:
+    asynStatus addParamsFromDrvInfo(const char *drvInfo);
+    asynStatus getParamDataType(const char *drvInfo,asynParamType *type);
+    asynStatus dtypStringToAsynType(char *dtyp,asynParamType *type)
     void dbDumpRecords();
     asynStatus connectIt( asynUser *pasynUser);
     epicsEventId eventId_;
