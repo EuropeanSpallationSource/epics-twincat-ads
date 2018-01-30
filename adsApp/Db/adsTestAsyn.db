@@ -24,3 +24,11 @@ record(ai,"$(P)GetFTest3"){
    field(SCAN,"1 second")
 }
 
+record(ai,"$(P)GetFTest4"){
+   field(PINI, "1")
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest2")
+   field(PREC, "3")
+   field(SCAN,"1 second")
+}
+

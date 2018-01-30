@@ -8,13 +8,18 @@
 #include <dbBase.h>
 #include <dbStaticLib.h>
 
+#define MAX_FIELD_CHAR_LENGTH 128
 
+typedef struct adsRecord{
+  char *name;
+  char *scan;
+  char *dtyp;
+  char *type;
+  char *inp;
+  char *out;
+  char *drvinfo;
+}adsRecord;
 
-//typedef struct devPvtCommon{
-//  dbCommon *pr;
-//  asynUser *pasynUser;
-//}devPvtCommon;
-//extern DBBASE *pdbBase;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
@@ -27,6 +32,7 @@ public:
                       unsigned int priority,
                       int autoConnect,
                       int noProcessEos);
+    virtual ~adsAsynPortDriver();
     virtual void report(FILE *fp, int details);
     virtual asynStatus disconnect(asynUser *pasynUser);
     virtual asynStatus connect(asynUser *pasynUser);
@@ -41,6 +47,7 @@ public:
     virtual asynStatus readInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements, size_t *nIn);
     virtual asynStatus readFloat32Array(asynUser *pasynUser, epicsFloat32 *value,size_t nElements, size_t *nIn);
     virtual asynStatus readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,size_t nElements, size_t *nIn);
+    asynStatus addParamsFromDrvInfo(const char *drvInfo);
     asynStatus setCfgData(const char *portName,
                           const char *ipaddr,
                           const char *amsaddr,
@@ -63,7 +70,9 @@ private:
     unsigned int priority_;
     int noAutoConnect_;
     int noProcessEos_;
-    DBBASE *pdbBase_;
+    adsRecord **pAdsRecordArray_;
+    int pAdsRecordArrayCount_;
+    int paramTableSize_;
 };
 
 #endif /* ASYNPORTDRIVER_H_ */

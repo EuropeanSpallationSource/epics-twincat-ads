@@ -25,8 +25,6 @@
 
 #include "adsCom.h"
 
-
-
 static const char *driverName="adsAsynPortDriver";
 
 // Constructor for the adsAsynPortDriver class.
@@ -50,8 +48,25 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
 {
   eventId_ = epicsEventCreate(epicsEventEmpty);
   setCfgData(portName,ipaddr,amsaddr,amsport,priority,autoConnect,noProcessEos);
-  //pParamTable_=new asynParamString_t[paramTableSize];
-  //paramTableSize_=paramTableSize;
+  pAdsRecordArray_= new adsRecord*[paramTableSize];
+  memset(pAdsRecordArray_,0,sizeof(*pAdsRecordArray_));
+  pAdsRecordArrayCount_=0;
+  paramTableSize_=paramTableSize;
+}
+
+adsAsynPortDriver::~adsAsynPortDriver()
+{
+  for(int i=0;i<pAdsRecordArrayCount_;i++){
+    free(pAdsRecordArray_[i]->name);
+    free(pAdsRecordArray_[i]->scan);
+    free(pAdsRecordArray_[i]->dtyp);
+    free(pAdsRecordArray_[i]->type);
+    free(pAdsRecordArray_[i]->inp);
+    free(pAdsRecordArray_[i]->out);
+    free(pAdsRecordArray_[i]->drvinfo);
+
+  }
+  delete pAdsRecordArray_;
 }
 
 void adsAsynPortDriver::report(FILE *fp, int details)
@@ -159,8 +174,8 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     }
   }
 //Intressting fieldnames
-//	SCAN
-//      DTYP
+//SCAN
+//DTYP
 
   //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->errorMessage=%s.\n",pasynUser->errorMessage);
   //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->timeout=%lf.\n",pasynUser->timeout);
@@ -171,19 +186,26 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   //dbDumpRecords();
   //return this->drvUserCreateParam(pasynUser, drvInfo, pptypeName, psize,pParamTable_, paramTableSize_);
   //pasynManager->report(stdout,1,"ADS_1");
+
+  status=addParamsFromDrvInfo(drvInfo);
+  if(status==asynSuccess){
+  }
   return asynSuccess;
 }
 
-void adsAsynPortDriver::addParamsFromDataBase()
+asynStatus adsAsynPortDriver::addParamsFromDrvInfo(const char *drvInfo)
 {
+//Could be more than one record with the same INP/OUT field address
   DBENTRY *pdbentry;
-  long status;
 
+  long status;
   pdbentry = dbAllocEntry(pdbbase);
   status = dbFirstRecordType(pdbentry);
-  if(status) {printf("No record descriptions\n");return;}
+  if(status) {printf("No record descriptions\n");return asynSuccess;}
   while(!status) {
-    printf("record type: %s",dbGetRecordTypeName(pdbentry));
+    adsRecord currentRecord;
+    currentRecord.type=strdup(dbGetRecordTypeName(pdbentry));
+    printf("record type: %s",currentRecord.type);
     status = dbFirstRecord(pdbentry);
     if(status) printf("  No Records\n");
       while(!status) {
@@ -193,10 +215,34 @@ void adsAsynPortDriver::addParamsFromDataBase()
          printf("\n  Record:%s\n",dbGetRecordName(pdbentry));
          status = dbFirstField(pdbentry,TRUE);
          if(status) printf("    No Fields\n");
-           while(!status) {
-             printf("    %s: %s",dbGetFieldName(pdbentry),
-             dbGetString(pdbentry));
-             status=dbNextField(pdbentry,TRUE);
+           status=dbFindField(pdbentry,"INP");
+           if(!status){
+             printf("WWWWWWWWWWWWWWW INP=%s.\n",dbGetString(pdbentry));
+             char port[MAX_FIELD_CHAR_LENGTH];
+             char adr[MAX_FIELD_CHAR_LENGTH];
+             char timeout[MAX_FIELD_CHAR_LENGTH];
+             char currdrvInfo[MAX_FIELD_CHAR_LENGTH];
+             int nvals=sscanf(dbGetString(pdbentry),"@asyn(%[^,],%[^,],%[^)])%s",port,adr,timeout,currdrvInfo);
+             if(nvals==4){
+               //Ensure correct port and drvinfo
+               if(strcmp(port,portName)==0 && strcmp(drvInfo,currdrvInfo)==0){
+                 printf("WWWWWWWWWWWWWWW INPUT   Correct port and drvinfo!\n");
+               }
+             }
+           }
+           status=dbFindField(pdbentry,"OUT");
+           if(!status){
+             printf("WWWWWWWWWWWWWWW OUT=%s.\n",dbGetString(pdbentry));
+             char port[MAX_FIELD_CHAR_LENGTH];
+             char adr[MAX_FIELD_CHAR_LENGTH];
+             char timeout[MAX_FIELD_CHAR_LENGTH];
+             char currdrvInfo[MAX_FIELD_CHAR_LENGTH];
+             int nvals=sscanf(dbGetString(pdbentry),"@asyn(%[^,],%[^,],%[^)])%s",port,adr,timeout,currdrvInfo);
+             if(nvals==4){
+               //Ensure correct port and drvinfo
+               if(strcmp(port,portName)==0 && strcmp(drvInfo,currdrvInfo)==0){
+                 printf("WWWWWWWWWWWWWWW OUTPUT   Correct port and drvinfo!\n");                   }
+               }
            }
          }
          status = dbNextRecord(pdbentry);
@@ -205,6 +251,7 @@ void adsAsynPortDriver::addParamsFromDataBase()
   }
   printf("End of all Records\n");
   dbFreeEntry(pdbentry);
+  return asynSuccess;
 }
 
 
