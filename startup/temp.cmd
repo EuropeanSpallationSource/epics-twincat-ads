@@ -1,6 +1,5 @@
-require ads,anderssandstrom
-require streamdevice,2.7.7
-require axis,10.1.5
+require ads,vagrant
+
 
 ##############################################################################
 # Demo file to run one axis motor record (or actually axis record). 

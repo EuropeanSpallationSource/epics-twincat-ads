@@ -6,13 +6,15 @@
 #include <epicsEvent.h>
 #include <dbCommon.h>
 #include <dbBase.h>
-#include <dbAccess.h>
+#include <dbStaticLib.h>
+
 
 
 //typedef struct devPvtCommon{
 //  dbCommon *pr;
 //  asynUser *pasynUser;
 //}devPvtCommon;
+//extern DBBASE *pdbBase;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:

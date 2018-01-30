@@ -21,8 +21,10 @@
 
 #include <epicsExport.h>
 #include <dbStaticLib.h>
+#include <dbAccess.h>
 
 #include "adsCom.h"
+
 
 
 static const char *driverName="adsAsynPortDriver";
@@ -131,80 +133,23 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
 
   asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
 
-  //pasynUser->drvUser->
+  //dbAddr  paddr;
+  //dbNameToAddr("ADS_IOC::GetFTest3",&paddr);
 
-
-  //asynStandardInterfaces *pInterfaces = this->pasynPortDriver->getAsynStdInterfaces();
-  asynStandardInterfaces *pIF = getAsynStdInterfaces();
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: pIF->float64  %s !!\n", driverName, functionName,pIF->float64.interfaceType);
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: pIF->int32  %s!!\n", driverName, functionName,pIF->int32.interfaceType);
-
-
-  //devPvtCommon *pPvt = (devPvtCommon *)pasynUser->userPvt;  // VERY UGLY CODE.. NEED TO GET RECORD INFO vi name?
-  //dbCommon *pr = (dbCommon *)pPvt->pr;
-
-  //DBENTRY *pdbentry = dbAllocEntry(pdbbase);
-  //asynStatus status = dbFindRecord(pdbentry, pr->name);
-  //if (status) {
-  //  asynPrint(pPvt->pasynUser, ASYN_TRACE_ERROR,"%s %s::%s error finding record\n",pr->name, driverName, functionName);
-  //  return asynError;
-  //}
-
-  //dbCommon *pr = (dbCommon *)pasynUser->userPvt->pr;
-
-  dbAddr  paddr;
-  dbNameToAddr("ADS_IOC::GetFTest3",&paddr);
-
-
-
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: RECORDNAME: %s. HEPP\n", driverName, functionName,pr->name);
   asynPrint(pasynUser, ASYN_TRACE_INFO,"####################################\n");
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: drvInfo=%s.\n", driverName, functionName,drvInfo);
+  //const char *data;
+  //size_t writeSize=1024;
+  //asynStatus status=drvUserGetType(pasynUser,&data,&writeSize);
+  //asynPrint(pasynUser, ASYN_TRACE_INFO,"STATUS = %d, data= %s, size=%d\n",status,data,writeSize);
 
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: drvInfo=%s. HEPP\n", driverName, functionName,drvInfo);
-
-  asynInterface *pasynInterface = pasynManager->findInterface(pasynUser,asynCommonType,1);
-
-  asynPrint(pasynUser, ASYN_TRACE_INFO,"%s pinterface %p drvPvt %p\n",pasynInterface->interfaceType, pasynInterface->pinterface,pasynInterface->drvPvt);
-
-  //asynCommon *pasynCommon = (asynCommon *)pasynInterface->pinterface;
-  //void *drvPvt = pasynInterface->drvPvt;
-  //int isConnected;
-
-  const char *data;
-  size_t writeSize=1024;
-
-  asynStatus status=drvUserGetType(pasynUser,&data,&writeSize);
-
-  asynPrint(pasynUser, ASYN_TRACE_INFO,"STATUS = %d, data= %s, size=%d\n",status,data,writeSize);
-
-
-//char *errorMessage;
-//int errorMessageSize;
-///* timeout must be set by the user */
-//double timeout; /* Timeout for I/O operations*/
-//void *userPvt;
-//void *userData;
-///* The following is for use by driver */
-//void *drvUser;
-///* The following is normally set by driver via asynDrvUser->create() */
-//int reason;
-//epicsTimeStamp timestamp;
-///* The following are for additional information from method calls */
-//int auxStatus; /* For auxillary status*/
-//int alarmStatus; /* Typically for EPICS record alarm status */
-//int alarmSeverity; /* Typically for EPICS record alarm severity */
-
-  int yesNo=-1;
-  pasynManager->isConnected(pasynUser, &yesNo);
-
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "HHHHHHHHHHHHHHHHHHHHHH CONNECTED: %d\n",yesNo);
   int index=0;
-  status=findParam(drvInfo,&index);
+  asynStatus status=findParam(drvInfo,&index);
   if(status==asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_INFO, "PAARMETER INDEX FOUND AT: %d for %s. \n",index,drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER INDEX FOUND AT: %d for %s. \n",index,drvInfo);
   }
   else{
-    asynPrint(pasynUser, ASYN_TRACE_INFO, "PAARMETER INDEX NOT FOUND for %s.\n",drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER INDEX NOT FOUND for %s.\n",drvInfo);
     status=createParam(drvInfo,asynParamFloat64,&index);
     if(status==asynSuccess){
       asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER CREATED AT: %d for %s. \n",index,drvInfo);
@@ -213,39 +158,43 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
       asynPrint(pasynUser, ASYN_TRACE_INFO, "CREATE PARAMETER FAILED for %s.\n",drvInfo);
     }
   }
+//Intressting fieldnames
+//	SCAN
+//      DTYP
 
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->errorMessage=%s.\n",pasynUser->errorMessage);
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->timeout=%lf.\n",pasynUser->timeout);
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->reason=%d.\n",pasynUser->reason);
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->auxStatus=%d.\n",pasynUser->auxStatus);
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->alarmStatus=%d.\n",pasynUser->alarmStatus);
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->alarmSeverity=%d.\n",pasynUser->alarmSeverity);
-  dbDumpRecords();
+  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->errorMessage=%s.\n",pasynUser->errorMessage);
+  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->timeout=%lf.\n",pasynUser->timeout);
+  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->reason=%d.\n",pasynUser->reason);
+  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->auxStatus=%d.\n",pasynUser->auxStatus);
+  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->alarmStatus=%d.\n",pasynUser->alarmStatus);
+  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->alarmSeverity=%d.\n",pasynUser->alarmSeverity);
+  //dbDumpRecords();
   //return this->drvUserCreateParam(pasynUser, drvInfo, pptypeName, psize,pParamTable_, paramTableSize_);
   //pasynManager->report(stdout,1,"ADS_1");
   return asynSuccess;
 }
-void adsAsynPortDriver::dbDumpRecords()
+
+void adsAsynPortDriver::addParamsFromDataBase()
 {
   DBENTRY *pdbentry;
   long status;
 
-  pdbentry = dbAllocEntry(pdbBase_);
+  pdbentry = dbAllocEntry(pdbbase);
   status = dbFirstRecordType(pdbentry);
-  if(status) {printf("No␣record␣descriptions\n");return;}
+  if(status) {printf("No record descriptions\n");return;}
   while(!status) {
-    printf("record␣type:␣%s",dbGetRecordTypeName(pdbentry));
+    printf("record type: %s",dbGetRecordTypeName(pdbentry));
     status = dbFirstRecord(pdbentry);
-    if(status) printf("␣␣No␣Records\n");
+    if(status) printf("  No Records\n");
       while(!status) {
        if(dbIsAlias(pdbentry))
-         printf("\n␣␣Alias:%s\n",dbGetRecordName(pdbentry));
+         printf("\n  Alias:%s\n",dbGetRecordName(pdbentry));
        else {
-         printf("\n␣␣Record:%s\n",dbGetRecordName(pdbentry));
+         printf("\n  Record:%s\n",dbGetRecordName(pdbentry));
          status = dbFirstField(pdbentry,TRUE);
-         if(status) printf("␣␣␣␣No␣Fields\n");
+         if(status) printf("    No Fields\n");
            while(!status) {
-             printf("␣␣␣␣%s:␣%s",dbGetFieldName(pdbentry),
+             printf("    %s: %s",dbGetFieldName(pdbentry),
              dbGetString(pdbentry));
              status=dbNextField(pdbentry,TRUE);
            }
@@ -254,7 +203,41 @@ void adsAsynPortDriver::dbDumpRecords()
       }
     status = dbNextRecordType(pdbentry);
   }
-  printf("End␣of␣all␣Records\n");
+  printf("End of all Records\n");
+  dbFreeEntry(pdbentry);
+}
+
+
+void adsAsynPortDriver::dbDumpRecords()
+{
+  DBENTRY *pdbentry;
+  long status;
+
+  pdbentry = dbAllocEntry(pdbbase);
+  status = dbFirstRecordType(pdbentry);
+  if(status) {printf("No record descriptions\n");return;}
+  while(!status) {
+    printf("record type: %s",dbGetRecordTypeName(pdbentry));
+    status = dbFirstRecord(pdbentry);
+    if(status) printf("  No Records\n");
+      while(!status) {
+       if(dbIsAlias(pdbentry))
+         printf("\n  Alias:%s\n",dbGetRecordName(pdbentry));
+       else {
+         printf("\n  Record:%s\n",dbGetRecordName(pdbentry));
+         status = dbFirstField(pdbentry,TRUE);
+         if(status) printf("    No Fields\n");
+           while(!status) {
+             printf("    %s: %s",dbGetFieldName(pdbentry),
+             dbGetString(pdbentry));
+             status=dbNextField(pdbentry,TRUE);
+           }
+         }
+         status = dbNextRecord(pdbentry);
+      }
+    status = dbNextRecordType(pdbentry);
+  }
+  printf("End of all Records\n");
   dbFreeEntry(pdbentry);
 }
 
@@ -444,16 +427,15 @@ asynStatus adsAsynPortDriver::setCfgData(const char *portName,
   return asynSuccess;
 }
 
-void adsAsynPortDriver::setDbBase(DBBASE *pdbbase)
-{
-  pdbBase_=pdbbase;
-}
+//void adsAsynPortDriver::setDbBase(DBBASE *pdbbase)
+//{
+//  pdbBase_=pdbbase;
+//}
 
 /* Configuration routine.  Called directly, or from the iocsh function below */
 
 extern "C" {
 
-  extern DBBASE *pdbBase;
   asynUser *pPrintOutAsynUser;
 
   static adsAsynPortDriver *adsAsynPortObj;
@@ -493,8 +475,8 @@ extern "C" {
         return (asynError);
       }
       pPrintOutAsynUser=traceUser;
-      adsAsynPortObj->connect(traceUser);
-      adsAsynPortObj->setDbBase(pdbBase);
+      //adsAsynPortObj->connect(traceUser);
+
 
     }
 
