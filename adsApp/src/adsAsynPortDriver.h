@@ -9,6 +9,7 @@
 #include <dbStaticLib.h>
 
 #define MAX_FIELD_CHAR_LENGTH 128
+#define ADR_COMMAND_PREFIX ".ADR."
 
 
 typedef struct adsParamInfo{
@@ -22,8 +23,15 @@ typedef struct adsParamInfo{
   asynParamType asynType;
   bool isInput;
   bool isOutput;
-  int adsPort;
+  int amsPort;
   int paramIndex;
+  bool plcAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
+  bool plcSymAdrIsAdrCommand;
+  char *plcSymAdr;
+  unsigned plcGroupNum;
+  unsigned plcOffsetInGroup;
+  unsigned plcSize;
+  unsigned plcDataType;
 }adsParamInfo;
 
 class adsAsynPortDriver : public asynPortDriver {
@@ -63,8 +71,10 @@ protected:
 
 private:
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,adsParamInfo *paramInfo);
-  asynStatus getParamDataType(const char *drvInfo,asynParamType *type);
+  //asynStatus getParamDataType(const char *drvInfo,asynParamType *type);
+  asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,adsParamInfo *paramInfo);
   asynParamType dtypStringToAsynType(char *dtype);
+  int getAmsPortFromDrvInfo(const char* drvInfo);
   void printParamInfo(adsParamInfo *paramInfo);
   void dbDumpRecords();
   asynStatus connectIt( asynUser *pasynUser);

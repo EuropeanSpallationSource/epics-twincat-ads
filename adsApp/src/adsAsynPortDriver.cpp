@@ -63,6 +63,8 @@ adsAsynPortDriver::~adsAsynPortDriver()
     free(pAdsParamArray_[i]->dtyp);
     free(pAdsParamArray_[i]->inp);
     free(pAdsParamArray_[i]->out);
+    free(pAdsParamArray_[i]->drvInfo);
+    free(pAdsParamArray_[i]->plcSymAdr);
     delete pAdsParamArray_[i];
   }
   delete pAdsParamArray_;
@@ -162,9 +164,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER INDEX FOUND AT: %d for %s. \n",index,drvInfo);
   }
   else{
-    // Get data type from database entry
-    //asynParamType type;
-    //status=getParamDataType(drvInfo,&type);
+   // Collect data from drvInfo string and record
     adsParamInfo *paramInfo=new adsParamInfo();
     memset(paramInfo,0,sizeof(adsParamInfo));
     status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
@@ -172,16 +172,22 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
       status=createParam(drvInfo,paramInfo->asynType,&index);
       if(status==asynSuccess){
         paramInfo->paramIndex=index;
-        pAdsParamArray_[pAdsParamArrayCount_]=paramInfo;
-        pAdsParamArrayCount_++;
-        //print all parameters
-        for(int i=0; i<pAdsParamArrayCount_;i++){
-          printParamInfo(pAdsParamArray_[i]);
+        status=parsePlcInfofromDrvInfo(drvInfo,paramInfo);
+        if(status==asynSuccess){
+          pAdsParamArray_[pAdsParamArrayCount_]=paramInfo;
+          pAdsParamArrayCount_++;
+          //print all parameters
+          for(int i=0; i<pAdsParamArrayCount_;i++){
+            printParamInfo(pAdsParamArray_[i]);
+          }
+          asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER CREATED AT: %d for %s.\n",index,drvInfo);
         }
-        asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER CREATED AT: %d for %s.\n",index,drvInfo);
+        else{
+          asynPrint(pasynUser, ASYN_TRACE_ERROR, "FAILED PARSING OF DRVINFO: %s.\n",drvInfo);
+        }
       }
       else{
-        asynPrint(pasynUser, ASYN_TRACE_INFO, "CREATE PARAMETER FAILED for %s.\n",drvInfo);
+        asynPrint(pasynUser, ASYN_TRACE_ERROR, "CREATE PARAMETER FAILED for %s.\n",drvInfo);
       }
     }
   }
@@ -199,7 +205,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::getParamDataType(const char *drvInfo,asynParamType *type)
+/*asynStatus adsAsynPortDriver::getParamDataType(const char *drvInfo,asynParamType *type)
 {
   DBENTRY *pdbentry;
   pdbentry = dbAllocEntry(pdbbase);
@@ -275,7 +281,7 @@ asynStatus adsAsynPortDriver::getParamDataType(const char *drvInfo,asynParamType
   }
   dbFreeEntry(pdbentry);
   return asynError;
-}
+}*/
 
 asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
 {
@@ -299,7 +305,7 @@ asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
 
 asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsParamInfo *paramInfo)
 {
-  paramInfo->adsPort=amsport_;
+  paramInfo->amsPort=amsport_;
   DBENTRY *pdbentry;
   pdbentry = dbAllocEntry(pdbbase);
   long status = dbFirstRecordType(pdbentry);
@@ -407,21 +413,90 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
   return asynError;
 }
 
+int adsAsynPortDriver::getAmsPortFromDrvInfo(const char* drvInfo)
+{
+  //check if "ADSPORT" option in drvInfo string
+  char plcAdr[MAX_FIELD_CHAR_LENGTH];
+  int amsPortLocal=0;
+  int nvals=sscanf(drvInfo,"ADSPORT=%d/%s",&amsPortLocal,plcAdr);
+  if(nvals==2){
+    return amsPortLocal;
+  }
+  return amsport_;  //No ADSPORT option found => return default port
+}
+/*
+  ADSPORT=501/.ADR.16#5001,16#B,2,2=1;
+*/
+
+asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsParamInfo *paramInfo)
+{
+  bool err=false;
+  //take part after last "/" if option or complete string.. How to handle .adr.??
+  char plcAdrLocal[MAX_FIELD_CHAR_LENGTH];
+  //See if option (find last '/')
+  const char *drvInfoEnd=strrchr(drvInfo,'/');
+  if(drvInfoEnd){ // found '/'
+    int nvals=sscanf(drvInfoEnd,"/%s",plcAdrLocal);
+    if(nvals==1){
+      paramInfo->plcSymAdr=strdup(plcAdrLocal);
+    }
+    else{
+      err=true;
+    }
+  }
+
+  //Check if .ADR. command
+  paramInfo->plcAdrValid=false;
+  paramInfo->plcSymAdrIsAdrCommand=false;
+  const char *adrStr=strstr(drvInfo,ADR_COMMAND_PREFIX);
+  if(adrStr){
+    paramInfo->plcSymAdrIsAdrCommand=true;
+    int nvals;
+    nvals = sscanf(adrStr, ".ADR.16#%x,16#%x,%u,%u",
+             &paramInfo->plcGroupNum,
+             &paramInfo->plcOffsetInGroup,
+             &paramInfo->plcSize,
+             &paramInfo->plcDataType);
+
+    if(nvals==4){
+      paramInfo->plcAdrValid=true;
+    }
+    else{
+      err=true;
+    }
+  }
+  //Look for AMSPORT option
+  paramInfo->amsPort=getAmsPortFromDrvInfo(drvInfo);
+
+  if(err){
+    return asynError;
+  }
+  else{
+    return asynSuccess;
+  }
+}
+
 void adsAsynPortDriver::printParamInfo(adsParamInfo *paramInfo)
 {
   printf("########################################\n");
-  printf("  Record name:     %s\n",paramInfo->recordName);
-  printf("  Record type:     %s\n",paramInfo->recordType);
-  printf("  Record type:     %s\n",paramInfo->dtyp);
-  printf("  Record asynType: %d\n",paramInfo->asynType);
-  printf("  Record scan:     %s\n",paramInfo->scan);
-  printf("  Record inp:      %s\n",paramInfo->inp);
-  printf("  Record out:      %s\n",paramInfo->out);
-  printf("  Record isInput:  %d\n",paramInfo->isInput);
-  printf("  Record isOutput: %d\n",paramInfo->isOutput);
-  printf("  Record adsPort:  %d\n",paramInfo->adsPort);
-  printf("  Param drvInfo:   %s\n",paramInfo->drvInfo);
-  printf("  Param index:     %d\n",paramInfo->paramIndex);
+  printf("  Record name:        %s\n",paramInfo->recordName);
+  printf("  Record type:        %s\n",paramInfo->recordType);
+  printf("  Record type:        %s\n",paramInfo->dtyp);
+  printf("  Record asynType:    %d\n",paramInfo->asynType);
+  printf("  Record scan:        %s\n",paramInfo->scan);
+  printf("  Record inp:         %s\n",paramInfo->inp);
+  printf("  Record out:         %s\n",paramInfo->out);
+  printf("  Record isInput:     %d\n",paramInfo->isInput);
+  printf("  Record isOutput:    %d\n",paramInfo->isOutput);
+  printf("  Param amsPort:      %d\n",paramInfo->amsPort);
+  printf("  Param drvInfo:      %s\n",paramInfo->drvInfo);
+  printf("  Plc AdrValid:       %d\n",paramInfo->plcAdrValid);
+  printf("  Plc SymAdrIsAdrCmd: %d\n",paramInfo->plcSymAdrIsAdrCommand);
+  printf("  Plc SymAdr:         %s\n",paramInfo->plcSymAdr);
+  printf("  Plc GroupNum:       16#%x\n",paramInfo->plcGroupNum);
+  printf("  Plc OffsetInGroup:  16#%x\n",paramInfo->plcOffsetInGroup);
+  printf("  Plc DataTypeSize:   %u\n",paramInfo->plcSize);
+  printf("  Plc DataType:       %u\n",paramInfo->plcDataType);
   printf("########################################\n");
 }
 
@@ -688,8 +763,8 @@ extern "C" {
       }
       pPrintOutAsynUser=traceUser;
       //adsAsynPortObj->connect(traceUser);
-
-
+      //printf("ADSPORT IS %d\n",adsAsynPortObj->getAmsPortFromDrvInfo("ADSPORT=123/.ADR.16#5000,16#2,4,8"));
+      //printf("ADSPORT IS %d\n",adsAsynPortObj->getAmsPortFromDrvInfo("ADSPORT=124/Main.M1.dTest"));
     }
 
     return asynSuccess;

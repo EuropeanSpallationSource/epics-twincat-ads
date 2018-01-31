@@ -32,3 +32,27 @@ record(ai,"$(P)GetFTest4"){
    field(SCAN,"1 second")
 }
 
+record(ai,"$(P)GetFTest11"){
+   field(PINI, "1")
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/.ADR.16#5000,16#2,4,8")
+   field(PREC, "3")
+   field(SCAN,"1 second")
+}
+
+record(ai,"$(P)GetFTest12"){
+   field(PINI, "1")
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),0,1).ADR.16#5000,16#2,4,8")
+   field(PREC, "3")
+   field(SCAN,"2 second")
+}
+
+record(ai,"$(P)GetFTest13"){
+   field(PINI, "1")
+   field(DTYP, "asynint32")
+   field(INP,  "@asyn($(PORT),0,1).ADR.16#5000,16#2,4,8")
+   field(PREC, "3")
+   field(SCAN,"2 second")
+}
+
