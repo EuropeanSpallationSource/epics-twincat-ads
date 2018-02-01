@@ -7,68 +7,73 @@
 #include <dbCommon.h>
 #include <dbBase.h>
 #include <dbStaticLib.h>
+#include "AdsLib.h"
 
 #define MAX_FIELD_CHAR_LENGTH 128
 #define ADR_COMMAND_PREFIX ".ADR."
 
 typedef struct adsParamInfo{
-  char *recordName;
-  char *recordType;
-  char *scan;
-  char *dtyp;
-  char *inp;
-  char *out;
-  char *drvInfo;
+  char          *recordName;
+  char          *recordType;
+  char          *scan;
+  char          *dtyp;
+  char          *inp;
+  char          *out;
+  char          *drvInfo;
   asynParamType asynType;
-  bool isInput;
-  bool isOutput;
-  int amsPort;
-  int paramIndex;
-  bool plcAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
-  bool plcSymAdrIsAdrCommand;
-  char *plcSymAdr;
-  unsigned plcGroupNum;
-  unsigned plcOffsetInGroup;
-  unsigned plcSize;
-  unsigned plcDataType;
+  bool          isInput;
+  bool          isOutput;
+  int           amsPort;
+  int           paramIndex;  //aslo used as hUser for ads callback
+  bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
+  bool          plcSymAdrIsAdrCommand;
+  char          *plcSymAdr;
+  unsigned      plcGroup;
+  unsigned      plcOffsetInGroup;
+  unsigned      plcSize;
+  unsigned      plcDataType;
+  //callback information
+  uint32_t      hCallbackNotify;
+  uint32_t      hSymbolicHandle;
 }adsParamInfo;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
-  adsAsynPortDriver(const char *portName,const char *ipaddr,
-                                    const char *amsaddr,
-                                    unsigned int amsport,
-                                    int paramTableSize,
-                                    unsigned int priority,
-                                    int autoConnect,
-                                    int noProcessEos);
+  adsAsynPortDriver(const char *portName,
+                    const char *ipaddr,
+                    const char *amsaddr,
+                    unsigned int amsport,
+                    int paramTableSize,
+                    unsigned int priority,
+                    int autoConnect,
+                    int noProcessEos);
   virtual ~adsAsynPortDriver();
   virtual void report(FILE *fp, int details);
   virtual asynStatus disconnect(asynUser *pasynUser);
   virtual asynStatus connect(asynUser *pasynUser);
   virtual asynStatus drvUserCreate(asynUser *pasynUser,
-                                    const char *drvInfo,
-                                    const char **pptypeName,
-                                    size_t *psize);
+                                   const char *drvInfo,
+                                   const char **pptypeName,
+                                   size_t *psize);
   virtual asynStatus writeOctet(asynUser *pasynUser,
-                                    const char *value,
-                                    size_t maxChars,
-                                    size_t *nActual);
+                                const char *value,
+                                size_t maxChars,
+                                size_t *nActual);
   virtual asynStatus readOctet(asynUser *pasynUser,
-                                    char *value,
-                                    size_t maxChars,
-                                    size_t *nActual,
-                                    int *eomReason);
+                               char *value,
+                               size_t maxChars,
+                               size_t *nActual,
+                               int *eomReason);
   virtual asynStatus writeInt32(asynUser *pasynUser,
-                                    epicsInt32 value);
+                                epicsInt32 value);
   virtual asynStatus writeFloat64(asynUser *pasynUser,
-                                    epicsFloat64 value);
+                                  epicsFloat64 value);
   virtual asynStatus readFloat64(asynUser *pasynUser,
-                                    epicsFloat64 *value);
+                                 epicsFloat64 *value);
   virtual asynStatus readInt8Array(asynUser *pasynUser,
-                                    epicsInt8 *value,
-                                    size_t nElements,
-                                    size_t *nIn);
+                                   epicsInt8 *value,
+                                   size_t nElements,
+                                   size_t *nIn);
   virtual asynStatus readInt16Array(asynUser *pasynUser,
                                     epicsInt16 *value,
                                     size_t nElements,
@@ -82,29 +87,35 @@ public:
                                      size_t nElements,
                                      size_t *nIn);
   virtual asynStatus readFloat64Array(asynUser *pasynUser,
-                                     epicsFloat64 *value,
-                                     size_t nElements,
-                                     size_t *nIn);
-  asynStatus setCfgData(const char *portName,const char *ipaddr,
-                                     const char *amsaddr,
-                                     unsigned int amsport,
-                                     unsigned int priority,
-                                     int noAutoConnect,
-                                     int noProcessEos);
+                                      epicsFloat64 *value,
+                                      size_t nElements,
+                                      size_t *nIn);
+  asynStatus setCfgData(const char *portName,
+                        const char *ipaddr,
+                        const char *amsaddr,
+                        unsigned int amsport,
+                        unsigned int priority,
+                        int noAutoConnect,
+                        int noProcessEos);
   asynUser *getTraceAsynUser();
 protected:
 
 private:
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,
-                                     adsParamInfo *paramInfo);
-  //asynStatus getParamDataType(const char *drvInfo,
-  //                                 asynParamType *type);
+                                      adsParamInfo *paramInfo);
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,
                                      adsParamInfo *paramInfo);
   asynParamType dtypStringToAsynType(char *dtype);
   int getAmsPortFromDrvInfo(const char* drvInfo);
   void printParamInfo(adsParamInfo *paramInfo);
   void dbDumpRecords();
+
+  asynStatus addNotificationCallback(long port,
+                                     const AmsAddr& server,
+                                     adsParamInfo *paramInfo);
+  asynStatus delNotificationCallback(long port,
+                                     const AmsAddr& server,
+                                     adsParamInfo *paramInfo);
   asynStatus connectIt( asynUser *pasynUser);
   epicsEventId eventId_;
   const char *portName_;
