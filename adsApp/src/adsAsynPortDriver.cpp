@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "cmd.h"
 
@@ -34,6 +35,150 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   printf(" value: ");
   for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
     printf(" 0x%x",(int)data[i]);
+  }
+}
+
+static const char *adsErrorToString(long error)
+{
+  switch (error) {
+    case GLOBALERR_TARGET_PORT:
+      return "GLOBALERR_TARGET_PORT";
+    case GLOBALERR_MISSING_ROUTE:
+      return "GLOBALERR_MISSING_ROUTE";
+    case GLOBALERR_NO_MEMORY:
+      return "GLOBALERR_NO_MEMORY";
+    case GLOBALERR_TCP_SEND:
+      return "GLOBALERR_TCP_SEND";
+    case ADSERR_DEVICE_ERROR:
+      return "ADSERR_DEVICE_ERROR";
+    case ADSERR_DEVICE_SRVNOTSUPP:
+      return "ADSERR_DEVICE_SRVNOTSUPP";
+    case ADSERR_DEVICE_INVALIDGRP:
+      return "ADSERR_DEVICE_INVALIDGRP";
+    case ADSERR_DEVICE_INVALIDOFFSET:
+      return "ADSERR_DEVICE_INVALIDOFFSET";
+    case ADSERR_DEVICE_INVALIDACCESS:
+      return "ADSERR_DEVICE_INVALIDACCESS";
+    case ADSERR_DEVICE_INVALIDSIZE:
+      return "ADSERR_DEVICE_INVALIDSIZE";
+    case ADSERR_DEVICE_INVALIDDATA:
+      return "ADSERR_DEVICE_INVALIDDATA";
+    case ADSERR_DEVICE_NOTREADY:
+      return "ADSERR_DEVICE_NOTREADY";
+    case ADSERR_DEVICE_BUSY:
+      return "ADSERR_DEVICE_BUSY";
+    case ADSERR_DEVICE_INVALIDCONTEXT:
+      return "ADSERR_DEVICE_INVALIDCONTEXT";
+    case ADSERR_DEVICE_NOMEMORY:
+      return "ADSERR_DEVICE_NOMEMORY";
+    case ADSERR_DEVICE_INVALIDPARM:
+      return "ADSERR_DEVICE_INVALIDPARM";
+    case ADSERR_DEVICE_NOTFOUND:
+      return "ADSERR_DEVICE_NOTFOUND";
+    case ADSERR_DEVICE_SYNTAX:
+      return "ADSERR_DEVICE_SYNTAX";
+    case ADSERR_DEVICE_INCOMPATIBLE:
+      return "ADSERR_DEVICE_INCOMPATIBLE";
+    case ADSERR_DEVICE_EXISTS:
+      return "ADSERR_DEVICE_EXISTS";
+    case ADSERR_DEVICE_SYMBOLNOTFOUND:
+      return "ADSERR_DEVICE_SYMBOLNOTFOUND";
+    case ADSERR_DEVICE_SYMBOLVERSIONINVALID:
+      return "ADSERR_DEVICE_SYMBOLVERSIONINVALID";
+    case ADSERR_DEVICE_INVALIDSTATE:
+      return "ADSERR_DEVICE_INVALIDSTATE";
+    case ADSERR_DEVICE_TRANSMODENOTSUPP:
+      return "ADSERR_DEVICE_TRANSMODENOTSUPP";
+    case ADSERR_DEVICE_NOTIFYHNDINVALID:
+      return "ADSERR_DEVICE_NOTIFYHNDINVALID";
+    case ADSERR_DEVICE_CLIENTUNKNOWN:
+      return "ADSERR_DEVICE_CLIENTUNKNOWN";
+    case ADSERR_DEVICE_NOMOREHDLS:
+      return "ADSERR_DEVICE_NOMOREHDLS";
+    case ADSERR_DEVICE_INVALIDWATCHSIZE:
+      return "ADSERR_DEVICE_INVALIDWATCHSIZE";
+    case ADSERR_DEVICE_NOTINIT:
+      return "ADSERR_DEVICE_NOTINIT";
+    case ADSERR_DEVICE_TIMEOUT:
+      return "ADSERR_DEVICE_TIMEOUT";
+    case ADSERR_DEVICE_NOINTERFACE:
+      return "ADSERR_DEVICE_NOINTERFACE";
+    case ADSERR_DEVICE_INVALIDINTERFACE:
+      return "ADSERR_DEVICE_INVALIDINTERFACE";
+    case ADSERR_DEVICE_INVALIDCLSID:
+      return "ADSERR_DEVICE_INVALIDCLSID";
+    case ADSERR_DEVICE_INVALIDOBJID:
+      return "ADSERR_DEVICE_INVALIDOBJID";
+    case ADSERR_DEVICE_PENDING:
+      return "ADSERR_DEVICE_PENDING";
+    case ADSERR_DEVICE_ABORTED:
+      return "ADSERR_DEVICE_ABORTED";
+    case ADSERR_DEVICE_WARNING:
+      return "ADSERR_DEVICE_WARNING";
+    case ADSERR_DEVICE_INVALIDARRAYIDX:
+      return "ADSERR_DEVICE_INVALIDARRAYIDX";
+    case ADSERR_DEVICE_SYMBOLNOTACTIVE:
+      return "ADSERR_DEVICE_SYMBOLNOTACTIVE";
+    case ADSERR_DEVICE_ACCESSDENIED:
+      return "ADSERR_DEVICE_ACCESSDENIED";
+    case ADSERR_DEVICE_LICENSENOTFOUND:
+      return "ADSERR_DEVICE_LICENSENOTFOUND";
+    case ADSERR_DEVICE_LICENSEEXPIRED:
+      return "ADSERR_DEVICE_LICENSEEXPIRED";
+    case ADSERR_DEVICE_LICENSEEXCEEDED:
+      return "ADSERR_DEVICE_LICENSEEXCEEDED";
+    case ADSERR_DEVICE_LICENSEINVALID:
+      return "ADSERR_DEVICE_LICENSEINVALID";
+    case ADSERR_DEVICE_LICENSESYSTEMID:
+      return "ADSERR_DEVICE_LICENSESYSTEMID";
+    case ADSERR_DEVICE_LICENSENOTIMELIMIT:
+      return "ADSERR_DEVICE_LICENSENOTIMELIMIT";
+    case ADSERR_DEVICE_LICENSEFUTUREISSUE:
+      return "ADSERR_DEVICE_LICENSEFUTUREISSUE";
+    case ADSERR_DEVICE_LICENSETIMETOLONG:
+      return "ADSERR_DEVICE_LICENSETIMETOLONG";
+    case ADSERR_DEVICE_EXCEPTION:
+      return "ADSERR_DEVICE_EXCEPTION";
+    case ADSERR_DEVICE_LICENSEDUPLICATED:
+      return "ADSERR_DEVICE_LICENSEDUPLICATED";
+    case ADSERR_DEVICE_SIGNATUREINVALID:
+      return "ADSERR_DEVICE_SIGNATUREINVALID";
+    case ADSERR_DEVICE_CERTIFICATEINVALID:
+      return "ADSERR_DEVICE_CERTIFICATEINVALID";
+    case ADSERR_CLIENT_ERROR:
+      return "ADSERR_CLIENT_ERROR";
+    case ADSERR_CLIENT_INVALIDPARM:
+      return "ADSERR_CLIENT_INVALIDPARM";
+    case ADSERR_CLIENT_LISTEMPTY:
+      return "ADSERR_CLIENT_LISTEMPTY";
+    case ADSERR_CLIENT_VARUSED:
+      return "ADSERR_CLIENT_VARUSED";
+    case ADSERR_CLIENT_DUPLINVOKEID:
+      return "ADSERR_CLIENT_DUPLINVOKEID";
+    case ADSERR_CLIENT_SYNCTIMEOUT:
+      return "ADSERR_CLIENT_SYNCTIMEOUT";
+    case ADSERR_CLIENT_W32ERROR:
+      return "ADSERR_CLIENT_W32ERROR";
+    case ADSERR_CLIENT_TIMEOUTINVALID:
+      return "ADSERR_CLIENT_TIMEOUTINVALID";
+    case ADSERR_CLIENT_PORTNOTOPEN:
+      return "ADSERR_CLIENT_PORTNOTOPEN";
+    case ADSERR_CLIENT_NOAMSADDR:
+      return "ADSERR_CLIENT_NOAMSADDR";
+    case ADSERR_CLIENT_SYNCINTERNAL:
+      return "ADSERR_CLIENT_SYNCINTERNAL";
+    case ADSERR_CLIENT_ADDHASH:
+      return "ADSERR_CLIENT_ADDHASH";
+    case ADSERR_CLIENT_REMOVEHASH:
+      return "ADSERR_CLIENT_REMOVEHASH";
+    case ADSERR_CLIENT_NOMORESYM:
+      return "ADSERR_CLIENT_NOMORESYM";
+    case ADSERR_CLIENT_SYNCRESINVALID:
+      return "ADSERR_CLIENT_SYNCRESINVALID";
+    case ADSERR_CLIENT_SYNCPORTLOCKED:
+      return "ADSERR_CLIENT_SYNCPORTLOCKED";
+    default:
+      return "ADSERR_ERROR_UNKNOWN";
   }
 }
 
@@ -434,25 +579,26 @@ void adsAsynPortDriver::printParamInfo(adsParamInfo *paramInfo)
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   printf("########################################\n");
-  printf("  Record name:        %s\n",paramInfo->recordName);
-  printf("  Record type:        %s\n",paramInfo->recordType);
-  printf("  Record dataType:    %s\n",paramInfo->dtyp);
-  printf("  Record asynType:    %d\n",paramInfo->asynType);
-  printf("  Record scan:        %s\n",paramInfo->scan);
-  printf("  Record inp:         %s\n",paramInfo->inp);
-  printf("  Record out:         %s\n",paramInfo->out);
-  printf("  Record isInput:     %d\n",paramInfo->isInput);
-  printf("  Record isOutput:    %d\n",paramInfo->isOutput);
-  printf("  Param index:        %d\n",paramInfo->paramIndex);
-  printf("  Param drvInfo:      %s\n",paramInfo->drvInfo);
-  printf("  Plc SymAdr:         %s\n",paramInfo->plcSymAdr);
-  printf("  Plc Ams Port:       %d\n",paramInfo->amsPort);
-  printf("  Plc SymAdrIsAdrCmd: %d\n",paramInfo->isAdrCommand);
-  printf("  Plc AbsAdrValid:    %d\n",paramInfo->plcAbsAdrValid);
-  printf("  Plc GroupNum:       16#%x\n",paramInfo->plcGroup);
-  printf("  Plc OffsetInGroup:  16#%x\n",paramInfo->plcOffsetInGroup);
-  printf("  Plc DataTypeSize:   %u\n",paramInfo->plcSize);
-  printf("  Plc DataType:       %u\n",paramInfo->plcDataType);
+  printf("  Record name:         %s\n",paramInfo->recordName);
+  printf("  Record type:         %s\n",paramInfo->recordType);
+  printf("  Record dataType:     %s\n",paramInfo->dtyp);
+  printf("  Record asynType:     %d\n",paramInfo->asynType);
+  printf("  Record scan:         %s\n",paramInfo->scan);
+  printf("  Record inp:          %s\n",paramInfo->inp);
+  printf("  Record out:          %s\n",paramInfo->out);
+  printf("  Record isInput:      %d\n",paramInfo->isInput);
+  printf("  Record isOutput:     %d\n",paramInfo->isOutput);
+  printf("  Param index:         %d\n",paramInfo->paramIndex);
+  printf("  Param drvInfo:       %s\n",paramInfo->drvInfo);
+  printf("  Plc SymAdr:          %s\n",paramInfo->plcSymAdr);
+  printf("  Plc Ams Port:        %d\n",paramInfo->amsPort);
+  printf("  Plc SymAdrIsAdrCmd:  %d\n",paramInfo->isAdrCommand);
+  printf("  Plc AbsAdrValid:     %d\n",paramInfo->plcAbsAdrValid);
+  printf("  Plc GroupNum:        16#%x\n",paramInfo->plcGroup);
+  printf("  Plc OffsetInGroup:   16#%x\n",paramInfo->plcOffsetInGroup);
+  printf("  Plc DataTypeSize:    %u\n",paramInfo->plcSize);
+  printf("  Plc DataType:        %u\n",paramInfo->plcDataType);
+  printf("  Plc hCallbackNotify: %u\n",paramInfo->hCallbackNotify);
   printf("########################################\n");
 }
 
@@ -678,7 +824,7 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
   }
   else{ // Access via symbolic varaiable name
 
-    AdsSymbolEntry infoStruct;
+    adsSymbolEntry infoStruct;
     //get information about symbol (only to get size)
     asynStatus statusInfo=adsGetSymInfoByName(paramInfo->amsPort,paramInfo->plcSymAdr,&infoStruct);
 
@@ -708,7 +854,7 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
                                                      paramInfo->plcSymAdr,
                                                      nullptr);
     if (handleStatus) {
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %ld\n", driverName, functionName,paramInfo->plcSymAdr,handleStatus);
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcSymAdr,adsErrorToString(handleStatus),handleStatus);
       return asynError;
     }
 
@@ -738,7 +884,7 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
   }
 
   if (addStatus){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %ld\n", driverName, functionName,addStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
     return asynError;
   }
 
@@ -763,7 +909,7 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
 
   const long delStatus = AdsSyncDelDeviceNotificationReqEx(adsPort_, &amsServer,paramInfo->hCallbackNotify);
   if (delStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %ld\n", driverName, functionName,delStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
     return asynError;
   }
 
@@ -778,7 +924,7 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsport,char *variableName,AdsSymbolEntry *infoStruct)
+asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsport,char *variableName,adsSymbolEntry *infoStruct)
 {
   const char* functionName = "getSymInfoByName";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
@@ -797,14 +943,14 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsport,char *variabl
                                              &amsServer,
                                              ADSIGRP_SYM_INFOBYNAMEEX,
                                              0,
-                                             sizeof(AdsSymbolEntry),
+                                             sizeof(adsSymbolEntry),
                                              infoStruct,
                                              strlen(variableName),
                                              variableName,
                                              &bytesRead);
 
   if (infoStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s: %ld\n", driverName, functionName,variableName,infoStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,variableName,adsErrorToString(infoStatus),infoStatus);
     return asynError;
   }
 
@@ -846,7 +992,7 @@ asynStatus adsAsynPortDriver::adsConnect()
   // add local route to your ADS Master
    const long addRouteStatus =AdsAddRoute(remoteNetId_, ipaddr_);
   if (addRouteStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Adding ADS route failed with code: %ld.\n", driverName, functionName,addRouteStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Adding ADS route failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(addRouteStatus),addRouteStatus);
     return asynError;
   }
 
@@ -867,7 +1013,7 @@ asynStatus adsAsynPortDriver::adsDisconnect()
 
   const long closeStatus = AdsPortCloseEx(adsPort_);
   if (closeStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Close ADS port failed with error code: %ld\n", driverName, functionName,closeStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Close ADS port failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(closeStatus),closeStatus);
     return asynError;
   }
 
@@ -896,11 +1042,52 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo)
 
   const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
   if (releaseStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %ld\n", driverName, functionName,paramInfo->hSymbolicHandle,releaseStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %s (%ld)\n", driverName, functionName,paramInfo->hSymbolicHandle,adsErrorToString(releaseStatus),releaseStatus);
     return asynError;
   }
   return asynSuccess;
 }
+
+asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binaryBuffer, uint32_t bytesToWrite)
+{
+  const char* functionName = "adsWrite";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  AmsAddr amsServer;
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,paramInfo->amsPort};
+  }
+
+//Group
+// ADSIGRP_SYM_VALBYNAME
+// ADSIGRP_SYM_VALBYHND
+  struct timeval start, end;
+  long secs_used,micros_used;
+  gettimeofday(&start, NULL);
+
+  long writeStatus= AdsSyncWriteReqEx(adsPort_,
+                                      &amsServer,
+                                      ADSIGRP_SYM_VALBYHND,
+                                      paramInfo->hSymbolicHandle,
+                                      bytesToWrite,
+                                      &binaryBuffer);
+
+  if (writeStatus) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(writeStatus),writeStatus);
+    return asynError;
+  }
+
+  gettimeofday(&end, NULL);
+  secs_used=(end.tv_sec - start.tv_sec); //avoid overflow by subtracting first
+  micros_used= ((secs_used*1000000) + end.tv_usec) - (start.tv_usec);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: ADS write: micros used: %ld\n", driverName, functionName,micros_used);
+
+  return asynSuccess;
+}
+
 
 
 /* Configuration routine.  Called directly, or from the iocsh function below */

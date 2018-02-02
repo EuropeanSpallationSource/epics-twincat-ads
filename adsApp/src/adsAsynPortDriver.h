@@ -52,7 +52,7 @@ typedef struct {
   char* variableName;
   char* symDataType;
   char* symComment;
-} AdsSymbolEntry;
+} adsSymbolEntry;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
@@ -124,11 +124,13 @@ private:
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsGetSymInfoByName(uint16_t amsport,
                                  char *variableName,
-                                 AdsSymbolEntry *infoStruct);
+                                 adsSymbolEntry *infoStruct);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
   asynStatus adsConnect();
   asynStatus adsDisconnect();
-
+  asynStatus adsWrite(adsParamInfo *paramInfo,
+                      const void *binaryBuffer,
+                      uint32_t bytesToWrite);
   epicsEventId eventId_;
   const char *portName_;
   const char *ipaddr_;
