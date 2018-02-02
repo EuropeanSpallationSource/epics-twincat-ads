@@ -111,6 +111,7 @@ public:
 protected:
 
 private:
+  //Asyn and EPICS stuff
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,
                                       adsParamInfo *paramInfo);
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,

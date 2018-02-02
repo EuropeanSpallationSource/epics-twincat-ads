@@ -667,13 +667,13 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
     attrib.dwChangeFilter=1000000; //100ms
 
     addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
-                                                             &amsServer,
-                                                             paramInfo->plcGroup,
-                                                             paramInfo->plcOffsetInGroup,
-                                                             &attrib,
-                                                             &adsNotifyCallback,
-                                                             (uint32_t)paramInfo->paramIndex,
-                                                             &hNotify);
+                                                  &amsServer,
+                                                  paramInfo->plcGroup,
+                                                  paramInfo->plcOffsetInGroup,
+                                                  &attrib,
+                                                  &adsNotifyCallback,
+                                                  (uint32_t)paramInfo->paramIndex,
+                                                  &hNotify);
 
   }
   else{ // Access via symbolic varaiable name
@@ -728,13 +728,13 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
     /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
     attrib.dwChangeFilter=1000000; //100ms
     addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
-                                                             &amsServer,
-                                                             ADSIGRP_SYM_VALBYHND,
-                                                             paramInfo->hSymbolicHandle,
-                                                             &attrib,
-                                                             &adsNotifyCallback,
-                                                             (uint32_t)paramInfo->paramIndex,
-                                                             &hNotify);
+                                                  &amsServer,
+                                                  ADSIGRP_SYM_VALBYHND,
+                                                  paramInfo->hSymbolicHandle,
+                                                  &attrib,
+                                                  &adsNotifyCallback,
+                                                  (uint32_t)paramInfo->paramIndex,
+                                                  &hNotify);
   }
 
   if (addStatus){
