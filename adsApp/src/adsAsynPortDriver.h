@@ -28,13 +28,14 @@ typedef struct adsParamInfo{
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
   bool          isAdrCommand;
   char          *plcSymAdr;
-  unsigned      plcGroup;
-  unsigned      plcOffsetInGroup;
-  unsigned      plcSize;
-  unsigned      plcDataType;
+  uint32_t      plcGroup;
+  uint32_t      plcOffsetInGroup;
+  uint32_t      plcSize;
+  uint32_t      plcDataType;
   //callback information
   uint32_t      hCallbackNotify;
   uint32_t      hSymbolicHandle;
+  bool          hSymbolicHandleValid;
 }adsParamInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
@@ -122,15 +123,13 @@ private:
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
-  asynStatus adsGetSymInfoByName(uint16_t amsport,
-                                 char *variableName,
-                                 adsSymbolEntry *infoStruct);
+  asynStatus adsGetSymInfoByName(adsParamInfo *paramInfo);
+  asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
   asynStatus adsConnect();
   asynStatus adsDisconnect();
   asynStatus adsWrite(adsParamInfo *paramInfo,
-                      const void *binaryBuffer,
-                      uint32_t bytesToWrite);
+                      const void *binaryBuffer);
   epicsEventId eventId_;
   const char *portName_;
   const char *ipaddr_;

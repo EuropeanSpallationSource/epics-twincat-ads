@@ -599,6 +599,8 @@ void adsAsynPortDriver::printParamInfo(adsParamInfo *paramInfo)
   printf("  Plc DataTypeSize:    %u\n",paramInfo->plcSize);
   printf("  Plc DataType:        %u\n",paramInfo->plcDataType);
   printf("  Plc hCallbackNotify: %u\n",paramInfo->hCallbackNotify);
+  printf("  Plc hSymbHndle:      %u\n",paramInfo->hSymbolicHandle);
+  printf("  Plc hSymbHndleValid: %u\n",paramInfo->hSymbolicHandleValid);
   printf("########################################\n");
 }
 
@@ -774,12 +776,10 @@ asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser, epicsFloat64
   return status;
 }
 
-asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo)
+asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo)
 {
-  const char* functionName = "addNotificationCallbackAbsAdr";
+  const char* functionName = "adsGetSymHandleByName";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  uint32_t hNotify=0;
 
   AmsAddr amsServer;
   if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
@@ -789,99 +789,103 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
     amsServer={remoteNetId_,paramInfo->amsPort};
   }
 
-  long addStatus=0;
+  //NOTE: MUST CHECK THAT handleByName folllows if adr is moved in PLC (after compile) otherwise a '
+  // rtriggering of all notificatios are needed...
 
-  // Absolute access via group offset
-  if(paramInfo->isAdrCommand){
+  uint32_t symbolHandle=0;
 
+  const long handleStatus = AdsSyncReadWriteReqEx2(adsPort_,
+                                                   &amsServer,
+                                                   ADSIGRP_SYM_HNDBYNAME,
+                                                   0,
+                                                   sizeof(paramInfo->hSymbolicHandle),
+                                                   &symbolHandle,
+                                                   strlen(paramInfo->plcSymAdr),
+                                                   paramInfo->plcSymAdr,
+                                                   nullptr);
+  if (handleStatus) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcSymAdr,adsErrorToString(handleStatus),handleStatus);
+    return asynError;
+  }
+
+  //Add handle succeded
+  paramInfo->hSymbolicHandle=symbolHandle;
+  paramInfo->hSymbolicHandleValid=true;
+
+  return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo)
+{
+  const char* functionName = "addNotificationCallbackAbsAdr";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  uint32_t group=0;
+  uint32_t offset=0;
+
+  AmsAddr amsServer;
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,paramInfo->amsPort};
+  }
+
+  if(paramInfo->isAdrCommand){// Abs access (ADR command)
     if(!paramInfo->plcAbsAdrValid){
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Absolute address in paramInfo not valid.\n", driverName, functionName);
       return asynError;
     }
 
-    AdsNotificationAttrib attrib;
-    /** Length of the data that is to be passed to the callback function. */
-    attrib.cbLength=paramInfo->plcSize;
-    /**
-    * ADSTRANS_SERVERCYCLE: The notification's callback function is invoked cyclically.
-    * ADSTRANS_SERVERONCHA: The notification's callback function is only invoked when the value changes.
-    */
-    attrib.nTransMode=ADSTRANS_SERVERONCHA;
-    /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
-    attrib.nMaxDelay=10000000; // 1s
-    /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
-    attrib.dwChangeFilter=1000000; //100ms
-
-    addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
-                                                  &amsServer,
-                                                  paramInfo->plcGroup,
-                                                  paramInfo->plcOffsetInGroup,
-                                                  &attrib,
-                                                  &adsNotifyCallback,
-                                                  (uint32_t)paramInfo->paramIndex,
-                                                  &hNotify);
-
+    group=paramInfo->plcGroup;
+    offset=paramInfo->plcOffsetInGroup;
   }
-  else{ // Access via symbolic varaiable name
+  else{ // Symbolic access
 
-    adsSymbolEntry infoStruct;
-    //get information about symbol (only to get size)
-    asynStatus statusInfo=adsGetSymInfoByName(paramInfo->amsPort,paramInfo->plcSymAdr,&infoStruct);
-
-    if(statusInfo==asynError){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymInfoByName failed.\n", driverName, functionName);
-      return asynError;
+    // Read symbolic information if needed (to get paramInfo->plcSize)
+    if(!paramInfo->plcAbsAdrValid){
+      asynStatus statusInfo=adsGetSymInfoByName(paramInfo);
+      if(statusInfo!=asynSuccess){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymInfoByName failed.\n", driverName, functionName);
+        return asynError;
+      }
     }
-    //fill data in structure
-    paramInfo->plcGroup=infoStruct.iGroup;
-    paramInfo->plcOffsetInGroup=infoStruct.iOffset;
-    paramInfo->plcSize=infoStruct.size;
-    paramInfo->plcDataType=infoStruct.dataType;
-    paramInfo->plcAbsAdrValid=true;  //However hopefully this adress should never be used (use symbol intstead since safer if memory moves in plc)..
 
-    //NOTE: MUST CHECK THAT handleByName folllows if adr is moved in PLC (after compile) otherwise a '
-    // rtriggering of all notificatios are needed...
+    // Get symbolic handle if needed
+    if(!paramInfo->hSymbolicHandleValid){
+      asynStatus statusHandle=adsGetSymHandleByName(paramInfo);
+      if(statusHandle!=asynSuccess){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymHandleByName failed.\n", driverName, functionName);
+        return asynError;
+      }
+    }
 
-    uint32_t symbolHandle=0;
+    group=ADSIGRP_SYM_VALBYHND;  //Access via symbolic handle stored in paramInfo->hSymbolicHandle
+    offset=paramInfo->hSymbolicHandle;
+  }
 
-    const long handleStatus = AdsSyncReadWriteReqEx2(adsPort_,
+  AdsNotificationAttrib attrib;
+  /** Length of the data that is to be passed to the callback function. */
+  attrib.cbLength=paramInfo->plcSize;
+  /**
+  * ADSTRANS_SERVERCYCLE: The notification's callback function is invoked cyclically.
+  * ADSTRANS_SERVERONCHA: The notification's callback function is only invoked when the value changes.
+  */
+  attrib.nTransMode=ADSTRANS_SERVERONCHA;  //Add option
+  /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
+  attrib.nMaxDelay=10000000; // 1s Add option
+  /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
+  attrib.dwChangeFilter=1000000; //100ms Add option
+
+  uint32_t hNotify=0;
+  long addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
                                                      &amsServer,
-                                                     ADSIGRP_SYM_HNDBYNAME,
-                                                     0,
-                                                     sizeof(paramInfo->hSymbolicHandle),
-                                                     &symbolHandle,
-                                                     strlen(paramInfo->plcSymAdr),
-                                                     paramInfo->plcSymAdr,
-                                                     nullptr);
-    if (handleStatus) {
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcSymAdr,adsErrorToString(handleStatus),handleStatus);
-      return asynError;
-    }
-
-    //Add handle succeded
-    paramInfo->hSymbolicHandle=symbolHandle;
-
-    AdsNotificationAttrib attrib;
-    /** Length of the data that is to be passed to the callback function. */
-    attrib.cbLength=paramInfo->plcSize;
-    /**
-    * ADSTRANS_SERVERCYCLE: The notification's callback function is invoked cyclically.
-    * ADSTRANS_SERVERONCHA: The notification's callback function is only invoked when the value changes.
-    */
-    attrib.nTransMode=ADSTRANS_SERVERONCHA;
-    /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
-    attrib.nMaxDelay=10000000; // 1s
-    /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
-    attrib.dwChangeFilter=1000000; //100ms
-    addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
-                                                  &amsServer,
-                                                  ADSIGRP_SYM_VALBYHND,
-                                                  paramInfo->hSymbolicHandle,
-                                                  &attrib,
-                                                  &adsNotifyCallback,
-                                                  (uint32_t)paramInfo->paramIndex,
-                                                  &hNotify);
-  }
+                                                     group,
+                                                     offset,
+                                                     &attrib,
+                                                     &adsNotifyCallback,
+                                                     (uint32_t)paramInfo->paramIndex,
+                                                     &hNotify);
 
   if (addStatus){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
@@ -924,19 +928,20 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsport,char *variableName,adsSymbolEntry *infoStruct)
+asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
 {
   const char* functionName = "getSymInfoByName";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  adsSymbolEntry infoStruct;
 
   uint32_t bytesRead=0;
   AmsAddr amsServer;
 
-  if(amsport<=0){  //Invalid amsPort try to fallback on default
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
     amsServer={remoteNetId_,amsport_};
   }
   else{
-    amsServer={remoteNetId_,amsport};
+    amsServer={remoteNetId_,paramInfo->amsPort};
   }
 
   const long infoStatus = AdsSyncReadWriteReqEx2(adsPort_,
@@ -944,42 +949,49 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsport,char *variabl
                                              ADSIGRP_SYM_INFOBYNAMEEX,
                                              0,
                                              sizeof(adsSymbolEntry),
-                                             infoStruct,
-                                             strlen(variableName),
-                                             variableName,
+                                             &infoStruct,
+                                             strlen(paramInfo->plcSymAdr),
+                                             paramInfo->plcSymAdr,
                                              &bytesRead);
 
   if (infoStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,variableName,adsErrorToString(infoStatus),infoStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,paramInfo->plcSymAdr,adsErrorToString(infoStatus),infoStatus);
     return asynError;
   }
 
-  infoStruct->variableName = infoStruct->buffer;
+  infoStruct.variableName = infoStruct.buffer;
 
-  if(infoStruct->nameLength>=sizeof(infoStruct->buffer)-1){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,variableName,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+  if(infoStruct.nameLength>=sizeof(infoStruct.buffer)-1){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcSymAdr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
     return asynError;
   }
-  infoStruct->symDataType = infoStruct->buffer+infoStruct->nameLength+1;
+  infoStruct.symDataType = infoStruct.buffer+infoStruct.nameLength+1;
 
-  if(infoStruct->nameLength + infoStruct->typeLength+2>=(uint16_t)(sizeof(infoStruct->buffer)-1)){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,variableName,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+  if(infoStruct.nameLength + infoStruct.typeLength+2>=(uint16_t)(sizeof(infoStruct.buffer)-1)){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcSymAdr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
   }
-  infoStruct->symComment= infoStruct->symDataType+infoStruct->typeLength+1;
+  infoStruct.symComment= infoStruct.symDataType+infoStruct.typeLength+1;
 
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Symbolic information\n");
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"SymEntrylength: %d\n",infoStruct->entryLen);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxGroup: 0x%x\n",infoStruct->iGroup);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxOffset: 0x%x\n",infoStruct->iOffset);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"ByteSize: %d\n",infoStruct->size);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"adsDataType: %d\n",infoStruct->dataType);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Flags: %d\n",infoStruct->flags);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Name length: %d\n",infoStruct->nameLength);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct->typeLength);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct->commentLength);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Variable name: %s\n",infoStruct->variableName);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Data type: %s\n",infoStruct->symDataType);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Comment: %s\n",infoStruct->symComment);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"SymEntrylength: %d\n",infoStruct.entryLen);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxGroup: 0x%x\n",infoStruct.iGroup);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxOffset: 0x%x\n",infoStruct.iOffset);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"ByteSize: %d\n",infoStruct.size);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"adsDataType: %d\n",infoStruct.dataType);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Flags: %d\n",infoStruct.flags);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Name length: %d\n",infoStruct.nameLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct.typeLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct.commentLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Variable name: %s\n",infoStruct.variableName);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Data type: %s\n",infoStruct.symDataType);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Comment: %s\n",infoStruct.symComment);
+
+  //fill data in structure
+  paramInfo->plcGroup=infoStruct.iGroup; //However hopefully this adress should never be used (use symbol intstead since safer if memory moves in plc)..
+  paramInfo->plcOffsetInGroup=infoStruct.iOffset; // -"- -"-
+  paramInfo->plcSize=infoStruct.size;  //Needed also for symbolic access
+  paramInfo->plcDataType=infoStruct.dataType;
+  paramInfo->plcAbsAdrValid=true;
 
   return asynSuccess;
 }
@@ -1032,6 +1044,8 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo)
   const char* functionName = "adsReleaseHandle";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
+  paramInfo->hSymbolicHandleValid=false;
+
   AmsAddr amsServer;
   if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
     amsServer={remoteNetId_,amsport_};
@@ -1048,10 +1062,18 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo)
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binaryBuffer, uint32_t bytesToWrite)
+asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binaryBuffer)
 {
   const char* functionName = "adsWrite";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  // Calculate consumed time by this method
+  struct timeval start, end;
+  long secs_used,micros_used;
+  gettimeofday(&start, NULL);
+
+  uint32_t group=0;
+  uint32_t offset=0;
 
   AmsAddr amsServer;
   if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
@@ -1061,18 +1083,44 @@ asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binar
     amsServer={remoteNetId_,paramInfo->amsPort};
   }
 
-//Group
-// ADSIGRP_SYM_VALBYNAME
-// ADSIGRP_SYM_VALBYHND
-  struct timeval start, end;
-  long secs_used,micros_used;
-  gettimeofday(&start, NULL);
+  if(paramInfo->isAdrCommand){// Abs access (ADR command)
+    if(!paramInfo->plcAbsAdrValid){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Absolute address in paramInfo not valid.\n", driverName, functionName);
+      return asynError;
+    }
+
+    group=paramInfo->plcGroup;
+    offset=paramInfo->plcOffsetInGroup;
+  }
+  else{ // Symbolic access
+
+    // Read symbolic information if needed (to get paramInfo->plcSize)
+    if(!paramInfo->plcAbsAdrValid){
+      asynStatus statusInfo=adsGetSymInfoByName(paramInfo);
+      if(statusInfo==asynError){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymInfoByName failed.\n", driverName, functionName);
+        return asynError;
+      }
+    }
+
+    // Get symbolic handle if needed
+    if(!paramInfo->hSymbolicHandleValid){
+      asynStatus statusHandle=adsGetSymHandleByName(paramInfo);
+      if(statusHandle!=asynSuccess){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymHandleByName failed.\n", driverName, functionName);
+        return asynError;
+      }
+    }
+
+    group=ADSIGRP_SYM_VALBYHND;  //Access via symbolic handle stored in paramInfo->hSymbolicHandle
+    offset=paramInfo->hSymbolicHandle;
+  }
 
   long writeStatus= AdsSyncWriteReqEx(adsPort_,
                                       &amsServer,
-                                      ADSIGRP_SYM_VALBYHND,
-                                      paramInfo->hSymbolicHandle,
-                                      bytesToWrite,
+                                      group,
+                                      offset,
+                                      paramInfo->plcSize,
                                       &binaryBuffer);
 
   if (writeStatus) {
