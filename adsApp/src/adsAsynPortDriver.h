@@ -23,10 +23,10 @@ typedef struct adsParamInfo{
   asynParamType asynType;
   bool          isInput;
   bool          isOutput;
-  int           amsPort;
+  uint16_t      amsPort;
   int           paramIndex;  //aslo used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
-  bool          plcSymAdrIsAdrCommand;
+  bool          isAdrCommand;
   char          *plcSymAdr;
   unsigned      plcGroup;
   unsigned      plcOffsetInGroup;
@@ -36,6 +36,23 @@ typedef struct adsParamInfo{
   uint32_t      hCallbackNotify;
   uint32_t      hSymbolicHandle;
 }adsParamInfo;
+
+//For info from symbolic name Actually this data type should be in the adslib (but missing)..
+typedef struct {
+  uint32_t entryLen;
+  uint32_t iGroup;
+  uint32_t iOffset;
+  uint32_t size;
+  uint32_t dataType;
+  uint32_t flags;
+  uint16_t nameLength; //why??
+  uint16_t typeLength; //why??
+  uint16_t commentLength; //why??
+  char  buffer[768]; //256*3, 256 is string size in TwinCAT then 768 is max
+  char* variableName;
+  char* symDataType;
+  char* symComment;
+} AdsSymbolEntry;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
@@ -83,20 +100,13 @@ public:
                                     size_t nElements,
                                     size_t *nIn);
   virtual asynStatus readFloat32Array(asynUser *pasynUser,
-                                     epicsFloat32 *value,
-                                     size_t nElements,
-                                     size_t *nIn);
+                                      epicsFloat32 *value,
+                                      size_t nElements,
+                                      size_t *nIn);
   virtual asynStatus readFloat64Array(asynUser *pasynUser,
                                       epicsFloat64 *value,
                                       size_t nElements,
                                       size_t *nIn);
-  asynStatus setCfgData(const char *portName,
-                        const char *ipaddr,
-                        const char *amsaddr,
-                        unsigned int amsport,
-                        unsigned int priority,
-                        int noAutoConnect,
-                        int noProcessEos);
   asynUser *getTraceAsynUser();
 protected:
 
@@ -108,26 +118,31 @@ private:
   asynParamType dtypStringToAsynType(char *dtype);
   int getAmsPortFromDrvInfo(const char* drvInfo);
   void printParamInfo(adsParamInfo *paramInfo);
-  void dbDumpRecords();
+  // ADS methods
+  asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
+  asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
+  asynStatus adsGetSymInfoByName(uint16_t amsport,
+                                 char *variableName,
+                                 AdsSymbolEntry *infoStruct);
+  asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
+  asynStatus adsConnect();
+  asynStatus adsDisconnect();
 
-  asynStatus addNotificationCallback(long port,
-                                     const AmsAddr& server,
-                                     adsParamInfo *paramInfo);
-  asynStatus delNotificationCallback(long port,
-                                     const AmsAddr& server,
-                                     adsParamInfo *paramInfo);
-  asynStatus connectIt( asynUser *pasynUser);
   epicsEventId eventId_;
   const char *portName_;
   const char *ipaddr_;
   const char *amsaddr_;
-  unsigned int amsport_;
+  uint16_t amsport_;
   unsigned int priority_;
-  int noAutoConnect_;
+  int autoConnect_;
   int noProcessEos_;
   adsParamInfo **pAdsParamArray_;
   int pAdsParamArrayCount_;
   int paramTableSize_;
+
+  //ADS
+  long adsPort_; //handle
+  AmsNetId remoteNetId_;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */

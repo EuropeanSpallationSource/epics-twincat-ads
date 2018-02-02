@@ -25,18 +25,16 @@
 
 #include "adsCom.h"
 
-
 static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
-    //std::cout << "hUser 0x" << std::hex << hUser <<
-    //    " sample time: " << std::dec << pNotification->nTimeStamp <<
-    //    " sample size: " << std::dec << pNotification->cbSampleSize <<
-    //    " value:";
-    for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
-    //    std::cout << " 0x" << std::dec << (int)data[i];
-    }
-    //std::cout << '\n';
+  const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
+  printf("hUser 0x%x", hUser);
+  printf(" sample time: %ld", pNotification->nTimeStamp);
+  printf(" sample size: %d", pNotification->cbSampleSize);
+  printf(" value: ");
+  for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
+    printf(" 0x%x",(int)data[i]);
+  }
 }
 
 static const char *driverName="adsAsynPortDriver";
@@ -60,17 +58,50 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                    priority, /* Default priority */
                                    0) /* Default stack size*/
 {
+  const char* functionName = "adsAsynPortDriver";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   eventId_ = epicsEventCreate(epicsEventEmpty);
-  setCfgData(portName,ipaddr,amsaddr,amsport,priority,autoConnect,noProcessEos);
   pAdsParamArray_= new adsParamInfo*[paramTableSize];
   memset(pAdsParamArray_,0,sizeof(*pAdsParamArray_));
   pAdsParamArrayCount_=0;
   paramTableSize_=paramTableSize;
+  portName_=portName;
+  ipaddr_=ipaddr;
+  amsaddr_=amsaddr;
+  amsport_=amsport;
+  priority_=priority;
+  autoConnect_=autoConnect;
+  noProcessEos_=noProcessEos;
+
+  //ADS
+  adsPort_=0; //handle
+  remoteNetId_={0,0,0,0,0,0};
+
+  if(amsport_<=0){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid default AMS port: %d\n", driverName, functionName,amsport_);
+  }
+
+  int nvals = sscanf(amsaddr_, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
+                     &remoteNetId_.b[0],
+                     &remoteNetId_.b[1],
+                     &remoteNetId_.b[2],
+                     &remoteNetId_.b[3],
+                     &remoteNetId_.b[4],
+                     &remoteNetId_.b[5]);
+  if (nvals != 6) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid AMS address: %s\n", driverName, functionName,amsaddr_);
+  }
 }
 
 adsAsynPortDriver::~adsAsynPortDriver()
 {
+  const char* functionName = "~adsAsynPortDriver";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   for(int i=0;i<pAdsParamArrayCount_;i++){
+    adsDelNotificationCallback(pAdsParamArray_[i]);
+
     free(pAdsParamArray_[i]->recordName);
     free(pAdsParamArray_[i]->recordType);
     free(pAdsParamArray_[i]->scan);
@@ -86,6 +117,9 @@ adsAsynPortDriver::~adsAsynPortDriver()
 
 void adsAsynPortDriver::report(FILE *fp, int details)
 {
+  const char* functionName = "report";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   if (details >= 1) {
     fprintf(fp, "    Port %s\n",portName);
   }
@@ -103,52 +137,24 @@ asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
 //      pasynManager->exceptionDisconnect(pasynUser);
 //  #endif
 
-  int error=adsDisconnect();
-  if (error){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"adsAsynPortDriver::disconnect: ERROR: Disconnect failed (0x%x).\n",error);
+  asynStatus disconnectStatus=adsDisconnect();
+  if (disconnectStatus){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Disconnect failed..\n", driverName, functionName);
     return asynError;
   }
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::connectIt( asynUser *pasynUser)
-
-{
-  //epicsMutexLockStatus mutexLockStatus;
-  int res;
-  int connectOK;
-
-  //(void)pasynUser;
-  //mutexLockStatus = epicsMutexLock(adsController_p->mutexId);
-  //if (mutexLockStatus != epicsMutexLockOK) {
-  //  return asynError;
-  //}
-
-  lock();
-
-  //if (adsController_p->connected) {
-  //  epicsMutexUnlock(adsController_p->mutexId);
-  //  return asynSuccess;
-  //}
-
-  /* adsConnect() returns 0 if failed */
-  res = adsConnect(ipaddr_,amsaddr_,amsport_);
-
-  connectOK =  res >= 0;
-  //if (connectOK) adsController_p->connected = 1;
-  //epicsMutexUnlock(adsController_p->mutexId);
-
-  unlock();
-
-  return connectOK ? asynSuccess : asynError;
-}
 
 asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 {
   const char* functionName = "connect";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
-  asynStatus status = connectIt(pasynUser);
+  lock();
+  asynStatus status = adsConnect();
+  unlock();
+
   if (status == asynSuccess){
     //pasynManager->exceptionConnect(pasynUser);
     asynPortDriver::connect(pasynUser);
@@ -160,6 +166,7 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvInfo,const char **pptypeName,size_t *psize)
 {
   const char* functionName = "drvUserCreate";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
   //dbAddr  paddr;
@@ -221,6 +228,9 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
 
 asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
 {
+  const char* functionName = "dtypStringToAsynType";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   if(strcmp("asynFloat64",dtype)==0){
     return asynParamFloat64;
   }
@@ -241,6 +251,9 @@ asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
 
 asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsParamInfo *paramInfo)
 {
+  const char* functionName = "getRecordInfoFromDrvInfo";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   paramInfo->amsPort=amsport_;
   DBENTRY *pdbentry;
   pdbentry = dbAllocEntry(pdbbase);
@@ -351,6 +364,9 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
 
 int adsAsynPortDriver::getAmsPortFromDrvInfo(const char* drvInfo)
 {
+  const char* functionName = "getAmsPortFromDrvInfo";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   //check if "ADSPORT" option in drvInfo string
   char plcAdr[MAX_FIELD_CHAR_LENGTH];
   int amsPortLocal=0;
@@ -360,12 +376,12 @@ int adsAsynPortDriver::getAmsPortFromDrvInfo(const char* drvInfo)
   }
   return amsport_;  //No ADSPORT option found => return default port
 }
-/*
-  ADSPORT=501/.ADR.16#5001,16#B,2,2=1;
-*/
 
 asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsParamInfo *paramInfo)
 {
+  const char* functionName = "parsePlcInfofromDrvInfo";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   bool err=false;
   //take part after last "/" if option or complete string.. How to handle .adr.??
   char plcAdrLocal[MAX_FIELD_CHAR_LENGTH];
@@ -383,10 +399,10 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
 
   //Check if .ADR. command
   paramInfo->plcAbsAdrValid=false;
-  paramInfo->plcSymAdrIsAdrCommand=false;
+  paramInfo->isAdrCommand=false;
   const char *adrStr=strstr(drvInfo,ADR_COMMAND_PREFIX);
   if(adrStr){
-    paramInfo->plcSymAdrIsAdrCommand=true;
+    paramInfo->isAdrCommand=true;
     int nvals;
     nvals = sscanf(adrStr, ".ADR.16#%x,16#%x,%u,%u",
              &paramInfo->plcGroup,
@@ -414,6 +430,9 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
 
 void adsAsynPortDriver::printParamInfo(adsParamInfo *paramInfo)
 {
+  const char* functionName = "printParamInfo";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   printf("########################################\n");
   printf("  Record name:        %s\n",paramInfo->recordName);
   printf("  Record type:        %s\n",paramInfo->recordType);
@@ -428,7 +447,7 @@ void adsAsynPortDriver::printParamInfo(adsParamInfo *paramInfo)
   printf("  Param drvInfo:      %s\n",paramInfo->drvInfo);
   printf("  Plc SymAdr:         %s\n",paramInfo->plcSymAdr);
   printf("  Plc Ams Port:       %d\n",paramInfo->amsPort);
-  printf("  Plc SymAdrIsAdrCmd: %d\n",paramInfo->plcSymAdrIsAdrCommand);
+  printf("  Plc SymAdrIsAdrCmd: %d\n",paramInfo->isAdrCommand);
   printf("  Plc AbsAdrValid:    %d\n",paramInfo->plcAbsAdrValid);
   printf("  Plc GroupNum:       16#%x\n",paramInfo->plcGroup);
   printf("  Plc OffsetInGroup:  16#%x\n",paramInfo->plcOffsetInGroup);
@@ -437,42 +456,11 @@ void adsAsynPortDriver::printParamInfo(adsParamInfo *paramInfo)
   printf("########################################\n");
 }
 
-void adsAsynPortDriver::dbDumpRecords()
-{
-  DBENTRY *pdbentry;
-  long status;
-
-  pdbentry = dbAllocEntry(pdbbase);
-  status = dbFirstRecordType(pdbentry);
-  if(status) {printf("No record descriptions\n");return;}
-  while(!status) {
-    printf("record type: %s",dbGetRecordTypeName(pdbentry));
-    status = dbFirstRecord(pdbentry);
-    if(status) printf("  No Records\n");
-      while(!status) {
-       if(dbIsAlias(pdbentry))
-         printf("\n  Alias:%s\n",dbGetRecordName(pdbentry));
-       else {
-         printf("\n  Record:%s\n",dbGetRecordName(pdbentry));
-         status = dbFirstField(pdbentry,TRUE);
-         if(status) printf("    No Fields\n");
-           while(!status) {
-             printf("    %s: %s",dbGetFieldName(pdbentry),
-             dbGetString(pdbentry));
-             status=dbNextField(pdbentry,TRUE);
-           }
-         }
-         status = dbNextRecord(pdbentry);
-      }
-    status = dbNextRecordType(pdbentry);
-  }
-  printf("End of all Records\n");
-  dbFreeEntry(pdbentry);
-}
-
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
   const char* functionName = "readOctet";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   size_t thisRead = 0;
   int reason = 0;
   asynStatus status = asynSuccess;
@@ -521,7 +509,6 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
 
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
 {
-
   const char* functionName = "writeOctet";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: %s\n", driverName, functionName,value);
 
@@ -590,6 +577,9 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
 
 asynUser *adsAsynPortDriver::getTraceAsynUser()
 {
+  const char* functionName = "getTraceAsynUser";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
   return pasynUserSelf;
 }
 
@@ -638,82 +628,111 @@ asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser, epicsFloat64
   return status;
 }
 
-asynStatus adsAsynPortDriver::setCfgData(const char *portName,
-                                         const char *ipaddr,
-                                         const char *amsaddr,
-                                         unsigned int amsport,
-                                         unsigned int priority,
-                                         int noAutoConnect,
-                                         int noProcessEos)
-{
-  portName_=portName;
-  ipaddr_=ipaddr;
-  amsaddr_=amsaddr;
-  amsport_=amsport;
-  priority_=priority;
-  noAutoConnect_=noAutoConnect;
-  noProcessEos_=noProcessEos;
-  return asynSuccess;
-}
-
-asynStatus adsAsynPortDriver::addNotificationCallback(long port, const AmsAddr& server,adsParamInfo *paramInfo)
+asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo)
 {
   const char* functionName = "addNotificationCallbackAbsAdr";
-
-  const AdsNotificationAttrib attrib = {
-      1,
-      ADSTRANS_SERVERCYCLE,
-      0,
-      {4000000}
-  };
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   uint32_t hNotify=0;
 
+  AmsAddr amsServer;
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,paramInfo->amsPort};
+  }
+
+  long addStatus=0;
+
   // Absolute access via group offset
-  if(!paramInfo->plcSymAdrIsAdrCommand){
+  if(paramInfo->isAdrCommand){
 
     if(!paramInfo->plcAbsAdrValid){
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Absolute address in paramInfo not valid.\n", driverName, functionName);
       return asynError;
     }
 
-    const long addStatus = AdsSyncAddDeviceNotificationReqEx(port,
-                                                             &server,
+    AdsNotificationAttrib attrib;
+    /** Length of the data that is to be passed to the callback function. */
+    attrib.cbLength=paramInfo->plcSize;
+    /**
+    * ADSTRANS_SERVERCYCLE: The notification's callback function is invoked cyclically.
+    * ADSTRANS_SERVERONCHA: The notification's callback function is only invoked when the value changes.
+    */
+    attrib.nTransMode=ADSTRANS_SERVERONCHA;
+    /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
+    attrib.nMaxDelay=10000000; // 1s
+    /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
+    attrib.dwChangeFilter=1000000; //100ms
+
+    addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
+                                                             &amsServer,
                                                              paramInfo->plcGroup,
                                                              paramInfo->plcOffsetInGroup,
                                                              &attrib,
                                                              &adsNotifyCallback,
                                                              (uint32_t)paramInfo->paramIndex,
                                                              &hNotify);
-  }
-  else{ // Absolute access symbolic varaiable name
 
-    paramInfo->hSymbolicHandle = getHandleByNameExample(out, port, server, paramInfo->plcSymAdr);
-    
-    uint32_t handle = 0;
-    const long handleStatus = AdsSyncReadWriteReqEx2(port,
-                                                     &server,
+  }
+  else{ // Access via symbolic varaiable name
+
+    AdsSymbolEntry infoStruct;
+    //get information about symbol (only to get size)
+    asynStatus statusInfo=adsGetSymInfoByName(paramInfo->amsPort,paramInfo->plcSymAdr,&infoStruct);
+
+    if(statusInfo==asynError){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymInfoByName failed.\n", driverName, functionName);
+      return asynError;
+    }
+    //fill data in structure
+    paramInfo->plcGroup=infoStruct.iGroup;
+    paramInfo->plcOffsetInGroup=infoStruct.iOffset;
+    paramInfo->plcSize=infoStruct.size;
+    paramInfo->plcDataType=infoStruct.dataType;
+    paramInfo->plcAbsAdrValid=true;  //However hopefully this adress should never be used (use symbol intstead since safer if memory moves in plc)..
+
+    //NOTE: MUST CHECK THAT handleByName folllows if adr is moved in PLC (after compile) otherwise a '
+    // rtriggering of all notificatios are needed...
+
+    uint32_t symbolHandle=0;
+
+    const long handleStatus = AdsSyncReadWriteReqEx2(adsPort_,
+                                                     &amsServer,
                                                      ADSIGRP_SYM_HNDBYNAME,
                                                      0,
-                                                     sizeof(handle),
-                                                     &handle,
-                                                     paramInfo->plcSymAdr.size(),
-                                                     paramInfo->plcSymAdr.c_str(),
+                                                     sizeof(paramInfo->hSymbolicHandle),
+                                                     &symbolHandle,
+                                                     strlen(paramInfo->plcSymAdr),
+                                                     paramInfo->plcSymAdr,
                                                      nullptr);
     if (handleStatus) {
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: 0x%x\n", driverName, functionName,paramInfo->plcSymAdr,handleStatus);
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %ld\n", driverName, functionName,paramInfo->plcSymAdr,handleStatus);
       return asynError;
     }
 
     //Add handle succeded
-    paramInfo->hSymbolicHandle=handle;
+    paramInfo->hSymbolicHandle=symbolHandle;
 
-    const long addStatus = AdsSyncAddDeviceNotificationReqEx(port,
-                                                             &server,
+    AdsNotificationAttrib attrib;
+    /** Length of the data that is to be passed to the callback function. */
+    attrib.cbLength=paramInfo->plcSize;
+    /**
+    * ADSTRANS_SERVERCYCLE: The notification's callback function is invoked cyclically.
+    * ADSTRANS_SERVERONCHA: The notification's callback function is only invoked when the value changes.
+    */
+    attrib.nTransMode=ADSTRANS_SERVERONCHA;
+    /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
+    attrib.nMaxDelay=10000000; // 1s
+    /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
+    attrib.dwChangeFilter=1000000; //100ms
+    addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
+                                                             &amsServer,
                                                              ADSIGRP_SYM_VALBYHND,
                                                              paramInfo->hSymbolicHandle,
                                                              &attrib,
-                                                             &NotifyCallback,
+                                                             &adsNotifyCallback,
                                                              (uint32_t)paramInfo->paramIndex,
                                                              &hNotify);
   }
@@ -729,22 +748,160 @@ asynStatus adsAsynPortDriver::addNotificationCallback(long port, const AmsAddr& 
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::delNotificationCallback(long port, const AmsAddr& server,adsParamInfo *paramInfo)
+asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo)
 {
   const char* functionName = "delNotificationCallback";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
-  const long delStatus = AdsSyncDelDeviceNotificationReqEx(port, &server,paramInfo->hCallbackNotify);
+  AmsAddr amsServer;
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,paramInfo->amsPort};
+  }
+
+  const long delStatus = AdsSyncDelDeviceNotificationReqEx(adsPort_, &amsServer,paramInfo->hCallbackNotify);
   if (delStatus) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %ld\n", driverName, functionName,delStatus);
     return asynError;
   }
 
   //Release symbolic handle if needed
-  if(!paramInfo->plcSymAdrIsAdrCommand){
-    releaseHandleExample(out, port, server, paramInfo->hSymbolicHandle);
+  if(!paramInfo->isAdrCommand){
+    asynStatus releaseStatus=adsReleaseSymbolicHandle(paramInfo);
+    if(releaseStatus!=asynSuccess){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release symbolic handle failed\n", driverName, functionName);
+      return asynError;
+    }
   }
   return asynSuccess;
 }
+
+asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsport,char *variableName,AdsSymbolEntry *infoStruct)
+{
+  const char* functionName = "getSymInfoByName";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  uint32_t bytesRead=0;
+  AmsAddr amsServer;
+
+  if(amsport<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,amsport};
+  }
+
+  const long infoStatus = AdsSyncReadWriteReqEx2(adsPort_,
+                                             &amsServer,
+                                             ADSIGRP_SYM_INFOBYNAMEEX,
+                                             0,
+                                             sizeof(AdsSymbolEntry),
+                                             infoStruct,
+                                             strlen(variableName),
+                                             variableName,
+                                             &bytesRead);
+
+  if (infoStatus) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s: %ld\n", driverName, functionName,variableName,infoStatus);
+    return asynError;
+  }
+
+  infoStruct->variableName = infoStruct->buffer;
+
+  if(infoStruct->nameLength>=sizeof(infoStruct->buffer)-1){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,variableName,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+    return asynError;
+  }
+  infoStruct->symDataType = infoStruct->buffer+infoStruct->nameLength+1;
+
+  if(infoStruct->nameLength + infoStruct->typeLength+2>=(uint16_t)(sizeof(infoStruct->buffer)-1)){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,variableName,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+  }
+  infoStruct->symComment= infoStruct->symDataType+infoStruct->typeLength+1;
+
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Symbolic information\n");
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"SymEntrylength: %d\n",infoStruct->entryLen);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxGroup: 0x%x\n",infoStruct->iGroup);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxOffset: 0x%x\n",infoStruct->iOffset);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"ByteSize: %d\n",infoStruct->size);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"adsDataType: %d\n",infoStruct->dataType);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Flags: %d\n",infoStruct->flags);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Name length: %d\n",infoStruct->nameLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct->typeLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct->commentLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Variable name: %s\n",infoStruct->variableName);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Data type: %s\n",infoStruct->symDataType);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Comment: %s\n",infoStruct->symComment);
+
+  return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::adsConnect()
+{
+  const char* functionName = "adsConnect";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  // add local route to your ADS Master
+   const long addRouteStatus =AdsAddRoute(remoteNetId_, ipaddr_);
+  if (addRouteStatus) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Adding ADS route failed with code: %ld.\n", driverName, functionName,addRouteStatus);
+    return asynError;
+  }
+
+  // open a new ADS port
+  adsPort_ = AdsPortOpenEx();
+  if (!adsPort_) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s:Open ADS port failed.\n", driverName, functionName);
+    return asynError;
+  }
+
+  return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::adsDisconnect()
+{
+  const char* functionName = "adsDisconnect";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  const long closeStatus = AdsPortCloseEx(adsPort_);
+  if (closeStatus) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Close ADS port failed with error code: %ld\n", driverName, functionName,closeStatus);
+    return asynError;
+  }
+
+#ifdef _WIN32
+   // WORKAROUND: On Win7 std::thread::join() called in destructors
+   //             of static objects might wait forever...
+   AdsDelRoute(remoteNetId_);
+#endif
+
+  adsPort_=0;
+  return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo)
+{
+  const char* functionName = "adsReleaseHandle";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  AmsAddr amsServer;
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,paramInfo->amsPort};
+  }
+
+  const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
+  if (releaseStatus) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %ld\n", driverName, functionName,paramInfo->hSymbolicHandle,releaseStatus);
+    return asynError;
+  }
+  return asynSuccess;
+}
+
 
 /* Configuration routine.  Called directly, or from the iocsh function below */
 
@@ -790,8 +947,6 @@ extern "C" {
       }
       pPrintOutAsynUser=traceUser;
       //adsAsynPortObj->connect(traceUser);
-      //printf("ADSPORT IS %d\n",adsAsynPortObj->getAmsPortFromDrvInfo("ADSPORT=123/.ADR.16#5000,16#2,4,8"));
-      //printf("ADSPORT IS %d\n",adsAsynPortObj->getAmsPortFromDrvInfo("ADSPORT=124/Main.M1.dTest"));
     }
 
     return asynSuccess;
