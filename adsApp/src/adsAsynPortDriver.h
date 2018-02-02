@@ -32,6 +32,7 @@ typedef struct adsParamInfo{
   uint32_t      plcOffsetInGroup;
   uint32_t      plcSize;
   uint32_t      plcDataType;
+  bool          plcDataTypeWarn;
   //callback information
   uint32_t      hCallbackNotify;
   uint32_t      hSymbolicHandle;
@@ -119,7 +120,6 @@ private:
                                      adsParamInfo *paramInfo);
   asynParamType dtypStringToAsynType(char *dtype);
   int getAmsPortFromDrvInfo(const char* drvInfo);
-  void printParamInfo(adsParamInfo *paramInfo);
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
@@ -129,7 +129,8 @@ private:
   asynStatus adsConnect();
   asynStatus adsDisconnect();
   asynStatus adsWrite(adsParamInfo *paramInfo,
-                      const void *binaryBuffer);
+                      const void *binaryBuffer,
+                      uint32_t bytesToWrite);
   epicsEventId eventId_;
   const char *portName_;
   const char *ipaddr_;
