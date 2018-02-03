@@ -273,9 +273,9 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   memset(pAdsParamArray_,0,sizeof(*pAdsParamArray_));
   pAdsParamArrayCount_=0;
   paramTableSize_=paramTableSize;
-  portName_=portName;
-  ipaddr_=ipaddr;
-  amsaddr_=amsaddr;
+  //portName_=portName; Already accessible in base class
+  ipaddr_=strdup(ipaddr);
+  amsaddr_=strdup(amsaddr);
   amsport_=amsport;
   priority_=priority;
   autoConnect_=autoConnect;
@@ -306,9 +306,11 @@ adsAsynPortDriver::~adsAsynPortDriver()
   const char* functionName = "~adsAsynPortDriver";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
+  free(ipaddr_);
+  free(amsaddr_);
+
   for(int i=0;i<pAdsParamArrayCount_;i++){
     adsDelNotificationCallback(pAdsParamArray_[i]);
-
     free(pAdsParamArray_[i]->recordName);
     free(pAdsParamArray_[i]->recordType);
     free(pAdsParamArray_[i]->scan);
@@ -327,42 +329,59 @@ void adsAsynPortDriver::report(FILE *fp, int details)
   const char* functionName = "report";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
-  if (details >= 1) {
-    fprintf(fp, "    Port %s\n",portName);
+  if(!fp){
+    fprintf(fp,"%s:%s: ERROR: File NULL.\n", driverName, functionName);
+    return;
   }
 
-  //print all parameters
-  for(int i=0; i<pAdsParamArrayCount_;i++){
-    if(!pAdsParamArray_[i]){
-      fprintf(fp,"%s:%s: ERROR: Parameter array null at index %d\n", driverName, functionName,i);
-      return;
+  if (details >= 1) {
+    fprintf(fp, "General information:\n");
+    fprintf(fp, "  Port:                %s\n",portName);
+    fprintf(fp, "  Ip-address:          %s\n",ipaddr_);
+    fprintf(fp, "  Ams-address:         %s\n",amsaddr_);
+    fprintf(fp, "  Default Ams-port :   %d\n",amsport_);
+    fprintf(fp, "  Auto-connect:        %s\n",autoConnect_ ? "true" : "false");
+    fprintf(fp, "  Priority:            %d\n",priority_); //Used?
+    fprintf(fp, "  ProcessEos:          %s\n",noProcessEos_ ? "false" : "true"); //Inverted
+    fprintf(fp, "  Param. table size:   %d\n",paramTableSize_);
+    fprintf(fp, "  Param. count:        %d\n",pAdsParamArrayCount_);
+    fprintf(fp,"\n");
+  }
+  if(details>=2){
+    //print all parameters
+    fprintf(fp,"Parameter details:\n");
+    for(int i=0; i<pAdsParamArrayCount_;i++){
+      if(!pAdsParamArray_[i]){
+        fprintf(fp,"%s:%s: ERROR: Parameter array null at index %d\n", driverName, functionName,i);
+        return;
+      }
+      adsParamInfo *paramInfo=pAdsParamArray_[i];
+      fprintf(fp,"  Parameter %d:\n",i);
+      fprintf(fp,"    Record name:         %s\n",paramInfo->recordName);
+      fprintf(fp,"    Record type:         %s\n",paramInfo->recordType);
+      fprintf(fp,"    Record dataType:     %s\n",paramInfo->dtyp);
+      fprintf(fp,"    Record asynType:     %d\n",paramInfo->asynType);
+      fprintf(fp,"    Record scan:         %s\n",paramInfo->scan);
+      fprintf(fp,"    Record inp:          %s\n",paramInfo->inp);
+      fprintf(fp,"    Record out:          %s\n",paramInfo->out);
+      fprintf(fp,"    Record isInput:      %s\n",paramInfo->isInput ? "true" : "false");
+      fprintf(fp,"    Record isOutput:     %s\n",paramInfo->isOutput ? "true" : "false");
+      fprintf(fp,"    Param index:         %d\n",paramInfo->paramIndex);
+      fprintf(fp,"    Param drvInfo:       %s\n",paramInfo->drvInfo);
+      fprintf(fp,"    Plc SymAdr:          %s\n",paramInfo->plcSymAdr);
+      fprintf(fp,"    Plc Ams Port:        %d\n",paramInfo->amsPort);
+      fprintf(fp,"    Plc SymAdrIsAdrCmd:  %s\n",paramInfo->isAdrCommand ? "true" : "false");
+      fprintf(fp,"    Plc AbsAdrValid:     %s\n",paramInfo->plcAbsAdrValid ? "true" : "false");
+      fprintf(fp,"    Plc GroupNum:        16#%x\n",paramInfo->plcGroup);
+      fprintf(fp,"    Plc OffsetInGroup:   16#%x\n",paramInfo->plcOffsetInGroup);
+      fprintf(fp,"    Plc DataTypeSize:    %u\n",paramInfo->plcSize);
+      fprintf(fp,"    Plc DataType:        %u\n",paramInfo->plcDataType);
+      fprintf(fp,"    Plc hCallbackNotify: %u\n",paramInfo->hCallbackNotify);
+      fprintf(fp,"    Plc hSymbHndle:      %u\n",paramInfo->hSymbolicHandle);
+      fprintf(fp,"    Plc hSymbHndleValid: %s\n",paramInfo->hSymbolicHandleValid ? "true" : "false");
+      fprintf(fp,"    Plc DataTypeWarn:    %s\n",paramInfo->plcDataTypeWarn ? "true" : "false");
+      fprintf(fp,"\n");
     }
-    adsParamInfo *paramInfo=pAdsParamArray_[i];
-    fprintf(fp,"########################################\n");
-    fprintf(fp,"  Record name:         %s\n",paramInfo->recordName);
-    fprintf(fp,"  Record type:         %s\n",paramInfo->recordType);
-    fprintf(fp,"  Record dataType:     %s\n",paramInfo->dtyp);
-    fprintf(fp,"  Record asynType:     %d\n",paramInfo->asynType);
-    fprintf(fp,"  Record scan:         %s\n",paramInfo->scan);
-    fprintf(fp,"  Record inp:          %s\n",paramInfo->inp);
-    fprintf(fp,"  Record out:          %s\n",paramInfo->out);
-    fprintf(fp,"  Record isInput:      %d\n",paramInfo->isInput);
-    fprintf(fp,"  Record isOutput:     %d\n",paramInfo->isOutput);
-    fprintf(fp,"  Param index:         %d\n",paramInfo->paramIndex);
-    fprintf(fp,"  Param drvInfo:       %s\n",paramInfo->drvInfo);
-    fprintf(fp,"  Plc SymAdr:          %s\n",paramInfo->plcSymAdr);
-    fprintf(fp,"  Plc Ams Port:        %d\n",paramInfo->amsPort);
-    fprintf(fp,"  Plc SymAdrIsAdrCmd:  %d\n",paramInfo->isAdrCommand);
-    fprintf(fp,"  Plc AbsAdrValid:     %d\n",paramInfo->plcAbsAdrValid);
-    fprintf(fp,"  Plc GroupNum:        16#%x\n",paramInfo->plcGroup);
-    fprintf(fp,"  Plc OffsetInGroup:   16#%x\n",paramInfo->plcOffsetInGroup);
-    fprintf(fp,"  Plc DataTypeSize:    %u\n",paramInfo->plcSize);
-    fprintf(fp,"  Plc DataType:        %u\n",paramInfo->plcDataType);
-    fprintf(fp,"  Plc hCallbackNotify: %u\n",paramInfo->hCallbackNotify);
-    fprintf(fp,"  Plc hSymbHndle:      %u\n",paramInfo->hSymbolicHandle);
-    fprintf(fp,"  Plc hSymbHndleValid: %u\n",paramInfo->hSymbolicHandleValid);
-    fprintf(fp,"  Plc DataTypeWarn:    %u\n",paramInfo->plcDataTypeWarn);
-    fprintf(fp,"########################################\n");
   }
 }
 
@@ -439,7 +458,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
           pAdsParamArray_[pAdsParamArrayCount_]=paramInfo;
           pAdsParamArrayCount_++;
           //print all parameters
-          report(stdout,1);
+          report(stdout,2);
           asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER CREATED AT: %d for %s.\n",index,drvInfo);
         }
         else{

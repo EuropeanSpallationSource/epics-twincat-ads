@@ -132,9 +132,8 @@ private:
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
   epicsEventId eventId_;
-  const char *portName_;
-  const char *ipaddr_;
-  const char *amsaddr_;
+  char *ipaddr_;
+  char *amsaddr_;
   uint16_t amsport_;
   unsigned int priority_;
   int autoConnect_;
