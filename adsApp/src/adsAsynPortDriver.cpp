@@ -318,7 +318,7 @@ adsAsynPortDriver::~adsAsynPortDriver()
     free(pAdsParamArray_[i]->inp);
     free(pAdsParamArray_[i]->out);
     free(pAdsParamArray_[i]->drvInfo);
-    free(pAdsParamArray_[i]->plcSymAdr);
+    free(pAdsParamArray_[i]->plcAdrStr);
     delete pAdsParamArray_[i];
   }
   delete pAdsParamArray_;
@@ -357,29 +357,29 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       }
       adsParamInfo *paramInfo=pAdsParamArray_[i];
       fprintf(fp,"  Parameter %d:\n",i);
-      fprintf(fp,"    Record name:         %s\n",paramInfo->recordName);
-      fprintf(fp,"    Record type:         %s\n",paramInfo->recordType);
-      fprintf(fp,"    Record dataType:     %s\n",paramInfo->dtyp);
-      fprintf(fp,"    Record asynType:     %d\n",paramInfo->asynType);
-      fprintf(fp,"    Record scan:         %s\n",paramInfo->scan);
-      fprintf(fp,"    Record inp:          %s\n",paramInfo->inp);
-      fprintf(fp,"    Record out:          %s\n",paramInfo->out);
-      fprintf(fp,"    Record isInput:      %s\n",paramInfo->isInput ? "true" : "false");
-      fprintf(fp,"    Record isOutput:     %s\n",paramInfo->isOutput ? "true" : "false");
-      fprintf(fp,"    Param index:         %d\n",paramInfo->paramIndex);
-      fprintf(fp,"    Param drvInfo:       %s\n",paramInfo->drvInfo);
-      fprintf(fp,"    Plc SymAdr:          %s\n",paramInfo->plcSymAdr);
-      fprintf(fp,"    Plc Ams Port:        %d\n",paramInfo->amsPort);
-      fprintf(fp,"    Plc SymAdrIsAdrCmd:  %s\n",paramInfo->isAdrCommand ? "true" : "false");
-      fprintf(fp,"    Plc AbsAdrValid:     %s\n",paramInfo->plcAbsAdrValid ? "true" : "false");
-      fprintf(fp,"    Plc GroupNum:        16#%x\n",paramInfo->plcGroup);
-      fprintf(fp,"    Plc OffsetInGroup:   16#%x\n",paramInfo->plcOffsetInGroup);
-      fprintf(fp,"    Plc DataTypeSize:    %u\n",paramInfo->plcSize);
-      fprintf(fp,"    Plc DataType:        %u\n",paramInfo->plcDataType);
-      fprintf(fp,"    Plc hCallbackNotify: %u\n",paramInfo->hCallbackNotify);
-      fprintf(fp,"    Plc hSymbHndle:      %u\n",paramInfo->hSymbolicHandle);
-      fprintf(fp,"    Plc hSymbHndleValid: %s\n",paramInfo->hSymbolicHandleValid ? "true" : "false");
-      fprintf(fp,"    Plc DataTypeWarn:    %s\n",paramInfo->plcDataTypeWarn ? "true" : "false");
+      fprintf(fp,"    Param index:             %d\n",paramInfo->paramIndex);
+      fprintf(fp,"    Param drvInfo:           %s\n",paramInfo->drvInfo);
+      fprintf(fp,"    Record name:             %s\n",paramInfo->recordName);
+      fprintf(fp,"    Record type:             %s\n",paramInfo->recordType);
+      fprintf(fp,"    Record scan:             %s\n",paramInfo->scan);
+      fprintf(fp,"    Record inp:              %s\n",paramInfo->inp);
+      fprintf(fp,"    Record out:              %s\n",paramInfo->out);
+      fprintf(fp,"    Record dtyp:             %s\n",paramInfo->dtyp);
+      fprintf(fp,"    Record asyn type:        %d\n",paramInfo->asynType);
+      fprintf(fp,"    Record isInput:          %s\n",paramInfo->isInput ? "true" : "false");
+      fprintf(fp,"    Record isOutput:         %s\n",paramInfo->isOutput ? "true" : "false");
+      fprintf(fp,"    Plc ams port:            %d\n",paramInfo->amsPort);
+      fprintf(fp,"    Plc adr str:             %s\n",paramInfo->plcAdrStr);
+      fprintf(fp,"    Plc adr str is ADR cmd:  %s\n",paramInfo->isAdrCommand ? "true" : "false");
+      fprintf(fp,"    Plc abs adr valid:       %s\n",paramInfo->plcAbsAdrValid ? "true" : "false");
+      fprintf(fp,"    Plc abs adr group:       16#%x\n",paramInfo->plcAbsAdrGroup);
+      fprintf(fp,"    Plc abs adr offset:      16#%x\n",paramInfo->plcAbsAdrOffset);
+      fprintf(fp,"    Plc data type:           %s\n",adsTypeToString(paramInfo->plcDataType));
+      fprintf(fp,"    Plc data type size:      %u\n",paramInfo->plcSize);
+      fprintf(fp,"    Plc data type warning:   %s\n",paramInfo->plcDataTypeWarn ? "true" : "false");
+      fprintf(fp,"    Ads hCallbackNotify:     %u\n",paramInfo->hCallbackNotify);
+      fprintf(fp,"    Ads hSymbHndle:          %u\n",paramInfo->hSymbolicHandle);
+      fprintf(fp,"    Ads hSymbHndleValid:     %s\n",paramInfo->hSymbolicHandleValid ? "true" : "false");
       fprintf(fp,"\n");
     }
   }
@@ -405,7 +405,6 @@ asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
   return asynSuccess;
 }
 
-
 asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 {
   const char* functionName = "connect";
@@ -428,7 +427,6 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   const char* functionName = "drvUserCreate";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
-  asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
   //dbAddr  paddr;
   //dbNameToAddr("ADS_IOC::GetFTest3",&paddr);
 
@@ -480,6 +478,8 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   //dbDumpRecords();
   //return this->drvUserCreateParam(pasynUser, drvInfo, pptypeName, psize,pParamTable_, paramTableSize_);
   //pasynManager->report(stdout,1,"ADS_1");
+
+  asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
 
   return asynSuccess;
 }
@@ -641,19 +641,23 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   bool err=false;
-  //take part after last "/" if option or complete string.. How to handle .adr.??
+  //take part after last "/" if option or complete string..
   char plcAdrLocal[MAX_FIELD_CHAR_LENGTH];
   //See if option (find last '/')
   const char *drvInfoEnd=strrchr(drvInfo,'/');
   if(drvInfoEnd){ // found '/'
     int nvals=sscanf(drvInfoEnd,"/%s",plcAdrLocal);
     if(nvals==1){
-      paramInfo->plcSymAdr=strdup(plcAdrLocal);
+      paramInfo->plcAdrStr=strdup(plcAdrLocal);
     }
     else{
       err=true;
     }
   }
+  else{  //No options
+    paramInfo->plcAdrStr=strdup(drvInfo);  //Symbolic or .ADR.
+  }
+
 
   //Check if .ADR. command
   paramInfo->plcAbsAdrValid=false;
@@ -663,8 +667,8 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     paramInfo->isAdrCommand=true;
     int nvals;
     nvals = sscanf(adrStr, ".ADR.16#%x,16#%x,%u,%u",
-             &paramInfo->plcGroup,
-             &paramInfo->plcOffsetInGroup,
+             &paramInfo->plcAbsAdrGroup,
+             &paramInfo->plcAbsAdrOffset,
              &paramInfo->plcSize,
              &paramInfo->plcDataType);
 
@@ -975,11 +979,11 @@ asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo)
                                                    0,
                                                    sizeof(paramInfo->hSymbolicHandle),
                                                    &symbolHandle,
-                                                   strlen(paramInfo->plcSymAdr),
-                                                   paramInfo->plcSymAdr,
+                                                   strlen(paramInfo->plcAdrStr),
+                                                   paramInfo->plcAdrStr,
                                                    nullptr);
   if (handleStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcSymAdr,adsErrorToString(handleStatus),handleStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(handleStatus),handleStatus);
     return asynError;
   }
 
@@ -1012,8 +1016,8 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
       return asynError;
     }
 
-    group=paramInfo->plcGroup;
-    offset=paramInfo->plcOffsetInGroup;
+    group=paramInfo->plcAbsAdrGroup;
+    offset=paramInfo->plcAbsAdrOffset;
   }
   else{ // Symbolic access
 
@@ -1125,25 +1129,25 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
                                              0,
                                              sizeof(adsSymbolEntry),
                                              &infoStruct,
-                                             strlen(paramInfo->plcSymAdr),
-                                             paramInfo->plcSymAdr,
+                                             strlen(paramInfo->plcAdrStr),
+                                             paramInfo->plcAdrStr,
                                              &bytesRead);
 
   if (infoStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,paramInfo->plcSymAdr,adsErrorToString(infoStatus),infoStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(infoStatus),infoStatus);
     return asynError;
   }
 
   infoStruct.variableName = infoStruct.buffer;
 
   if(infoStruct.nameLength>=sizeof(infoStruct.buffer)-1){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcSymAdr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcAdrStr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
     return asynError;
   }
   infoStruct.symDataType = infoStruct.buffer+infoStruct.nameLength+1;
 
   if(infoStruct.nameLength + infoStruct.typeLength+2>=(uint16_t)(sizeof(infoStruct.buffer)-1)){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcSymAdr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcAdrStr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
   }
   infoStruct.symComment= infoStruct.symDataType+infoStruct.typeLength+1;
 
@@ -1162,8 +1166,8 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Comment: %s\n",infoStruct.symComment);
 
   //fill data in structure
-  paramInfo->plcGroup=infoStruct.iGroup; //However hopefully this adress should never be used (use symbol intstead since safer if memory moves in plc)..
-  paramInfo->plcOffsetInGroup=infoStruct.iOffset; // -"- -"-
+  paramInfo->plcAbsAdrGroup=infoStruct.iGroup; //However hopefully this adress should never be used (use symbol intstead since safer if memory moves in plc)..
+  paramInfo->plcAbsAdrOffset=infoStruct.iOffset; // -"- -"-
   paramInfo->plcSize=infoStruct.size;  //Needed also for symbolic access
   paramInfo->plcDataType=infoStruct.dataType;
   paramInfo->plcAbsAdrValid=true;
@@ -1264,8 +1268,8 @@ asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binar
       return asynError;
     }
 
-    group=paramInfo->plcGroup;
-    offset=paramInfo->plcOffsetInGroup;
+    group=paramInfo->plcAbsAdrGroup;
+    offset=paramInfo->plcAbsAdrOffset;
   }
   else{ // Symbolic access
 

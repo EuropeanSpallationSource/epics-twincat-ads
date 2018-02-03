@@ -27,9 +27,9 @@ typedef struct adsParamInfo{
   int           paramIndex;  //aslo used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
   bool          isAdrCommand;
-  char          *plcSymAdr;
-  uint32_t      plcGroup;
-  uint32_t      plcOffsetInGroup;
+  char          *plcAdrStr;
+  uint32_t      plcAbsAdrGroup;
+  uint32_t      plcAbsAdrOffset;
   uint32_t      plcSize;
   uint32_t      plcDataType;
   bool          plcDataTypeWarn;
