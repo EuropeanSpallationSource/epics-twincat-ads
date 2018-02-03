@@ -427,16 +427,6 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   const char* functionName = "drvUserCreate";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
-  //dbAddr  paddr;
-  //dbNameToAddr("ADS_IOC::GetFTest3",&paddr);
-
-  //asynPrint(pasynUser, ASYN_TRACE_INFO,"####################################\n");
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: drvInfo=%s.\n", driverName, functionName,drvInfo);
-  //const char *data;
-  //size_t writeSize=1024;
-  //asynStatus status=drvUserGetType(pasynUser,&data,&writeSize);
-  //asynPrint(pasynUser, ASYN_TRACE_INFO,"STATUS = %d, data= %s, size=%d\n",status,data,writeSize);
-
   int index=0;
   asynStatus status=findParam(drvInfo,&index);
   if(status==asynSuccess){
@@ -468,16 +458,6 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
       }
     }
   }
-
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->errorMessage=%s.\n",pasynUser->errorMessage);
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->timeout=%lf.\n",pasynUser->timeout);
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->reason=%d.\n",pasynUser->reason);
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->auxStatus=%d.\n",pasynUser->auxStatus);
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->alarmStatus=%d.\n",pasynUser->alarmStatus);
-  //asynPrint(pasynUser, ASYN_TRACE_INFO, "pasynUser->alarmSeverity=%d.\n",pasynUser->alarmSeverity);
-  //dbDumpRecords();
-  //return this->drvUserCreateParam(pasynUser, drvInfo, pptypeName, psize,pParamTable_, paramTableSize_);
-  //pasynManager->report(stdout,1,"ADS_1");
 
   asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
 
@@ -775,22 +755,6 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
   return status;
 }
 
-asynStatus adsAsynPortDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *value)
-{
-  const char* functionName = "readFloat64";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  int function = pasynUser->reason;
-  const char *paramName;
-  getParamName(function, &paramName);
-  *value=101.01999;
-
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "readFloat64: %s, %d\n",paramName,function);
-  asynStatus status = asynSuccess;
-  return status;
-
-}
-
 asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
   const char* functionName = "writeInt32";
@@ -908,51 +872,6 @@ asynUser *adsAsynPortDriver::getTraceAsynUser()
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   return pasynUserSelf;
-}
-
-asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser, epicsInt8 *value,size_t nElements, size_t *nIn)
-{
-  const char* functionName = "readInt8Array";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  asynStatus status = asynSuccess;
-  return status;
-}
-
-asynStatus adsAsynPortDriver::readInt16Array(asynUser *pasynUser, epicsInt16 *value,size_t nElements, size_t *nIn)
-{
-  const char* functionName = "readInt16Array";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  asynStatus status = asynSuccess;
-  return status;
-}
-
-asynStatus adsAsynPortDriver::readInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements, size_t *nIn)
-{
-  const char* functionName = "readInt32Array";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  asynStatus status = asynSuccess;
-  return status;
-}
-
-asynStatus adsAsynPortDriver::readFloat32Array(asynUser *pasynUser, epicsFloat32 *value,size_t nElements, size_t *nIn)
-{
-  const char* functionName = "readFloat32Array";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  asynStatus status = asynSuccess;
-  return status;
-}
-
-asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,size_t nElements, size_t *nIn)
-{
-  const char* functionName = "readFloat64Array";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
-  asynStatus status = asynSuccess;
-  return status;
 }
 
 asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo)

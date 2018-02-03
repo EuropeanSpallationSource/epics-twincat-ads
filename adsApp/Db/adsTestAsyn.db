@@ -50,8 +50,8 @@ record(ai,"$(P)GetFTest12"){
 
 record(ai,"$(P)GetFTest13"){
    field(PINI, "1")
-   field(DTYP, "asynint32")
-   field(INP,  "@asyn($(PORT),0,1).ADR.16#5000,16#2,4,8")
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),0,1).ADR.16#5010,16#2,4,8")
    field(PREC, "3")
    field(SCAN,"2 second")
 }
