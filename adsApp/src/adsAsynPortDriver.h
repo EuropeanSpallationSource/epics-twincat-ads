@@ -24,7 +24,7 @@ typedef struct adsParamInfo{
   bool          isInput;
   bool          isOutput;
   uint16_t      amsPort;
-  int           paramIndex;  //aslo used as hUser for ads callback
+  int           paramIndex;  //also used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
   bool          isAdrCommand;
   char          *plcAdrStr;
@@ -88,10 +88,12 @@ public:
   virtual asynStatus writeFloat64(asynUser *pasynUser,
                                   epicsFloat64 value);
   asynUser *getTraceAsynUser();
+  int getParamTableSize();
+  adsParamInfo *getAdsParamInfo(int index);
 protected:
 
 private:
-  //Asyn and EPICS stuff
+  //Asyn and EPICS methods
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,
                                       adsParamInfo *paramInfo);
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,
@@ -117,7 +119,7 @@ private:
   int autoConnect_;
   int noProcessEos_;
   adsParamInfo **pAdsParamArray_;
-  int pAdsParamArrayCount_;
+  int adsParamArrayCount_;
   int paramTableSize_;
 
   //ADS

@@ -26,15 +26,34 @@
 
 #include "adsCom.h"
 
-static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
+static const char *driverName="adsAsynPortDriver";
+static adsAsynPortDriver *adsAsynPortObj;
+
+static const char *asynTypeToString(long type)
 {
-  const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
-  printf("hUser 0x%x", hUser);
-  printf(" sample time: %ld", pNotification->nTimeStamp);
-  printf(" sample size: %d", pNotification->cbSampleSize);
-  printf(" value: ");
-  for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
-    printf(" 0x%x",(int)data[i]);
+  switch (type) {
+    case asynParamInt32:
+      return "asynParamInt32";
+    case asynParamFloat64:
+      return "asynParamFloat64";
+    case asynParamUInt32Digital:
+      return "asynParamUInt32Digital";
+    case asynParamOctet:
+      return "asynParamOctet";
+    case asynParamInt8Array:
+      return "asynParamInt8Array";
+    case asynParamInt16Array:
+      return "asynParamInt16Array";
+    case asynParamInt32Array:
+      return "asynParamInt32Array";
+    case asynParamFloat32Array:
+      return "asynParamFloat32Array";
+    case asynParamFloat64Array:
+      return "asynParamFloat64Array";
+    case asynParamGenericPointer:
+      return "asynParamGenericPointer";
+    default:
+      return "asynUnknownType";
   }
 }
 
@@ -57,7 +76,6 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   ADST_BIGTYPE  = 65,
   ADST_MAXTYPES
 } ADSDATATYPEID;*/
-
 static const char *adsTypeToString(long type)
 {
   switch (type) {
@@ -97,6 +115,138 @@ static const char *adsTypeToString(long type)
       return "ADST_MAXTYPES";
     default:
       return "ADS_UNKNOWN_DATATYPE";
+  }
+}
+
+static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
+{
+  const char* functionName = "adsNotifyCallback";
+
+  if(!adsAsynPortObj){
+    printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
+    return;
+  }
+
+  asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: hUser: %u\n", driverName, functionName,hUser);
+
+  const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
+
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO,"hUser 0x%x", hUser);
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO," sample time: %ld", pNotification->nTimeStamp);
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO," sample size: %d", pNotification->cbSampleSize);
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO," value: ");
+  for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
+    asynPrint(asynTraceUser, ASYN_TRACE_INFO," 0x%x",(int)data[i]);
+  }
+
+  //Ensure hUser is within range
+  if(hUser>(uint32_t)(adsAsynPortObj->getParamTableSize()-1)){
+    asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: hUser out of range: %u.\n", driverName, functionName,hUser);
+    return;
+  }
+
+  //Get paramInfo
+  adsParamInfo *paramInfo=adsAsynPortObj->getAdsParamInfo(hUser);
+  if(!paramInfo){
+    asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: getAdsParamInfo() for hUser %u failed\n", driverName, functionName,hUser);
+    return;
+  }
+
+  //Ensure hUser is equal to parameter index
+  if(hUser!=(uint32_t)(paramInfo->paramIndex)){
+    asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: hUser not equal to parameter index (%u vs %d).\n", driverName, functionName,hUser,paramInfo->paramIndex);
+    return;
+  }
+
+  //  asynParamInt32
+  //  asynParamFloat64
+  //  asynParamUInt32Digital,
+  //  asynParamOctet,
+  //  asynParamInt8Array,
+  //  asynParamInt16Array,
+  //  asynParamInt32Array,
+  //  asynParamFloat32Array,
+  //  asynParamFloat64Array,
+  //  asynParamGenericPointer
+
+  //Check size to identify arrays
+
+  //Data type management
+  switch(paramInfo->plcDataType){
+
+    case ADST_INT8:
+      int8_t *ADST_INT8Var;
+      ADST_INT8Var=((int8_t*)data);
+
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT8Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT8Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          break;
+      }
+
+      break;
+
+    case ADST_INT16:
+      int16_t *ADST_INT16Var;
+      ADST_INT16Var=((int16_t*)data);
+
+      break;
+    case ADST_INT32:
+      int32_t *ADST_INT32Var;
+      ADST_INT32Var=((int32_t*)data);
+
+      break;
+    case ADST_INT64:
+      int64_t *ADST_INT64Var;
+      ADST_INT64Var=((int64_t*)data);
+
+      break;
+    case ADST_UINT8:
+      uint8_t *ADST_UINT8Var;
+      ADST_UINT8Var=((uint8_t*)data);
+
+      break;
+    case ADST_UINT16:
+      uint16_t *ADST_UINT16Var;
+      ADST_UINT16Var=((uint16_t*)data);
+
+      break;
+    case ADST_UINT32:
+      uint32_t *ADST_UINT32Var;
+      ADST_UINT32Var=((uint32_t*)data);
+
+      break;
+    case ADST_UINT64:
+      uint64_t *ADST_UINT64Var;
+      ADST_UINT64Var=((uint64_t*)data);
+
+      break;
+    case ADST_REAL32:
+      float *ADST_REAL32Var;
+      ADST_REAL32Var=((float*)data);
+
+      break;
+    case ADST_REAL64:
+      double *ADST_REAL64Var;
+      ADST_REAL64Var=((double*)data);
+
+      break;
+    case ADST_BIT:
+      //buffer[0]=value>0;
+      //maxBytesToWrite=1;
+      break;
+    default:
+      asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (epicsInt32 and %s). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType));
+      return;
+      break;
   }
 }
 
@@ -244,8 +394,6 @@ static const char *adsErrorToString(long error)
   }
 }
 
-static const char *driverName="adsAsynPortDriver";
-
 // Constructor for the adsAsynPortDriver class.
 adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      const char *ipaddr,
@@ -271,7 +419,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   eventId_ = epicsEventCreate(epicsEventEmpty);
   pAdsParamArray_= new adsParamInfo*[paramTableSize];
   memset(pAdsParamArray_,0,sizeof(*pAdsParamArray_));
-  pAdsParamArrayCount_=0;
+  adsParamArrayCount_=0;
   paramTableSize_=paramTableSize;
   //portName_=portName; Already accessible in base class
   ipaddr_=strdup(ipaddr);
@@ -287,6 +435,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
 
   if(amsport_<=0){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid default AMS port: %d\n", driverName, functionName,amsport_);
+    return;
   }
 
   int nvals = sscanf(amsaddr_, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
@@ -298,7 +447,35 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                      &remoteNetId_.b[5]);
   if (nvals != 6) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid AMS address: %s\n", driverName, functionName,amsaddr_);
+    return;
   }
+
+  if(paramTableSize_<1){  //If paramTableSize_==1 then only stream device or motor record can use the driver through the "default access" param below.
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Param table size to small: %d\n", driverName, functionName,paramTableSize_);
+    return;
+  }
+
+  //Add first param for other access (like motor record or stream device).
+  int index;
+  asynStatus status=createParam("Default access",asynParamNotDefined,&index);
+  if(status!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: createParam for default access failed.\n", driverName, functionName);
+    return;
+  }
+  adsParamInfo *paramInfo=new adsParamInfo();
+  memset(paramInfo,0,sizeof(adsParamInfo));
+  paramInfo->recordName=strdup("Any record");
+  paramInfo->recordType=strdup("No type");
+  paramInfo->scan=strdup("No scan");
+  paramInfo->dtyp=strdup("No dtyp");
+  paramInfo->inp=strdup("No inp");
+  paramInfo->out=strdup("No out");
+  paramInfo->drvInfo=strdup("No drvinfo");
+  paramInfo->asynType=asynParamNotDefined;
+  paramInfo->paramIndex=index;  //also used as hUser for ads callback
+  paramInfo->plcAdrStr=strdup("No adr str");
+  pAdsParamArray_[0]=paramInfo;
+  adsParamArrayCount_++;
 }
 
 adsAsynPortDriver::~adsAsynPortDriver()
@@ -309,7 +486,7 @@ adsAsynPortDriver::~adsAsynPortDriver()
   free(ipaddr_);
   free(amsaddr_);
 
-  for(int i=0;i<pAdsParamArrayCount_;i++){
+  for(int i=0;i<adsParamArrayCount_;i++){
     adsDelNotificationCallback(pAdsParamArray_[i]);
     free(pAdsParamArray_[i]->recordName);
     free(pAdsParamArray_[i]->recordType);
@@ -344,13 +521,13 @@ void adsAsynPortDriver::report(FILE *fp, int details)
     fprintf(fp, "  Priority:            %d\n",priority_); //Used?
     fprintf(fp, "  ProcessEos:          %s\n",noProcessEos_ ? "false" : "true"); //Inverted
     fprintf(fp, "  Param. table size:   %d\n",paramTableSize_);
-    fprintf(fp, "  Param. count:        %d\n",pAdsParamArrayCount_);
+    fprintf(fp, "  Param. count:        %d\n",adsParamArrayCount_);
     fprintf(fp,"\n");
   }
   if(details>=2){
     //print all parameters
     fprintf(fp,"Parameter details:\n");
-    for(int i=0; i<pAdsParamArrayCount_;i++){
+    for(int i=0; i<adsParamArrayCount_;i++){
       if(!pAdsParamArray_[i]){
         fprintf(fp,"%s:%s: ERROR: Parameter array null at index %d\n", driverName, functionName,i);
         return;
@@ -433,6 +610,11 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER INDEX FOUND AT: %d for %s. \n",index,drvInfo);
   }
   else{
+   //Ensure space left in param table
+   if(adsParamArrayCount_>=paramTableSize_){
+     asynPrint(pasynUser, ASYN_TRACE_ERROR, "Parameter table full. Parameter with drvInfo %s will be discarded",drvInfo);
+     return asynError;
+   }
    // Collect data from drvInfo string and record
     adsParamInfo *paramInfo=new adsParamInfo();
     memset(paramInfo,0,sizeof(adsParamInfo));
@@ -443,8 +625,8 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
         paramInfo->paramIndex=index;
         status=parsePlcInfofromDrvInfo(drvInfo,paramInfo);
         if(status==asynSuccess){
-          pAdsParamArray_[pAdsParamArrayCount_]=paramInfo;
-          pAdsParamArrayCount_++;
+          pAdsParamArray_[adsParamArrayCount_]=paramInfo;
+          adsParamArrayCount_++;
           //print all parameters
           report(stdout,2);
           asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER CREATED AT: %d for %s.\n",index,drvInfo);
@@ -1234,7 +1416,20 @@ asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binar
   return asynSuccess;
 }
 
+int adsAsynPortDriver::getParamTableSize()
+{
+  return paramTableSize_;
+}
 
+adsParamInfo *adsAsynPortDriver::getAdsParamInfo(int index)
+{
+  if(index<adsParamArrayCount_){
+    return pAdsParamArray_[index];
+  }
+  else{
+    return NULL;
+  }
+}
 
 /* Configuration routine.  Called directly, or from the iocsh function below */
 
@@ -1242,7 +1437,6 @@ extern "C" {
 
   asynUser *pPrintOutAsynUser;
 
-  static adsAsynPortDriver *adsAsynPortObj;
   /*
    * Configure and register
    */
