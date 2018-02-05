@@ -1,58 +1,26 @@
 # Test db file for ads communication. 
 # Macros and templates have been avoided in order to focus on showing the functionality.
 
-record(ao,"$(P)SetFTest"){
-   field(PINI, "1")
-   field(DTYP, "asynFloat64")
-   field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest2")
-   field(PREC, "3")
-}
+#record(ao,"$(P)SetFTest"){
+#   field(PINI, "1")
+#   field(DTYP, "asynFloat64")
+#   field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest1")
+#   field(PREC, "3")
+#}
 
 record(ai,"$(P)GetFTest2"){
    field(PINI, "1")
    field(DTYP, "asynFloat64")
-   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest2")
+   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest")
    field(PREC, "3")
    field(SCAN,"1 second")
 }
 
-record(ai,"$(P)GetFTest3"){
-   field(PINI, "1")
-   field(DTYP, "asynFloat64")
-   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest3")
-   field(PREC, "3")
-   field(SCAN,"1 second")
-}
 
-record(ai,"$(P)GetFTest4"){
-   field(PINI, "1")
-   field(DTYP, "asynFloat64")
-   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest2")
-   field(PREC, "3")
-   field(SCAN,"1 second")
-}
-
-record(ai,"$(P)GetFTest11"){
-   field(PINI, "1")
-   field(DTYP, "asynFloat64")
-   field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/.ADR.16#5000,16#2,4,8")
-   field(PREC, "3")
-   field(SCAN,"1 second")
-}
-
-record(ai,"$(P)GetFTest12"){
-   field(PINI, "1")
-   field(DTYP, "asynFloat64")
-   field(INP,  "@asyn($(PORT),0,1).ADR.16#5000,16#2,4,8")
-   field(PREC, "3")
-   field(SCAN,"2 second")
-}
-
-record(ai,"$(P)GetFTest13"){
-   field(PINI, "1")
-   field(DTYP, "asynInt32")
-   field(INP,  "@asyn($(PORT),0,1).ADR.16#5010,16#2,4,8")
-   field(PREC, "3")
-   field(SCAN,"2 second")
-}
-
+#record(ai,"$(P)GetFTest11"){
+#   field(PINI, "1")
+#   field(DTYP, "asynFloat64")
+#   field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/.ADR.16#5000,16#2,4,8")
+#   field(PREC, "3")
+#   field(SCAN,"1 second")
+#}
