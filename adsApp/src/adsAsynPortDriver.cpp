@@ -28,6 +28,7 @@
 
 static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
+//static  AdsNotificationAttrib attrib;
 
 static const char *asynTypeToString(long type)
 {
@@ -128,17 +129,18 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   }
 
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: hUser: %u\n", driverName, functionName,hUser);
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: hUser: %u.\n", driverName, functionName,hUser);
 
   const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
 
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO,"hUser 0x%x", hUser);
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO," sample time: %ld", pNotification->nTimeStamp);
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO," sample size: %d", pNotification->cbSampleSize);
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO," value: ");
+  printf("hUser 0x%x:\n", hUser);
+  printf(" sample time: %ld\n", pNotification->nTimeStamp);
+  printf(" sample size: %d\n", pNotification->cbSampleSize);
+  printf(" value: \n");
   for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
-    asynPrint(asynTraceUser, ASYN_TRACE_INFO," 0x%x",(int)data[i]);
+    printf(" 0x%x",(int)data[i]);
   }
+  printf("\n");
 
   //Ensure hUser is within range
   if(hUser>(uint32_t)(adsAsynPortObj->getParamTableSize()-1)){
@@ -172,6 +174,9 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
 
   //Check size to identify arrays
 
+  asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Temporray return from callback.. No write to parameters will be made.\n", driverName, functionName);
+  return;
+
   //Data type management
   switch(paramInfo->plcDataType){
 
@@ -189,6 +194,7 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
           break;
         default:
           asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
           break;
       }
 
@@ -607,39 +613,55 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   int index=0;
   asynStatus status=findParam(drvInfo,&index);
   if(status==asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER INDEX FOUND AT: %d for %s. \n",index,drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_INFO, "Parameter index found at: %d for %s. \n",index,drvInfo);
+    asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
+    return asynSuccess;
   }
-  else{
-   //Ensure space left in param table
-   if(adsParamArrayCount_>=paramTableSize_){
-     asynPrint(pasynUser, ASYN_TRACE_ERROR, "Parameter table full. Parameter with drvInfo %s will be discarded",drvInfo);
-     return asynError;
-   }
-   // Collect data from drvInfo string and record
-    adsParamInfo *paramInfo=new adsParamInfo();
-    memset(paramInfo,0,sizeof(adsParamInfo));
-    status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
-    if(status==asynSuccess){
-      status=createParam(drvInfo,paramInfo->asynType,&index);
-      if(status==asynSuccess){
-        paramInfo->paramIndex=index;
-        status=parsePlcInfofromDrvInfo(drvInfo,paramInfo);
-        if(status==asynSuccess){
-          pAdsParamArray_[adsParamArrayCount_]=paramInfo;
-          adsParamArrayCount_++;
-          //print all parameters
-          report(stdout,2);
-          asynPrint(pasynUser, ASYN_TRACE_INFO, "PARAMETER CREATED AT: %d for %s.\n",index,drvInfo);
-        }
-        else{
-          asynPrint(pasynUser, ASYN_TRACE_ERROR, "FAILED PARSING OF DRVINFO: %s.\n",drvInfo);
-        }
-      }
-      else{
-        asynPrint(pasynUser, ASYN_TRACE_ERROR, "CREATE PARAMETER FAILED for %s.\n",drvInfo);
-      }
-    }
+
+  //Ensure space left in param table
+  if(adsParamArrayCount_>=paramTableSize_){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "Parameter table full. Parameter with drvInfo %s will be discarded.",drvInfo);
+    return asynError;
   }
+  // Collect data from drvInfo string and record
+  adsParamInfo *paramInfo=new adsParamInfo();
+  memset(paramInfo,0,sizeof(adsParamInfo));
+  status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
+  if(status!=asynSuccess){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "getRecordInfoFromDrvInfo() failed parsing of drvInfo: %s.\n",drvInfo);
+    return asynError;
+  }
+  status=createParam(drvInfo,paramInfo->asynType,&index);
+  if(status!=asynSuccess){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "createParam() failed.");
+    return asynError;
+  }
+  paramInfo->paramIndex=index;
+
+  status=parsePlcInfofromDrvInfo(drvInfo,paramInfo);
+  if(status!=asynSuccess){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "parsePlcInfofromDrvInfo() failed parsing of drvInfo: %s.\n.",drvInfo);
+    return asynError;
+  }
+  pAdsParamArray_[adsParamArrayCount_]=paramInfo;
+  adsParamArrayCount_++;
+
+  //Add callback
+  status=adsAddNotificationCallback(paramInfo);
+  if(status!=asynSuccess){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "adsAddNotificationCallback() failed.\n.");
+    return asynError;
+  }
+
+  //Make first read
+  status =adsRead(paramInfo);
+  if(status!=asynSuccess){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "adsRead() failed.\n.");
+    return asynError;
+  }
+
+  //print all parameters
+  report(stdout,2);
 
   asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
 
@@ -1155,7 +1177,15 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
   /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
   attrib.nMaxDelay=10000000; // 1s Add option
   /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
+  //attrib.dwChangeFilter=1000000; //100ms Add option
   attrib.dwChangeFilter=1000000; //100ms Add option
+
+//  const AdsNotificationAttrib attrib = {
+//      paramInfo->plcSize,
+//      ADSTRANS_SERVERCYCLE,
+//      0,
+//      {4000000}
+//  };
 
   uint32_t hNotify=0;
   long addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
@@ -1416,6 +1446,171 @@ asynStatus adsAsynPortDriver::adsWrite(adsParamInfo *paramInfo,const void *binar
   return asynSuccess;
 }
 
+asynStatus adsAsynPortDriver::adsRead(adsParamInfo *paramInfo)
+{
+
+  const char* functionName = "adsRead";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  uint32_t group=0;
+  uint32_t offset=0;
+
+  AmsAddr amsServer;
+  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
+    amsServer={remoteNetId_,amsport_};
+  }
+  else{
+    amsServer={remoteNetId_,paramInfo->amsPort};
+  }
+
+  if(paramInfo->isAdrCommand){// Abs access (ADR command)
+    if(!paramInfo->plcAbsAdrValid){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Absolute address in paramInfo not valid.\n", driverName, functionName);
+      return asynError;
+    }
+
+    group=paramInfo->plcAbsAdrGroup;
+    offset=paramInfo->plcAbsAdrOffset;
+  }
+  else{ // Symbolic access
+
+    // Read symbolic information if needed (to get paramInfo->plcSize)
+    if(!paramInfo->plcAbsAdrValid){
+      asynStatus statusInfo=adsGetSymInfoByName(paramInfo);
+      if(statusInfo==asynError){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymInfoByName failed.\n", driverName, functionName);
+        return asynError;
+      }
+    }
+
+    // Get symbolic handle if needed
+    if(!paramInfo->hSymbolicHandleValid){
+      asynStatus statusHandle=adsGetSymHandleByName(paramInfo);
+      if(statusHandle!=asynSuccess){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymHandleByName failed.\n", driverName, functionName);
+        return asynError;
+      }
+    }
+
+    group=ADSIGRP_SYM_VALBYHND;  //Access via symbolic handle stored in paramInfo->hSymbolicHandle
+    offset=paramInfo->hSymbolicHandle;
+  }
+
+  char *data=new char[paramInfo->plcSize];
+  uint32_t bytesRead=0;
+  int statusRead = AdsSyncReadReqEx2(adsPort_,
+                                     &amsServer,
+                                     group,
+                                     offset,
+                                     paramInfo->plcSize,
+                                     (void *)data,
+                                     &bytesRead);
+
+  if(bytesRead!=paramInfo->plcSize){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Read bytes differ from parameter plc size (%u vs %u).\n", driverName, functionName,bytesRead,paramInfo->plcSize);
+    return asynError;
+  }
+
+  uint32_t hUser=paramInfo->paramIndex;
+
+  //Update parameter
+ switch(paramInfo->plcDataType){
+
+    case ADST_INT8:
+      int8_t *ADST_INT8Var;
+      ADST_INT8Var=((int8_t*)data);
+
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT8Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT8Var));
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+
+      break;
+
+    case ADST_INT16:
+      int16_t *ADST_INT16Var;
+      ADST_INT16Var=((int16_t*)data);
+
+      break;
+    case ADST_INT32:
+      int32_t *ADST_INT32Var;
+      ADST_INT32Var=((int32_t*)data);
+
+      break;
+    case ADST_INT64:
+      int64_t *ADST_INT64Var;
+      ADST_INT64Var=((int64_t*)data);
+
+      break;
+    case ADST_UINT8:
+      uint8_t *ADST_UINT8Var;
+      ADST_UINT8Var=((uint8_t*)data);
+
+      break;
+    case ADST_UINT16:
+      uint16_t *ADST_UINT16Var;
+      ADST_UINT16Var=((uint16_t*)data);
+
+      break;
+    case ADST_UINT32:
+      uint32_t *ADST_UINT32Var;
+      ADST_UINT32Var=((uint32_t*)data);
+
+      break;
+    case ADST_UINT64:
+      uint64_t *ADST_UINT64Var;
+      ADST_UINT64Var=((uint64_t*)data);
+
+      break;
+    case ADST_REAL32:
+      float *ADST_REAL32Var;
+      ADST_REAL32Var=((float*)data);
+
+      break;
+    case ADST_REAL64:
+      double *ADST_REAL64Var;
+      ADST_REAL64Var=((double*)data);
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_REAL64Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_REAL64Var));
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_BIT:
+      //buffer[0]=value>0;
+      //maxBytesToWrite=1;
+      break;
+    default:
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (epicsInt32 and %s). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType));
+      return asynError;
+      break;
+  }
+
+
+  if(statusRead){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsGetSymHandleByName failed.\n", driverName, functionName);
+    return asynError;
+  }
+
+  return asynSuccess;
+}
+
 int adsAsynPortDriver::getParamTableSize()
 {
   return paramTableSize_;
@@ -1473,7 +1668,7 @@ extern "C" {
         return (asynError);
       }
       pPrintOutAsynUser=traceUser;
-      //adsAsynPortObj->connect(traceUser);
+      adsAsynPortObj->connect(traceUser);
     }
 
     return asynSuccess;

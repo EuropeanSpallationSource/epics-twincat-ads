@@ -111,6 +111,9 @@ private:
   asynStatus adsWrite(adsParamInfo *paramInfo,
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
+
+  asynStatus adsRead(adsParamInfo *paramInfo);
+
   epicsEventId eventId_;
   char *ipaddr_;
   char *amsaddr_;
