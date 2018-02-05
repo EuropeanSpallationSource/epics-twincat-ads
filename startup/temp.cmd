@@ -1,4 +1,4 @@
-require ads,vagrant
+require ads,anderssandstrom
 
 
 ##############################################################################
@@ -14,12 +14,13 @@ require ads,vagrant
 ############# Configure device (<ASYN PORT>, <IP_of_PLC>,<AMS_of_PLC>,<Default_ADS_Port>,<Not_used>,<Not_used>,<Not_used>):
 ## Configure devices
 #drvAsynAdsPortConfigure("ADS_1","192.168.88.60","5.40.216.206.1.1",851,0, 0,0)
-adsAsynPortDriverConfigure("ADS_1","192.168.88.60","5.40.216.206.1.1",851,1000, 0, 0,0)
+# MCU10adsAsynPortDriverConfigure("ADS_1","192.168.88.60","5.40.216.206.1.1",851,1000, 0, 0,0)
+adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0)
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
 
-asynSetTraceMask("ADS_1", -1, 0x44)
+asynSetTraceMask("ADS_1", -1, 0xFF)
 asynSetTraceIOMask("ADS_1", -1, 0x44)
 asynSetTraceInfoMask("ADS_1", -1, 15)
 
