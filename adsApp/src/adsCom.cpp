@@ -1,16 +1,15 @@
 
 #include "adsCom.h"
 #include "AdsLib.h"
-
 #include <iostream>
 #include <sys/time.h>
 #include <string.h>
 #include <inttypes.h>
 
-static long adsPort=0; //handle
-static uint16_t defaultAmsPort=0; //Port number for module (851 for PLC 1)
-static AmsNetId remoteNetId={0,0,0,0,0,0};
-//static AmsAddr amsServer={remoteNetId,0};
+static AmsNetId remoteNetIdAdsCom={0,0,0,0,0,0};
+static long adsPortAdsCom=0;
+static uint16_t defaultAmsPortAdsCom=0;
+
 
 static int returnVarName=0;
 
@@ -169,7 +168,7 @@ extern "C" {
 }
 
 
-static void NotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
+/*static void NotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
     const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
     std::cout << "hUser 0x" << std::hex << hUser <<
@@ -180,9 +179,9 @@ static void NotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pN
         std::cout << " 0x" << std::dec << (int)data[i];
     }
     std::cout << '\n';
-}
+}*/
 
-uint32_t getHandleByNameExample(std::ostream& out, long port, const AmsAddr& server,
+/*uint32_t getHandleByNameExample(std::ostream& out, long port, const AmsAddr& server,
                                 const std::string handleName)
 {
     uint32_t handle = 0;
@@ -373,21 +372,21 @@ void runExample()
     //             of static objects might wait forever...
     AdsDelRoute(remoteNetId);
 #endif
-}
+}*/
 
-void reset()
+/*void reset()
 {
   adsPort=0;
-  defaultAmsPort=0;
+  defaultAmsPortAdsCom=0;
   remoteNetId={0,0,0,0,0,0};
 }
 
 int adsConnect(const char *ipaddr,const char *amsaddr, int amsport)
 {
-  defaultAmsPort=amsport;
+  defaultAmsPortAdsCom=amsport;
 
-  if(defaultAmsPort<=0){
-    std::cout<< "Invalid AMS port:" << defaultAmsPort << " .Did you specify a valid ams port number?\n";
+  if(defaultAmsPortAdsCom<=0){
+    std::cout<< "Invalid AMS port:" << defaultAmsPortAdsCom << " .Did you specify a valid ams port number?\n";
     return ADS_COM_ERROR_INVALID_AMS_PORT;
   }
   int nvals = sscanf(amsaddr, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
@@ -437,7 +436,7 @@ int adsDisconnect()
   reset();
   return 0;
 
-}
+}*/
 
 long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *info)
 {
@@ -445,13 +444,13 @@ long getSymInfoByName(uint16_t amsPort,const char* variableAddr,SYMINFOSTRUCT *i
   AmsAddr amsServer;
   uint32_t bytesRead=0;
   if(amsPort<=0){
-    amsServer={remoteNetId,defaultAmsPort};
+    amsServer={remoteNetIdAdsCom,defaultAmsPortAdsCom};
   }
   else{
-    amsServer={remoteNetId,amsPort};
+    amsServer={remoteNetIdAdsCom,amsPort};
   }
 
-  const long status = AdsSyncReadWriteReqEx2(adsPort,
+  const long status = AdsSyncReadWriteReqEx2(adsPortAdsCom,
                                              &amsServer,
                                              ADSIGRP_SYM_INFOBYNAMEEX,
                                              0,
@@ -880,10 +879,10 @@ long adsReadByName(uint16_t amsPort,const char *variableAddr,adsOutputBufferType
   memset(&info,0,sizeof(info));
   AmsAddr amsServer;
   if(amsPort<=0){
-    amsServer={remoteNetId,defaultAmsPort};
+    amsServer={remoteNetIdAdsCom,defaultAmsPortAdsCom};
   }
   else{
-    amsServer={remoteNetId,amsPort};
+    amsServer={remoteNetIdAdsCom,amsPort};
   }
 
   LOGINFO4("%s(): Variable Name:%s\n", __FUNCTION__,variableAddr);
@@ -932,10 +931,10 @@ int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, adsOutputBufferTy
 
   AmsAddr amsServer;
   if(amsPort<=0){
-    amsServer={remoteNetId,defaultAmsPort};
+    amsServer={remoteNetIdAdsCom,defaultAmsPortAdsCom};
   }
   else{
-    amsServer={remoteNetId,amsPort};
+    amsServer={remoteNetIdAdsCom,amsPort};
   }
 
   int dataSize=info->byteSize;
@@ -949,7 +948,7 @@ int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, adsOutputBufferTy
   long secs_used,micros_used;
   gettimeofday(&start, NULL);
 
-  int error = AdsSyncReadReqEx2(adsPort, &amsServer, info->idxGroup,info->idxOffset,dataSize, &adsReadBuffer, &bytesRead);
+  int error = AdsSyncReadReqEx2(adsPortAdsCom, &amsServer, info->idxGroup,info->idxOffset,dataSize, &adsReadBuffer, &bytesRead);
   if (error) {
     LOGERR("%s(): ADS read failed with: %d\n",__FUNCTION__,error);
     return error;
@@ -969,16 +968,34 @@ int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, adsOutputBufferTy
   return 0;
 }
 
+int setAmsNetId(uint8_t *netId){
+
+  memcpy(netId,&remoteNetIdAdsCom,6);
+  return 0;
+}
+
+int setAdsPort(long  adsPort)
+{
+  adsPortAdsCom=adsPort;
+  return 0;
+}
+
+int setAmsPort(uint16_t  amsPort)
+{
+  defaultAmsPortAdsCom=amsPort;
+  return 0;
+}
+
 int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToWrite,adsOutputBufferType *outBuffer)
 {
   SYMINFOSTRUCT info;
 
   AmsAddr amsServer;
   if(amsPort<=0){
-    amsServer={remoteNetId,defaultAmsPort};
+    amsServer={remoteNetIdAdsCom,defaultAmsPortAdsCom};
   }
   else{
-    amsServer={remoteNetId,amsPort};
+    amsServer={remoteNetIdAdsCom,amsPort};
   }
 
   LOGINFO4("%s(): variable: %s value to write:%s\n",__FUNCTION__,variableAddr,asciiValueToWrite);
@@ -1015,10 +1032,10 @@ int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint1
   LOGINFO4("%s(): group: %x offset: %x datatype: %d dataSize: %d  value: %s\n",__FUNCTION__, group, offset,dataType,dataSize, asciiValueToWrite );
 
   if(amsPort<=0){
-    amsServer={remoteNetId,defaultAmsPort};
+    amsServer={remoteNetIdAdsCom,defaultAmsPortAdsCom};
   }
   else{
-    amsServer={remoteNetId,amsPort};
+    amsServer={remoteNetIdAdsCom,amsPort};
   }
   int error=ascii2binary(asciiValueToWrite,dataType,&binaryBuffer,BUFFER_SIZE,&bytesToWrite);
   if(error){
@@ -1034,7 +1051,7 @@ int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint1
   long secs_used,micros_used;
   gettimeofday(&start, NULL);
 
-  error = AdsSyncWriteReqEx(adsPort, &amsServer, group, offset, bytesToWrite, &binaryBuffer);
+  error = AdsSyncWriteReqEx(adsPortAdsCom, &amsServer, group, offset, bytesToWrite, &binaryBuffer);
 
   if (error) {
     LOGERR("%s(): ADS write failed with: %d\n",__FUNCTION__,error);

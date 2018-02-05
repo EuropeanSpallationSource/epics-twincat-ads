@@ -598,6 +598,15 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                      &remoteNetId_.b[3],
                      &remoteNetId_.b[4],
                      &remoteNetId_.b[5]);
+
+  //Global variables in adsCom.h (for motor record and streamdevice using cmd_eat parser)
+  uint8_t  *netId;
+  netId=(uint8_t*)&remoteNetId_;
+
+  //Set values to old ascii based api (still used for motor record and streamdevice)
+  //setAmsNetId(netId);
+  //setAmsPort(amsport_);
+
   if (nvals != 6) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid AMS address: %s\n", driverName, functionName,amsaddr_);
     return;
@@ -1634,6 +1643,8 @@ asynStatus adsAsynPortDriver::adsConnect()
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s:Open ADS port failed.\n", driverName, functionName);
     return asynError;
   }
+
+  //setAdsPort(adsPort_); //Global variable in adsCom.h used to get motor record and stream device com to work.
 
   return asynSuccess;
 }

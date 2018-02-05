@@ -2,7 +2,9 @@
 #define ADSCOM_H
 
 #define __STDC_FORMAT_MACROS
+
 #include "cmd.h"
+
 #include <inttypes.h>
 #include "stdint.h"
 
@@ -82,13 +84,15 @@ typedef struct {
   char bHomed;
   char bBusy;
 } STAXISSTATUSSTRUCT;
-
+int setAmsNetId(uint8_t  *netId);
+int setAdsPort(long  adsPort);
+int setAmsPort(uint16_t  amsPort);
 long adsReadByName(uint16_t amsPort,const char *variableAddr,adsOutputBufferType *outBuffer);
 int adsReadByGroupOffset(uint16_t amsPort,SYMINFOSTRUCT *info, adsOutputBufferType *outBuffer);
 int adsWriteByName(uint16_t amsPort,const char *variableAddr,char *asciiValueToWrite,adsOutputBufferType *outBuffer);
 int adsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize,const char *asciiValueToWrite,adsOutputBufferType *asciiResponseBuffer);
-int adsConnect(const char *ipaddr,const char *amsaddr, int amsport);
-int adsDisconnect();
+//int adsConnect(const char *ipaddr,const char *amsaddr, int amsport);
+//int adsDisconnect();
 
 #ifdef __cplusplus
 }
