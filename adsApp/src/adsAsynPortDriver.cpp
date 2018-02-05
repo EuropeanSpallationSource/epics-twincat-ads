@@ -119,6 +119,8 @@ static const char *adsTypeToString(long type)
   }
 }
 
+static long oldTimeStamp=0;
+static struct timeval oldTime={0};
 static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
   const char* functionName = "adsNotifyCallback";
@@ -129,18 +131,30 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   }
 
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: hUser: %u.\n", driverName, functionName,hUser);
+  asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: hUser: %u.\n", driverName, functionName,hUser);
+
 
   const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
+  struct timeval newTime;
+  gettimeofday(&newTime, NULL);
+  printf("TIME <%ld.%06ld>\n",(long) newTime.tv_sec, (long) newTime.tv_usec);
 
-  printf("hUser 0x%x:\n", hUser);
+  long secs_used=(newTime.tv_sec - oldTime.tv_sec); //avoid overflow by subtracting first
+  long micros_used= ((secs_used*1000000) + newTime.tv_usec) - (oldTime.tv_usec);
+  oldTime=newTime;
+
+  printf("hUser 0x%x: \n", hUser);
   printf(" sample time: %ld\n", pNotification->nTimeStamp);
+  printf(" time since last plc [ms]: %lf\n", ((double)(pNotification->nTimeStamp-oldTimeStamp))/10000.0);
+  printf(" time since last ioc [ms]: %lf \n",((double)(micros_used))/1000);
   printf(" sample size: %d\n", pNotification->cbSampleSize);
   printf(" value: \n");
   for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
     printf(" 0x%x",(int)data[i]);
   }
   printf("\n");
+  oldTimeStamp=pNotification->nTimeStamp;
+
 
   //Ensure hUser is within range
   if(hUser>(uint32_t)(adsAsynPortObj->getParamTableSize()-1)){
@@ -154,6 +168,8 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
     asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: getAdsParamInfo() for hUser %u failed\n", driverName, functionName,hUser);
     return;
   }
+
+  printf("Parameter: %s\n", paramInfo->drvInfo);
 
   //Ensure hUser is equal to parameter index
   if(hUser!=(uint32_t)(paramInfo->paramIndex)){
@@ -174,16 +190,12 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
 
   //Check size to identify arrays
 
-  asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Temporray return from callback.. No write to parameters will be made.\n", driverName, functionName);
-  return;
-
   //Data type management
   switch(paramInfo->plcDataType){
 
     case ADST_INT8:
       int8_t *ADST_INT8Var;
       ADST_INT8Var=((int8_t*)data);
-
       //Asyn types
       switch(paramInfo->asynType){
         case asynParamInt32:
@@ -197,63 +209,191 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
           return;
           break;
       }
-
       break;
 
     case ADST_INT16:
       int16_t *ADST_INT16Var;
       ADST_INT16Var=((int16_t*)data);
-
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT16Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT16Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_INT32:
       int32_t *ADST_INT32Var;
       ADST_INT32Var=((int32_t*)data);
 
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT32Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT32Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_INT64:
       int64_t *ADST_INT64Var;
       ADST_INT64Var=((int64_t*)data);
-
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT64Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT64Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_UINT8:
       uint8_t *ADST_UINT8Var;
       ADST_UINT8Var=((uint8_t*)data);
-
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_UINT8Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_UINT8Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_UINT16:
       uint16_t *ADST_UINT16Var;
       ADST_UINT16Var=((uint16_t*)data);
-
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_UINT16Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_UINT16Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_UINT32:
       uint32_t *ADST_UINT32Var;
       ADST_UINT32Var=((uint32_t*)data);
-
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_UINT32Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_UINT32Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_UINT64:
       uint64_t *ADST_UINT64Var;
       ADST_UINT64Var=((uint64_t*)data);
-
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_UINT64Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_UINT64Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_REAL32:
       float *ADST_REAL32Var;
       ADST_REAL32Var=((float*)data);
-
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_REAL32Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_REAL32Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     case ADST_REAL64:
       double *ADST_REAL64Var;
       ADST_REAL64Var=((double*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_REAL64Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_REAL64Var));
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
 
       break;
     case ADST_BIT:
-      //buffer[0]=value>0;
-      //maxBytesToWrite=1;
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)data[0]);
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)data[0]);
+          break;
+        default:
+          asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return;
+          break;
+      }
       break;
+
     default:
       asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (epicsInt32 and %s). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType));
       return;
       break;
+
   }
+  adsAsynPortObj->callParamCallbacks();  // TODO call only this function if needed.. ARRAYS..
 }
 
 static const char *adsErrorToString(long error)
@@ -408,7 +548,9 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      int paramTableSize,
                                      unsigned int priority,
                                      int autoConnect,
-                                     int noProcessEos)
+                                     int noProcessEos,
+                                     int defaultSampleTimeMS,
+                                     int maxDelayTimeMS)
                     :asynPortDriver(portName,
                                    1, /* maxAddr */
                                    paramTableSize,
@@ -434,7 +576,8 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   priority_=priority;
   autoConnect_=autoConnect;
   noProcessEos_=noProcessEos;
-
+  defaultSampleTimeMS_=defaultSampleTimeMS;
+  maxDelayTimeMS_=maxDelayTimeMS;
   //ADS
   adsPort_=0; //handle
   remoteNetId_={0,0,0,0,0,0};
@@ -551,6 +694,8 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Record asyn type:        %d\n",paramInfo->asynType);
       fprintf(fp,"    Record isInput:          %s\n",paramInfo->isInput ? "true" : "false");
       fprintf(fp,"    Record isOutput:         %s\n",paramInfo->isOutput ? "true" : "false");
+      fprintf(fp,"    Record isIOIntr:         %s\n",paramInfo->isIOIntr ? "true" : "false");
+      fprintf(fp,"    Record sample time [ms]: %lf\n",paramInfo->sampleTimeMS);
       fprintf(fp,"    Plc ams port:            %d\n",paramInfo->amsPort);
       fprintf(fp,"    Plc adr str:             %s\n",paramInfo->plcAdrStr);
       fprintf(fp,"    Plc adr str is ADR cmd:  %s\n",paramInfo->isAdrCommand ? "true" : "false");
@@ -763,9 +908,22 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
             paramInfo->asynType=asynParamNotDefined;
           }
           //SCAN
+          paramInfo->sampleTimeMS=defaultSampleTimeMS_;
+
           status=dbFindField(pdbentry,"SCAN");
           if(!status){
             paramInfo->scan=strdup(dbGetString(pdbentry));
+            if(strcmp("I/O Intr",paramInfo->scan)==0){
+              paramInfo->isIOIntr=true;
+            }
+            else{
+              double sampleTime=0;
+              int nvals=sscanf(paramInfo->scan,"%lf second",&sampleTime);
+              if(nvals==1){
+                paramInfo->isIOIntr=false;
+                paramInfo->sampleTimeMS=sampleTime*1000;
+              }
+            }
           }
           else{
             paramInfo->scan=0;
@@ -1175,17 +1333,9 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
   */
   attrib.nTransMode=ADSTRANS_SERVERONCHA;  //Add option
   /** The notification's callback function is invoked at the latest when this time has elapsed. The unit is 100 ns. */
-  attrib.nMaxDelay=10000000; // 1s Add option
+  attrib.nMaxDelay=maxDelayTimeMS_*10000; // 100ms
   /** The ADS server checks whether the variable has changed after this time interval. The unit is 100 ns. */
-  //attrib.dwChangeFilter=1000000; //100ms Add option
-  attrib.dwChangeFilter=1000000; //100ms Add option
-
-//  const AdsNotificationAttrib attrib = {
-//      paramInfo->plcSize,
-//      ADSTRANS_SERVERCYCLE,
-//      0,
-//      {4000000}
-//  };
+  attrib.nCycleTime=(uint32_t)(paramInfo->sampleTimeMS*10000);
 
   uint32_t hNotify=0;
   long addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
@@ -1539,12 +1689,34 @@ asynStatus adsAsynPortDriver::adsRead(adsParamInfo *paramInfo)
     case ADST_INT16:
       int16_t *ADST_INT16Var;
       ADST_INT16Var=((int16_t*)data);
-
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT16Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT16Var));
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
       break;
     case ADST_INT32:
       int32_t *ADST_INT32Var;
       ADST_INT32Var=((int32_t*)data);
-
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          adsAsynPortObj->setIntegerParam(hUser,(int)(*ADST_INT32Var));
+          break;
+        case asynParamFloat64:
+          adsAsynPortObj->setDoubleParam(hUser,(double)(*ADST_INT32Var));
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
       break;
     case ADST_INT64:
       int64_t *ADST_INT64Var;
@@ -1643,7 +1815,9 @@ extern "C" {
                              unsigned int asynParamTableSize,
                              unsigned int priority,
                              int noAutoConnect,
-                             int noProcessEos)
+                             int noProcessEos,
+                             int defaultSampleTimeMS,
+                             int maxDelayTimeMS)
   {
 
     if (!portName) {
@@ -1660,7 +1834,16 @@ extern "C" {
       return -1;
     }
 
-    adsAsynPortObj=new adsAsynPortDriver(portName,ipaddr,amsaddr,amsport,asynParamTableSize,priority,noAutoConnect==0,noProcessEos);
+    adsAsynPortObj=new adsAsynPortDriver(portName,
+                                         ipaddr,
+                                         amsaddr,
+                                         amsport,
+                                         asynParamTableSize,
+                                         priority,
+                                         noAutoConnect==0,
+                                         noProcessEos,
+                                         defaultSampleTimeMS,
+                                         maxDelayTimeMS);
     if(adsAsynPortObj){
       asynUser *traceUser= adsAsynPortObj->getTraceAsynUser();
       if(!traceUser){
@@ -1685,18 +1868,21 @@ extern "C" {
   static const iocshArg adsAsynPortDriverConfigureArg5 = { "priority",iocshArgInt};
   static const iocshArg adsAsynPortDriverConfigureArg6 = { "disable auto-connect",iocshArgInt};
   static const iocshArg adsAsynPortDriverConfigureArg7 = { "noProcessEos",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg8 = { "default sample time ms",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg9 = { "max delay time ms",iocshArgInt};
   static const iocshArg *adsAsynPortDriverConfigureArgs[] = {
     &adsAsynPortDriverConfigureArg0, &adsAsynPortDriverConfigureArg1,
     &adsAsynPortDriverConfigureArg2, &adsAsynPortDriverConfigureArg3,
     &adsAsynPortDriverConfigureArg4, &adsAsynPortDriverConfigureArg5,
-    &adsAsynPortDriverConfigureArg6, &adsAsynPortDriverConfigureArg7};
+    &adsAsynPortDriverConfigureArg6, &adsAsynPortDriverConfigureArg7,
+    &adsAsynPortDriverConfigureArg8,&adsAsynPortDriverConfigureArg9};
 
   static const iocshFuncDef adsAsynPortDriverConfigureFuncDef =
-    {"adsAsynPortDriverConfigure",8,adsAsynPortDriverConfigureArgs};
+    {"adsAsynPortDriverConfigure",10,adsAsynPortDriverConfigureArgs};
 
   static void adsAsynPortDriverConfigureCallFunc(const iocshArgBuf *args)
   {
-    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival);
+    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival,args[8].ival,args[9].ival);
   }
 
   /*

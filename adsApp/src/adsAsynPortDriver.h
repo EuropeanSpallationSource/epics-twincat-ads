@@ -23,6 +23,8 @@ typedef struct adsParamInfo{
   asynParamType asynType;
   bool          isInput;
   bool          isOutput;
+  bool          isIOIntr;
+  double        sampleTimeMS;  //milli seconds
   uint16_t      amsPort;
   int           paramIndex;  //also used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
@@ -65,7 +67,10 @@ public:
                     int paramTableSize,
                     unsigned int priority,
                     int autoConnect,
-                    int noProcessEos);
+                    int noProcessEos,
+                    int defaultSampleTimeMS,
+                    int maxDelayTimeMS);
+
   virtual ~adsAsynPortDriver();
   virtual void report(FILE *fp, int details);
   virtual asynStatus disconnect(asynUser *pasynUser);
@@ -124,7 +129,8 @@ private:
   adsParamInfo **pAdsParamArray_;
   int adsParamArrayCount_;
   int paramTableSize_;
-
+  int defaultSampleTimeMS_;
+  int maxDelayTimeMS_;
   //ADS
   long adsPort_; //handle
   AmsNetId remoteNetId_;
