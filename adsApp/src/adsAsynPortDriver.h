@@ -35,6 +35,7 @@ typedef struct adsParamInfo{
   uint32_t      plcSize;
   uint32_t      plcDataType;
   bool          plcDataTypeWarn;
+  bool          plcDataIsArray;
   //callback information
   uint32_t      hCallbackNotify;
   uint32_t      hSymbolicHandle;
