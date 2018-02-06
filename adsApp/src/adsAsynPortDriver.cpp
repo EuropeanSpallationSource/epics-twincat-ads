@@ -1473,6 +1473,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
     writeSize=dataSize;
   }
 
+  //Update time stamp (later take timestamp from callback instead somehow)
+  if(updateTimeStamp()!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: updateTimeStamp() failed.\n", driverName, functionName);
+  }
+
   switch(paramInfo->plcDataType){
     case ADST_INT8:
       int8_t *ADST_INT8Var;
