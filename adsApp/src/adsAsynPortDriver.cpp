@@ -231,6 +231,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
     fprintf(fp, "  ProcessEos:          %s\n",noProcessEos_ ? "false" : "true"); //Inverted
     fprintf(fp, "  Param. table size:   %d\n",paramTableSize_);
     fprintf(fp, "  Param. count:        %d\n",adsParamArrayCount_);
+    fprintf(fp, "  NOTE: Several records can be linked to the same parameter.\n");
     fprintf(fp,"\n");
   }
   if(details>=2){
@@ -248,8 +249,8 @@ void adsAsynPortDriver::report(FILE *fp, int details)
         fprintf(fp,"\n");
         continue;
       }
+      fprintf(fp,"    Param name:              %s\n",paramInfo->drvInfo);
       fprintf(fp,"    Param index:             %d\n",paramInfo->paramIndex);
-      fprintf(fp,"    Param drvInfo:           %s\n",paramInfo->drvInfo);
       fprintf(fp,"    Record name:             %s\n",paramInfo->recordName);
       fprintf(fp,"    Record type:             %s\n",paramInfo->recordType);
       fprintf(fp,"    Record scan:             %s\n",paramInfo->scan);
