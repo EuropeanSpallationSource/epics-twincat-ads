@@ -50,9 +50,9 @@ typedef struct {
   uint32_t size;
   uint32_t dataType;
   uint32_t flags;
-  uint16_t nameLength; //why??
-  uint16_t typeLength; //why??
-  uint16_t commentLength; //why??
+  uint16_t nameLength;
+  uint16_t typeLength;
+  uint16_t commentLength;
   char  buffer[768]; //256*3, 256 is string size in TwinCAT then 768 is max
   char* variableName;
   char* symDataType;
@@ -120,13 +120,15 @@ private:
   asynStatus adsWrite(adsParamInfo *paramInfo,
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
-
   asynStatus adsRead(adsParamInfo *paramInfo);
+
+  //Static methods
   static const char *adsErrorToString(long error);
   static const char *adsTypeToString(long type);
   static const char *asynTypeToString(long type);
 
-  epicsEventId eventId_;
+  //Variables
+  epicsEventId eventId_; //Do I need this?..
   char *ipaddr_;
   char *amsaddr_;
   uint16_t amsport_;

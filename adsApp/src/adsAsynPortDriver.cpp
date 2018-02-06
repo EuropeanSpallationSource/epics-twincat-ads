@@ -102,15 +102,15 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      int noProcessEos,
                                      int defaultSampleTimeMS,
                                      int maxDelayTimeMS)
-                    :asynPortDriver(portName,
-                                   1, /* maxAddr */
-                                   paramTableSize,
-                                   asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask, /* Interface mask */
-                                   asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask,  /* Interrupt mask */
-                                   ASYN_CANBLOCK, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
-                                   autoConnect, /* Autoconnect */
-                                   priority, /* Default priority */
-                                   0) /* Default stack size*/
+                     :asynPortDriver(portName,
+                                     1, /* maxAddr */
+                                     paramTableSize,
+                                     asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask, /* Interface mask */
+                                     asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask,  /* Interrupt mask */
+                                     ASYN_CANBLOCK, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
+                                     autoConnect, /* Autoconnect */
+                                     priority, /* Default priority */
+                                     0) /* Default stack size*/
 {
   const char* functionName = "adsAsynPortDriver";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
