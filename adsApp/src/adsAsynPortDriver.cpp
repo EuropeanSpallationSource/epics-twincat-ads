@@ -366,9 +366,6 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     return asynError;
   }
 
-  //print all parameters
-  report(stdout,2);
-
   asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
 
   return asynSuccess;
