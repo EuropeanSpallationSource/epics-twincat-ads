@@ -96,6 +96,9 @@ public:
   asynUser *getTraceAsynUser();
   int getParamTableSize();
   adsParamInfo *getAdsParamInfo(int index);
+  asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
+                                 const void *data,
+                                 size_t dataSize);
 protected:
 
 private:
@@ -119,6 +122,9 @@ private:
                       uint32_t bytesToWrite);
 
   asynStatus adsRead(adsParamInfo *paramInfo);
+  static const char *adsErrorToString(long error);
+  static const char *adsTypeToString(long type);
+  static const char *asynTypeToString(long type);
 
   epicsEventId eventId_;
   char *ipaddr_;
