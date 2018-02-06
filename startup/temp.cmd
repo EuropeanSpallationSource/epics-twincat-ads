@@ -39,5 +39,3 @@ asynSetTraceInfoMask("ADS_1", -1, 15)
 
 dbLoadRecords("adsTestAsyn.db","P=ADS_IOC:,PORT=ADS_1")
 
-asynReport(2,ADS_1)
-
