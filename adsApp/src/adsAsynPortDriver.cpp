@@ -268,7 +268,8 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Plc abs adr group:       16#%x\n",paramInfo->plcAbsAdrGroup);
       fprintf(fp,"    Plc abs adr offset:      16#%x\n",paramInfo->plcAbsAdrOffset);
       fprintf(fp,"    Plc data type:           %s\n",adsTypeToString(paramInfo->plcDataType));
-      fprintf(fp,"    Plc data type size:      %u\n",paramInfo->plcSize);
+      fprintf(fp,"    Plc data type size:      %zu\n",adsTypeSize(paramInfo->plcDataType));
+      fprintf(fp,"    Plc data size:           %u\n",paramInfo->plcSize);
       fprintf(fp,"    Plc data is array:       %s\n",paramInfo->plcDataIsArray ? "true" : "false");
       fprintf(fp,"    Plc data type warning:   %s\n",paramInfo->plcDataTypeWarn ? "true" : "false");
       fprintf(fp,"    Ads hCallbackNotify:     %u\n",paramInfo->hCallbackNotify);
