@@ -61,10 +61,10 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   asynPrint(asynTraceUser, ASYN_TRACE_INFO," time since last plc [ms]: %lf\n", ((double)(pNotification->nTimeStamp-oldTimeStamp))/10000.0);
   asynPrint(asynTraceUser, ASYN_TRACE_INFO," time since last ioc [ms]: %lf \n",((double)(micros_used))/1000);
   asynPrint(asynTraceUser, ASYN_TRACE_INFO," sample size: %d\n", pNotification->cbSampleSize);
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO," value: \n");
-  for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
-      asynPrint(asynTraceUser, ASYN_TRACE_INFO," 0x%x\n",(int)data[i]);
-  }
+  //asynPrint(asynTraceUser, ASYN_TRACE_INFO," value: \n");
+  //for (size_t i = 0; i < pNotification->cbSampleSize; ++i) {
+  //    asynPrint(asynTraceUser, ASYN_TRACE_INFO," 0x%x\n",(int)data[i]);
+  //}
   asynPrint(asynTraceUser, ASYN_TRACE_INFO,"\n");
   oldTimeStamp=pNotification->nTimeStamp;
 
@@ -799,7 +799,7 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
   int paramIndex = pasynUser->reason;
 
   if(!pAdsParamArray_[paramIndex]){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: pAdsParamArray NULL\n", driverName, functionName);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: pAdsParamArray NULL\n", driverName, functionName);
     return asynError;
   }
   paramInfo=pAdsParamArray_[paramIndex];
@@ -873,24 +873,99 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
       maxBytesToWrite=1;
       break;
     default:
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (epicsInt32 and %s). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType));
+      asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (epicsInt32 and %s). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType));
       return asynError;
       break;
   }
 
   // Warning. Risk of loss of data..
   if(sizeof(value)>maxBytesToWrite || sizeof(value)>paramInfo->plcSize){
-    asynPrint(pasynUserSelf, ASYN_TRACE_WARNING, "%s:%s: WARNING. EPICS datatype size larger than PLC datatype size (%ld vs %d bytes).\n", driverName,functionName,sizeof(value),paramInfo->plcDataType);
+    asynPrint(pasynUser, ASYN_TRACE_WARNING, "%s:%s: WARNING. EPICS datatype size larger than PLC datatype size (%ld vs %d bytes).\n", driverName,functionName,sizeof(value),paramInfo->plcDataType);
     paramInfo->plcDataTypeWarn=true;
   }
 
   //Ensure that PLC datatype and number of bytes to write match
   if(maxBytesToWrite!=paramInfo->plcSize || maxBytesToWrite==0){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data types size missmatch (%s and %d bytes). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),maxBytesToWrite);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Data types size mismatch (%s and %d bytes). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),maxBytesToWrite);
     return asynError;
   }
 
   return  adsWrite(paramInfo,(const void *)buffer,maxBytesToWrite);
+}
+
+asynStatus adsAsynPortDriver::adsGenericArrayWrite(int paramIndex,long adsType,const void *data,size_t nBytes)
+{
+  const char* functionName = "adsGenericArrayWrite";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+
+  if(!pAdsParamArray_[paramIndex]){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: pAdsParamArray NULL\n", driverName, functionName);
+    return asynError;
+  }
+
+  adsParamInfo *paramInfo=pAdsParamArray_[paramIndex];
+
+  //Only support same datatype as in PLC
+  if(paramInfo->plcDataType!=adsType){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible. Write canceled.\n", driverName, functionName);
+    return asynError;
+  }
+
+  size_t bytesToWrite=nBytes;
+  if(paramInfo->plcSize<nBytes){
+    bytesToWrite=paramInfo->plcSize;
+  }
+
+  return adsWrite(paramInfo,data,bytesToWrite);
+}
+
+asynStatus adsAsynPortDriver::writeInt8Array(asynUser *pasynUser, epicsInt8 *value,size_t nElements)
+{
+  const char* functionName = "writeInt8Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  long allowedType=ADST_INT8;
+
+  return adsGenericArrayWrite(pasynUser->reason,allowedType,(const void *)value,nElements*adsTypeSize(allowedType));
+}
+
+asynStatus adsAsynPortDriver::writeInt16Array(asynUser *pasynUser, epicsInt16 *value,size_t nElements)
+{
+  const char* functionName = "writeInt16Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  long allowedType=ADST_INT16;
+
+  return adsGenericArrayWrite(pasynUser->reason,allowedType,(const void *)value,nElements*adsTypeSize(allowedType));
+}
+
+asynStatus adsAsynPortDriver::writeInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements)
+{
+  const char* functionName = "writeInt32Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  long allowedType=ADST_INT32;
+
+  return adsGenericArrayWrite(pasynUser->reason,allowedType,(const void *)value,nElements*adsTypeSize(allowedType));
+}
+
+asynStatus adsAsynPortDriver::writeFloat32Array(asynUser *pasynUser,epicsFloat32 *value,size_t nElements)
+{
+  const char* functionName = "writeFloat32Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  long allowedType=ADST_REAL32;
+  return adsGenericArrayWrite(pasynUser->reason,allowedType,(const void *)value,nElements*adsTypeSize(allowedType));
+}
+
+asynStatus adsAsynPortDriver::writeFloat64Array(asynUser *pasynUser,epicsFloat64 *value,size_t nElements)
+{
+  const char* functionName = "writeFloat64Array";
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  long allowedType=ADST_REAL64;
+  return adsGenericArrayWrite(pasynUser->reason,allowedType,(const void *)value,nElements*adsTypeSize(allowedType));
 }
 
 asynUser *adsAsynPortDriver::getTraceAsynUser()
@@ -1120,52 +1195,15 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
 
   bool isArray=false;
   //Check if array
-
   switch (paramInfo->plcDataType) {
     case ADST_VOID:
       isArray=false;
-      break;
-    case ADST_INT16:
-      isArray=paramInfo->plcSize>2;
-      break;
-    case ADST_INT32:
-      isArray=paramInfo->plcSize>4;
-      break;
-    case ADST_REAL32:
-      isArray=paramInfo->plcSize>4;
-      break;
-    case ADST_REAL64:
-      isArray=paramInfo->plcSize>8;
-      break;
-    case ADST_INT8:
-      isArray=paramInfo->plcSize>1;
-      break;
-    case ADST_UINT8:
-      isArray=paramInfo->plcSize>1;
-      break;
-    case ADST_UINT16:
-      isArray=paramInfo->plcSize>2;
-      break;
-    case ADST_UINT32:
-      isArray=paramInfo->plcSize>4;
-      break;
-    case ADST_INT64:
-      isArray=paramInfo->plcSize>8;
-      break;
-    case ADST_UINT64:
-      isArray=paramInfo->plcSize>8;
       break;
     case ADST_STRING:
       isArray=false;  //Special case
       break;
     case ADST_WSTRING:
       isArray=false; //Special case?
-      break;
-    case ADST_REAL80:
-      isArray=paramInfo->plcSize>10;
-      break;
-    case ADST_BIT:
-      isArray=paramInfo->plcSize>1;
       break;
     case ADST_BIGTYPE:
       isArray=false;
@@ -1174,7 +1212,7 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
       isArray=false;
       break;
     default:
-      isArray=false;
+      isArray=paramInfo->plcSize>adsTypeSize(paramInfo->plcDataType);
       break;
   }
   paramInfo->plcDataIsArray=isArray;
@@ -1852,6 +1890,47 @@ const char *adsAsynPortDriver::adsTypeToString(long type)
   }
 }
 
+size_t adsAsynPortDriver::adsTypeSize(long type)
+{
+  switch (type) {
+    case ADST_VOID:
+      return 0;
+    case ADST_INT16:
+      return 2;
+    case ADST_INT32:
+      return 4;
+    case ADST_REAL32:
+      return 4;
+    case ADST_REAL64:
+      return 8;
+    case ADST_INT8:
+      return 1;
+    case ADST_UINT8:
+      return 1;
+    case ADST_UINT16:
+      return 2;
+    case ADST_UINT32:
+      return 4;
+    case ADST_INT64:
+      return 8;
+    case ADST_UINT64:
+      return 8;
+    case ADST_STRING:
+      return -1;
+    case ADST_WSTRING:
+      return -1;
+    case ADST_REAL80:
+      return 10;
+    case ADST_BIT:
+      return 1;
+    case ADST_BIGTYPE:
+      return -1;
+    case ADST_MAXTYPES:
+      return -1;
+    default:
+      return -1;
+  }
+}
 const char *adsAsynPortDriver::asynTypeToString(long type)
 {
   switch (type) {

@@ -91,8 +91,23 @@ public:
                                int *eomReason);
   virtual asynStatus writeInt32(asynUser *pasynUser,
                                 epicsInt32 value);
+  virtual asynStatus writeInt8Array(asynUser *pasynUser,
+                                    epicsInt8 *value,
+                                    size_t nElements);
+  virtual asynStatus writeInt16Array(asynUser *pasynUser,
+                                     epicsInt16 *value,
+                                     size_t nElements);
+  virtual asynStatus writeInt32Array(asynUser *pasynUser,
+                                     epicsInt32 *value,
+                                     size_t nElements);
   virtual asynStatus writeFloat64(asynUser *pasynUser,
                                   epicsFloat64 value);
+  virtual asynStatus writeFloat32Array(asynUser *pasynUser,
+                                       epicsFloat32 *value,
+                                       size_t nElements);
+  virtual asynStatus writeFloat64Array(asynUser *pasynUser,
+                                       epicsFloat64 *value,
+                                       size_t nElements);
   asynUser *getTraceAsynUser();
   int getParamTableSize();
   adsParamInfo *getAdsParamInfo(int index);
@@ -121,11 +136,16 @@ private:
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
   asynStatus adsRead(adsParamInfo *paramInfo);
+  asynStatus adsGenericArrayWrite(int paramIndex,
+                                  long adsType,
+                                  const void *data,
+                                  size_t nBytes);
 
   //Static methods
   static const char *adsErrorToString(long error);
   static const char *adsTypeToString(long type);
   static const char *asynTypeToString(long type);
+  static size_t adsTypeSize(long type);
 
   //Variables
   epicsEventId eventId_; //Do I need this?..
