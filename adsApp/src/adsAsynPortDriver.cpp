@@ -243,6 +243,11 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       }
       adsParamInfo *paramInfo=pAdsParamArray_[i];
       fprintf(fp,"  Parameter %d:\n",i);
+      if(i==0){
+        fprintf(fp,"    Parameter 0 is reserved for Motor Record and Stream Device access!\n");
+        fprintf(fp,"\n");
+        continue;
+      }
       fprintf(fp,"    Param index:             %d\n",paramInfo->paramIndex);
       fprintf(fp,"    Param drvInfo:           %s\n",paramInfo->drvInfo);
       fprintf(fp,"    Record name:             %s\n",paramInfo->recordName);
