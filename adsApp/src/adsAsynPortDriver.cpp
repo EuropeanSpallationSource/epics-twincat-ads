@@ -1002,7 +1002,18 @@ asynStatus adsAsynPortDriver::writeInt8Array(asynUser *pasynUser, epicsInt8 *val
   const char* functionName = "writeInt8Array";
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
+
   long allowedType=ADST_INT8;
+
+  //Also allow string as int8array (special case)
+  if(!pAdsParamArray_[pasynUser->reason]){
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: pAdsParamArray NULL\n", driverName, functionName);
+    return asynError;
+  }
+
+  if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_STRING){
+    allowedType=ADST_STRING;
+  }
 
   return adsGenericArrayWrite(pasynUser->reason,allowedType,(const void *)value,nElements*adsTypeSize(allowedType));
 }
@@ -1277,10 +1288,10 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
       isArray=false;
       break;
     case ADST_STRING:
-      isArray=false;  //Special case
+      isArray=true;  //Special case
       break;
     case ADST_WSTRING:
-      isArray=false; //Special case?
+      isArray=true; //Special case?
       break;
     case ADST_BIGTYPE:
       isArray=false;
@@ -1773,8 +1784,22 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
       }
       break;
 
+    case ADST_STRING:
+      int8_t *ADST_STRINGVar;
+      ADST_STRINGVar=((int8_t*)data);
+      switch(paramInfo->asynType){
+        case asynParamInt8Array:
+          ret=doCallbacksInt8Array((epicsInt8 *) ADST_STRINGVar,writeSize, paramInfo->paramIndex,ADS_ASYN_ADR);
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+        }
+      break;
+
     default:
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (epicsInt32 and %s).\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType));
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
       return asynError;
       break;
   }
@@ -1998,7 +2023,7 @@ size_t adsAsynPortDriver::adsTypeSize(long type)
     case ADST_UINT64:
       return 8;
     case ADST_STRING:
-      return -1;
+      return 1;  //Array of char
     case ADST_WSTRING:
       return -1;
     case ADST_REAL80:
