@@ -251,13 +251,13 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       }
       fprintf(fp,"    Param name:              %s\n",paramInfo->drvInfo);
       fprintf(fp,"    Param index:             %d\n",paramInfo->paramIndex);
+      fprintf(fp,"    Param type:              %s (%d)\n",asynTypeToString((long)paramInfo->asynType),paramInfo->asynType);
       fprintf(fp,"    Record name:             %s\n",paramInfo->recordName);
       fprintf(fp,"    Record type:             %s\n",paramInfo->recordType);
       fprintf(fp,"    Record scan:             %s\n",paramInfo->scan);
       fprintf(fp,"    Record inp:              %s\n",paramInfo->inp);
       fprintf(fp,"    Record out:              %s\n",paramInfo->out);
       fprintf(fp,"    Record dtyp:             %s\n",paramInfo->dtyp);
-      fprintf(fp,"    Record asyn type:        %d\n",paramInfo->asynType);
       fprintf(fp,"    Record isInput:          %s\n",paramInfo->isInput ? "true" : "false");
       fprintf(fp,"    Record isOutput:         %s\n",paramInfo->isOutput ? "true" : "false");
       fprintf(fp,"    Record isIOIntr:         %s\n",paramInfo->isIOIntr ? "true" : "false");
