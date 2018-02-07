@@ -118,6 +118,8 @@ protected:
 
 private:
   //Asyn and EPICS methods
+  asynStatus addParam(asynUser *pasynUser,const char *drvInfo,int *index);
+  asynStatus validateDrvInfo(const char *drvInfo);
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,
                                       adsParamInfo *paramInfo);
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,

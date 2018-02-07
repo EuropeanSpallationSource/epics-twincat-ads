@@ -5,21 +5,21 @@ record(ao,"$(P)SetFAmplitude"){
   info(asyn:READBACK,"1")
   field(PINI, "1")
   field(DTYP, "asynFloat64")
-  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fAmplitude")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fAmplitude?")
   field(PREC, "3")
 }
 
 record(ao,"$(P)SetITestError"){
   field(PINI, "1")
   field(DTYP, "asynFloat64")
-  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTestError")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTestError=")
   field(PREC, "3")
 }
 
 record(ai,"$(P)GetITest"){
   field(PINI, "1")
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTestError")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTestError?")
   field(PREC, "3")
   field(SCAN,"I/O Intr")
 }
@@ -27,7 +27,7 @@ record(ai,"$(P)GetITest"){
 record(ai,"$(P)GetFTest2"){
   field(PINI, "1")
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fTest?")
   field(PREC, "3")
   field(SCAN,"I/O Intr")
 }
@@ -35,7 +35,7 @@ record(ai,"$(P)GetFTest2"){
 record(waveform,"$(P)GetFTestArray"){
   field(PINI, "1")
   field(DTYP,"asynFloat64ArrayIn")
-  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.fTestArray")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.fTestArray?")
   field(NELM,100)
   field(SCAN,"I/O Intr")
   field(FTVL,"DOUBLE")
@@ -44,10 +44,8 @@ record(waveform,"$(P)GetFTestArray"){
 record(waveform,"$(P)SetFTestArray2"){
   info(asyn:READBACK,"1")
   field(DTYP,"asynFloat64ArrayOut")
-  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.fTestArray2")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.fTestArray2?")
   field(NELM,10)
   field(SCAN,"Passive")
   field(FTVL,"DOUBLE")
 }
-
-

@@ -318,62 +318,106 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
   return status;
 }
 
+asynStatus adsAsynPortDriver::validateDrvInfo(const char *drvInfo)
+{
+  const char* functionName = "validateDrvInfo";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: drvInfo: %s\n", driverName, functionName,drvInfo);
+
+  if(strlen(drvInfo)==0){
+    asynPrint(pasynUserSelf,ASYN_TRACE_ERROR,"Invalid drvInfo string: Length 0 (%s).\n",drvInfo);
+    return asynError;
+  }
+
+  //Check '?' mark last or '=' last
+  const char* read=strrchr(drvInfo,'?');
+  if(read){
+    if(strlen(read)==1){
+      return asynSuccess;
+    }
+  }
+
+  const char* write=strrchr(drvInfo,'=');
+  if(write){
+    if(strlen(write)==1){
+      return asynSuccess;
+    }
+  }
+
+  asynPrint(pasynUserSelf,ASYN_TRACE_ERROR,"Invalid drvInfo string (%s).\n",drvInfo);
+  return asynError;
+}
+
+
 asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvInfo,const char **pptypeName,size_t *psize)
 {
   const char* functionName = "drvUserCreate";
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: drvInfo: %s\n", driverName, functionName,drvInfo);
+
+  if(validateDrvInfo(drvInfo)!=asynSuccess){
+    return asynError;
+  }
 
   int index=0;
+
   asynStatus status=findParam(drvInfo,&index);
   if(status==asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_INFO, "Parameter index found at: %d for %s. \n",index,drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: Parameter index found at: %d for %s. \n", driverName, functionName,index,drvInfo);
     asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
     return asynSuccess;
   }
 
   //Ensure space left in param table
   if(adsParamArrayCount_>=paramTableSize_){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "Parameter table full. Parameter with drvInfo %s will be discarded.",drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Parameter table full. Parameter with drvInfo %s will be discarded.", driverName, functionName,drvInfo);
     return asynError;
   }
-  // Collect data from drvInfo string and record
+
+  // Collect data from drvInfo string and recordpasynUser->reason=index;
   adsParamInfo *paramInfo=new adsParamInfo();
   memset(paramInfo,0,sizeof(adsParamInfo));
+  paramInfo->sampleTimeMS=defaultSampleTimeMS_;
+
   status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
   if(status!=asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "getRecordInfoFromDrvInfo() failed parsing of drvInfo: %s.\n",drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: getRecordInfoFromDrvInfo() failed parsing of drvInfo: %s.\n", driverName, functionName,drvInfo);
     return asynError;
   }
+
   status=createParam(drvInfo,paramInfo->asynType,&index);
   if(status!=asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "createParam() failed.");
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: createParam() failed.",driverName, functionName);
     return asynError;
   }
+
   paramInfo->paramIndex=index;
 
   status=parsePlcInfofromDrvInfo(drvInfo,paramInfo);
   if(status!=asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "parsePlcInfofromDrvInfo() failed parsing of drvInfo: %s.\n.",drvInfo);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: parsePlcInfofromDrvInfo() failed parsing of drvInfo: %s.\n.", driverName, functionName,drvInfo);
     return asynError;
   }
+
   pAdsParamArray_[adsParamArrayCount_]=paramInfo;
   adsParamArrayCount_++;
 
-  //Add callback
-  status=adsAddNotificationCallback(paramInfo);
-  if(status!=asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "adsAddNotificationCallback() failed.\n.");
-    return asynError;
+
+  //Add callback only for I/O intr
+  if(paramInfo->isIOIntr){
+    status=adsAddNotificationCallback(paramInfo);
+    if(status!=asynSuccess){
+      asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: adsAddNotificationCallback() failed.\n.", driverName, functionName);
+      return asynError;
+    }
   }
 
   //Make first read
   status =adsRead(paramInfo);
   if(status!=asynSuccess){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "adsRead() failed.\n.");
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: adsRead() failed.\n.", driverName, functionName);
     return asynError;
   }
 
-  asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
+  asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize); //Assigns pasynUser->reason
 
   return asynSuccess;
 }
@@ -414,7 +458,7 @@ asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
 asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsParamInfo *paramInfo)
 {
   const char* functionName = "getRecordInfoFromDrvInfo";
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: drvInfo: %s\n", driverName, functionName,drvInfo);
 
   paramInfo->amsPort=amsport_;
   DBENTRY *pdbentry;
@@ -483,13 +527,13 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
             paramInfo->asynType=asynParamNotDefined;
           }
           //SCAN
-          paramInfo->sampleTimeMS=defaultSampleTimeMS_;
+          //paramInfo->sampleTimeMS=defaultSampleTimeMS_;
 
-          status=dbFindField(pdbentry,"SCAN");
+          /*status=dbFindField(pdbentry,"SCAN");
           if(!status){
             paramInfo->scan=strdup(dbGetString(pdbentry));
             if(strcmp("I/O Intr",paramInfo->scan)==0){
-              paramInfo->isIOIntr=true;
+              //paramInfo->isIOIntr=true;
             }
             else{
               double sampleTime=0;
@@ -502,7 +546,8 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
           }
           else{
             paramInfo->scan=0;
-          }
+          }*/
+
           //drvInput (not a field)
           paramInfo->drvInfo=strdup(drvInfo);
           dbFreeEntry(pdbentry);
@@ -540,7 +585,7 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
 int adsAsynPortDriver::getAmsPortFromDrvInfo(const char* drvInfo)
 {
   const char* functionName = "getAmsPortFromDrvInfo";
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: drvInfo:%s\n", driverName, functionName,drvInfo);
 
   //check if "ADSPORT" option in drvInfo string
   char plcAdr[MAX_FIELD_CHAR_LENGTH];
@@ -555,7 +600,23 @@ int adsAsynPortDriver::getAmsPortFromDrvInfo(const char* drvInfo)
 asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsParamInfo *paramInfo)
 {
   const char* functionName = "parsePlcInfofromDrvInfo";
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: drvInfo: %s\n", driverName, functionName,drvInfo);
+
+  //Check if input or output
+  const char* temp=strrchr(drvInfo,'?');
+  if(temp){
+    if(strlen(temp)==1){
+      paramInfo->isIOIntr=true; //All inputs will be created I/O intr
+    }
+    else{ //Must be '=' in end
+      paramInfo->isIOIntr=false; //All inputs will be created I/O intr
+    }
+  }
+  else{ //Must be '=' in end
+    paramInfo->isIOIntr=false; //All inputs will be created I/O intr
+  }
+
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: drvInfo %s is %s\n", driverName, functionName,drvInfo,paramInfo->isIOIntr ? "I/O Intr (end with ?)": " not I/O Intr (end with =)");
 
   bool err=false;
   //take part after last "/" if option or complete string..
@@ -566,6 +627,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     int nvals=sscanf(drvInfoEnd,"/%s",plcAdrLocal);
     if(nvals==1){
       paramInfo->plcAdrStr=strdup(plcAdrLocal);
+      paramInfo->plcAdrStr[strlen(paramInfo->plcAdrStr)-1]=0; //Strip ? or = from end
     }
     else{
       err=true;
@@ -573,8 +635,8 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   }
   else{  //No options
     paramInfo->plcAdrStr=strdup(drvInfo);  //Symbolic or .ADR.
+    paramInfo->plcAdrStr[strlen(paramInfo->plcAdrStr)-1]=0; //Strip ? or = from end
   }
-
 
   //Check if .ADR. command
   paramInfo->plcAbsAdrValid=false;
@@ -596,6 +658,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       err=true;
     }
   }
+
   //Look for AMSPORT option
   paramInfo->amsPort=getAmsPortFromDrvInfo(drvInfo);
 
@@ -791,7 +854,12 @@ asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
     return asynError;
   }
 
-  return  adsWrite(paramInfo,(const void *)buffer,maxBytesToWrite);
+  //Do the write
+  if(adsWrite(paramInfo,(const void *)buffer,maxBytesToWrite)!=asynSuccess){
+    return asynError;
+  }
+
+ return asynPortDriver::writeInt32(pasynUser, value);
 }
 
 asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
@@ -894,7 +962,12 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
     return asynError;
   }
 
-  return  adsWrite(paramInfo,(const void *)buffer,maxBytesToWrite);
+  //Do the write
+  if(adsWrite(paramInfo,(const void *)buffer,maxBytesToWrite)!=asynSuccess){
+    return asynError;
+  }
+
+  return asynPortDriver::writeFloat64(pasynUser,value);
 }
 
 asynStatus adsAsynPortDriver::adsGenericArrayWrite(int paramIndex,long adsType,const void *data,size_t nBytes)
