@@ -30,14 +30,14 @@ static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
 static long oldTimeStamp=0;
 static struct timeval oldTime={0};
-static int blockCallback=0;
+static int allowCallback=0;
 
 static void getEpicsState(initHookState state)
 {
   printf("EPICS State= %d.\n",(int)state);
   if(state==initHookAfterIocRunning){
     printf("IOC init ready. ADS callbacks enabled!\n");
-    blockCallback=1;
+    allowCallback=1;
   }
 }
 
@@ -55,7 +55,7 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
     return;
   }
 
-  if(!blockCallback){
+  if(!allowCallback){
     return;
   }
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
@@ -271,9 +271,11 @@ void adsAsynPortDriver::cyclicThread()
     uint16_t adsState=0;
     asynStatus stat=adsReadState(&adsState);
     if(stat==asynSuccess){
+      allowCallback=1;
       asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: ADS state: %s.\n",driverName,functionName,asynStateToString(adsState));
     }
     else{
+      allowCallback=0;
       //Communication error try to reconnect
       if(autoConnect_){
         lock();
@@ -1991,7 +1993,6 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         case asynParamInt8Array:
           ret=doCallbacksInt8Array((epicsInt8 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-          //ret=doCallbacksInt8Array((epicsInt8 *) ADST_INT8Var,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
@@ -2013,7 +2014,6 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         case asynParamInt16Array:
           ret=doCallbacksInt16Array((epicsInt16 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-          //ret=doCallbacksInt16Array((epicsInt16 *) ADST_INT16Var,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
@@ -2034,7 +2034,6 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         case asynParamInt32Array:
           ret=doCallbacksInt32Array((epicsInt32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-          //ret=doCallbacksInt32Array((epicsInt32 *) ADST_INT32Var,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
@@ -2149,7 +2148,6 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         case asynParamFloat32Array:
           ret=doCallbacksFloat32Array((epicsFloat32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-          //ret=doCallbacksFloat32Array((epicsFloat32 *) ADST_REAL32Var,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
@@ -2171,7 +2169,6 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         case asynParamFloat64Array:
           ret=doCallbacksFloat64Array((epicsFloat64 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-          //ret=doCallbacksFloat64Array((epicsFloat64 *) ADST_REAL64Var,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
