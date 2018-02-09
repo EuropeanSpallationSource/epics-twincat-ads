@@ -30,23 +30,21 @@ static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
 static long oldTimeStamp=0;
 static struct timeval oldTime={0};
-static int initReady=0;
+static int blockCallback=0;
 
 static void getEpicsState(initHookState state)
 {
   printf("EPICS State= %d.\n",(int)state);
   if(state==initHookAfterIocRunning){
     printf("IOC init ready. ADS callbacks enabled!\n");
-    initReady=1;
+    blockCallback=1;
   }
 }
 
-
-int myHookInit(void)
+int initHook(void)
 {
   return(initHookRegister(getEpicsState));
 }
-
 
 static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
@@ -56,23 +54,8 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
     printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
     return;
   }
-  //asynStandardInterfaces* temp=adsAsynPortObj->getAsynStdInterfaces();
-  //adsAsynPortObj->reportParams(stdout,10);
 
-//  printf("%s:%s: INFO: octetInterruptPvt: %s\n", driverName, functionName,temp->octetInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: uInt32DigitalInterruptPvt: %s\n", driverName, functionName,temp->uInt32DigitalInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: octetInterruptPvt: %s\n", driverName, functionName,temp->octetInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: int32InterruptPvt: %s\n", driverName, functionName,temp->int32InterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: float64InterruptPvt: %s\n", driverName, functionName,temp->float64InterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: int8ArrayInterruptPvt: %s\n", driverName, functionName,temp->int8ArrayInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: int16ArrayInterruptPvt: %s\n", driverName, functionName,temp->int16ArrayInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: int32ArrayInterruptPvt: %s\n", driverName, functionName,temp->int32ArrayInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: float32ArrayInterruptPvt: %s\n", driverName, functionName,temp->float32ArrayInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: float64ArrayInterruptPvt: %s\n", driverName, functionName,temp->float64ArrayInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: genericPointerInterruptPvt: %s\n", driverName, functionName,temp->genericPointerInterruptPvt ? "yes" : "no");
-//  printf("%s:%s: INFO: enumInterruptPvt: %s\n", driverName, functionName,temp->enumInterruptPvt ? "yes" : "no");
-
-  if(!initReady){
+  if(!blockCallback){
     return;
   }
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
@@ -2636,7 +2619,7 @@ extern "C" {
       adsAsynPortObj->connect(traceUser);
     }
 
-    myHookInit();
+    initHook();
 
     return asynSuccess;
   }
