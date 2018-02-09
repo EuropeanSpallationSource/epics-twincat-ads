@@ -29,6 +29,18 @@ record(ai,"$(P)GetFAmplitude"){
   field(PREC, "3")
   field(SCAN,"I/O Intr")
 }
+###############################################################################
+# fTest: Fast update rate:
+# TS_MS=10:      10ms sample rate in PLC)
+# T_DLY_MS=500:  500ms max delay for data to be sent from PLC (buffers in max 500ms). This could result in that 50 values (T_DLY_MS/TS_MS) are sent each 500ms (depending on if other communication is filling the PLC AMS buffers or not).
+
+record(ai,"$(P)GetFTest"){
+  field(PINI, "1")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)T_DLY_MS=500/TS_MS=10/ADSPORT=851/Main.fTest?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+}
 
 ###############################################################################
 # bTest:  Two different types:
@@ -64,7 +76,7 @@ record(waveform,"$(P)GetFTestArray"){
 }
 
 ###############################################################################
-# fTestArray2: waveform Output
+# fTestArray2: waveform Output and Input
 #        Three different types:
 #             1. waveform with readback  (I/O intr)
 #             2. waveform without readback
@@ -91,7 +103,7 @@ record(waveform,"$(P)SetFTestArray2"){
 
 record(waveform,"$(P)GetFTestArray2"){
   field(PINI, "1")
-  field(DTYP,"asynFloat64ArrayOut")
+  field(DTYP,"asynFloat64ArrayIn")
   field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.fTestArray2?")
   field(NELM,10)
   field(SCAN,"I/O Intr")
@@ -99,7 +111,7 @@ record(waveform,"$(P)GetFTestArray2"){
 }
 
 ###############################################################################
-# sTest: waveform Output
+# sTest: waveform Output and Input
 #        Three different types:
 #             1. waveform with readback  (I/O intr)
 #             2. waveform without readback
@@ -126,10 +138,44 @@ record(waveform,"$(P)SetSTest"){
 
 record(waveform,"$(P)GetSTest"){
   field(PINI, "1")
-  field(DTYP,"asynInt8ArrayOut")
+  field(DTYP,"asynInt8ArrayIn")
   field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.sTest?")
   field(NELM,100)
   field(SCAN,"I/O Intr")
   field(FTVL,"CHAR")
 }
 
+###############################################################################
+# Int8Array: waveform Output and Input
+#        Three different types:
+#             1. waveform with readback  (I/O intr)
+#             2. waveform without readback
+#             3  waveform I/O intr
+
+record(waveform,"$(P)SetInt8ArrayRB"){
+  field(PINI, "1")
+  info(asyn:READBACK,"1")
+  field(DTYP,"asynInt8ArrayOut")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.Int8Array?")
+  field(NELM,100)
+  field(SCAN,"Passive")
+  field(FTVL,"CHAR")
+}
+
+record(waveform,"$(P)SetInt8Array"){
+  field(PINI, "1")
+  field(DTYP,"asynInt8ArrayOut")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.Int8Array=")
+  field(NELM,100)
+  field(SCAN,"Passive")
+  field(FTVL,"CHAR")
+}
+
+record(waveform,"$(P)GetInt8Array"){
+  field(PINI, "1")
+  field(DTYP,"asynInt8ArrayIn")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.Int8Array?")
+  field(NELM,100)
+  field(SCAN,"I/O Intr")
+  field(FTVL,"CHAR")
+}

@@ -44,6 +44,7 @@ TEMPLATES = \
   adsApp/Db/FB_DriveVirtual_v1_01.template\
   adsApp/Db/adsTest.db\
   adsApp/Db/adsTestAsyn.db\
+  adsApp/Db/adsTestAsynSlim.db\
 
 
 

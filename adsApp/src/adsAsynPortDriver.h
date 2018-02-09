@@ -9,8 +9,11 @@
 #include <dbStaticLib.h>
 #include "AdsLib.h"
 
-#define MAX_FIELD_CHAR_LENGTH 128
-#define ADR_COMMAND_PREFIX ".ADR."
+#define ADS_MAX_FIELD_CHAR_LENGTH 128
+#define ADS_ADR_COMMAND_PREFIX ".ADR."
+#define ADS_OPTION_T_MAX_DLY_MS "T_DLY_MS"
+#define ADS_OPTION_T_SAMPLE_RATE_MS "TS_MS"
+#define ADS_OPTION_ADSPORT "ADSPORT"
 
 typedef struct adsParamInfo{
   char          *recordName;
@@ -21,10 +24,12 @@ typedef struct adsParamInfo{
   char          *out;
   char          *drvInfo;
   asynParamType asynType;
-  bool          isInput;
-  bool          isOutput;
+  int           asynAddr;
+  //bool          isInput;
+  //bool          isOutput;
   bool          isIOIntr;
   double        sampleTimeMS;  //milli seconds
+  double        maxDelayTimeMS;  //milli seconds
   uint16_t      amsPort;
   int           paramIndex;  //also used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
@@ -38,8 +43,9 @@ typedef struct adsParamInfo{
   bool          plcDataIsArray;
   //callback information
   uint32_t      hCallbackNotify;
+  bool          bCallbackNotifyValid;
   uint32_t      hSymbolicHandle;
-  bool          hSymbolicHandleValid;
+  bool          bSymbolicHandleValid;
 }adsParamInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
@@ -114,6 +120,7 @@ public:
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
                                  const void *data,
                                  size_t dataSize);
+  void cyclicThread();
 protected:
 
 private:
@@ -125,7 +132,7 @@ private:
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,
                                      adsParamInfo *paramInfo);
   asynParamType dtypStringToAsynType(char *dtype);
-  int getAmsPortFromDrvInfo(const char* drvInfo);
+  asynStatus reconnect();
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
@@ -133,11 +140,13 @@ private:
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
   asynStatus adsConnect();
+  asynStatus adsAddRoute();
   asynStatus adsDisconnect();
   asynStatus adsWrite(adsParamInfo *paramInfo,
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
   asynStatus adsRead(adsParamInfo *paramInfo);
+  asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsGenericArrayWrite(int paramIndex,
                                   long adsType,
                                   const void *data,
@@ -147,13 +156,13 @@ private:
   static const char *adsErrorToString(long error);
   static const char *adsTypeToString(long type);
   static const char *asynTypeToString(long type);
+  static const char *asynStateToString(long state);
   static size_t adsTypeSize(long type);
 
   //Variables
-  epicsEventId eventId_; //Do I need this?..
   char *ipaddr_;
   char *amsaddr_;
-  uint16_t amsport_;
+  uint16_t amsportDefault_;
   unsigned int priority_;
   int autoConnect_;
   int noProcessEos_;
@@ -161,7 +170,7 @@ private:
   int adsParamArrayCount_;
   int paramTableSize_;
   int defaultSampleTimeMS_;
-  int maxDelayTimeMS_;
+  int defaultMaxDelayTimeMS_;
   //ADS
   long adsPort_; //handle
   AmsNetId remoteNetId_;
