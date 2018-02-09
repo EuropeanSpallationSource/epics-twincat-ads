@@ -18,6 +18,7 @@
 #include <epicsString.h>
 #include <epicsTimer.h>
 #include <iocsh.h>
+#include <initHooks.h>
 
 #include <epicsExport.h>
 #include <dbStaticLib.h>
@@ -29,8 +30,23 @@ static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
 static long oldTimeStamp=0;
 static struct timeval oldTime={0};
+static int initReady=0;
 
-static int counter=0;
+static void getEpicsState(initHookState state)
+{
+  printf("EPICS State= %d.\n",(int)state);
+  if(state==initHookAfterIocRunning){
+    printf("IOC init ready. ADS callbacks enabled!\n");
+    initReady=1;
+  }
+}
+
+
+int myHookInit(void)
+{
+  return(initHookRegister(getEpicsState));
+}
+
 
 static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
@@ -56,11 +72,9 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
 //  printf("%s:%s: INFO: genericPointerInterruptPvt: %s\n", driverName, functionName,temp->genericPointerInterruptPvt ? "yes" : "no");
 //  printf("%s:%s: INFO: enumInterruptPvt: %s\n", driverName, functionName,temp->enumInterruptPvt ? "yes" : "no");
 
-  counter++;
-  if(counter<100){
+  if(!initReady){
     return;
   }
-
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
   asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: hUser: %u.\n", driverName, functionName,hUser);
 
@@ -117,7 +131,7 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
 void cyclicThread(void *drvPvt)
 {
   adsAsynPortDriver *pPvt = (adsAsynPortDriver *)drvPvt;
-  //pPvt->cyclicThread();
+  pPvt->cyclicThread();
 }
 
 // Constructor for the adsAsynPortDriver class.
@@ -2567,6 +2581,9 @@ const char *adsAsynPortDriver::asynStateToString(long state)
 
 extern "C" {
 
+  //static initHookFunction myHookFunction;
+
+
   asynUser *pPrintOutAsynUser;
 
   /*
@@ -2618,6 +2635,8 @@ extern "C" {
       pPrintOutAsynUser=traceUser;
       adsAsynPortObj->connect(traceUser);
     }
+
+    myHookInit();
 
     return asynSuccess;
   }
