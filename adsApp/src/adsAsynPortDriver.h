@@ -46,6 +46,7 @@ typedef struct adsParamInfo{
   bool          bCallbackNotifyValid;
   uint32_t      hSymbolicHandle;
   bool          bSymbolicHandleValid;
+  void*         arrayDataBuffer;
 }adsParamInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
@@ -97,20 +98,40 @@ public:
                                int *eomReason);
   virtual asynStatus writeInt32(asynUser *pasynUser,
                                 epicsInt32 value);
+  virtual asynStatus writeFloat64(asynUser *pasynUser,
+                                  epicsFloat64 value);
+  virtual asynStatus readInt8Array(asynUser *pasynUser,
+                                   epicsInt8 *value,
+                                   size_t nElements,
+                                   size_t *nIn);
   virtual asynStatus writeInt8Array(asynUser *pasynUser,
                                     epicsInt8 *value,
                                     size_t nElements);
+  virtual asynStatus readInt16Array(asynUser *pasynUser,
+                                    epicsInt16 *value,
+                                    size_t nElements,
+                                    size_t *nIn);
   virtual asynStatus writeInt16Array(asynUser *pasynUser,
                                      epicsInt16 *value,
                                      size_t nElements);
+  virtual asynStatus readInt32Array(asynUser *pasynUser,
+                                    epicsInt32 *value,
+                                    size_t nElements,
+                                    size_t *nIn);
   virtual asynStatus writeInt32Array(asynUser *pasynUser,
                                      epicsInt32 *value,
                                      size_t nElements);
-  virtual asynStatus writeFloat64(asynUser *pasynUser,
-                                  epicsFloat64 value);
+  virtual asynStatus readFloat32Array(asynUser *pasynUser,
+                                      epicsFloat32 *value,
+                                      size_t nElements,
+                                      size_t *nIn);
   virtual asynStatus writeFloat32Array(asynUser *pasynUser,
                                        epicsFloat32 *value,
                                        size_t nElements);
+  virtual asynStatus readFloat64Array(asynUser *pasynUser,
+                                      epicsFloat64 *value,
+                                      size_t nElements,
+                                      size_t *nIn);
   virtual asynStatus writeFloat64Array(asynUser *pasynUser,
                                        epicsFloat64 *value,
                                        size_t nElements);
@@ -148,10 +169,14 @@ private:
   asynStatus adsRead(adsParamInfo *paramInfo);
   asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsGenericArrayWrite(int paramIndex,
-                                  long adsType,
-                                  const void *data,
-                                  size_t nBytes);
-
+                                  long allowedType,
+                                  const void *epicsDataBuffer,
+                                  size_t nEpicsBufferBytes);
+  asynStatus adsGenericArrayRead(int paramIndex,
+                                 long allowedType,
+                                 void *epicsDataBuffer,
+                                 size_t nEpicsBufferBytes,
+                                 size_t *nBytesRead);
   //Static methods
   static const char *adsErrorToString(long error);
   static const char *adsTypeToString(long type);
