@@ -83,8 +83,8 @@ record(waveform,"$(P)GetFTestArray"){
 #             3  waveform I/O intr
 
 record(waveform,"$(P)SetFTestArray2RB"){
-  field(PINI, "1")
   info(asyn:READBACK,"1")
+  field(PINI, "1")
   field(DTYP,"asynFloat64ArrayOut")
   field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.fTestArray2?")
   field(NELM,10)

@@ -46,6 +46,7 @@ typedef struct adsParamInfo{
   bool          bCallbackNotifyValid;
   uint32_t      hSymbolicHandle;
   bool          bSymbolicHandleValid;
+  size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
 }adsParamInfo;
 
@@ -77,7 +78,8 @@ public:
                     int autoConnect,
                     int noProcessEos,
                     int defaultSampleTimeMS,
-                    int maxDelayTimeMS);
+                    int maxDelayTimeMS,
+                    int adsTimeoutMS);
 
   virtual ~adsAsynPortDriver();
   virtual void report(FILE *fp, int details);
@@ -109,7 +111,7 @@ public:
                                     size_t nElements);
   virtual asynStatus readInt16Array(asynUser *pasynUser,
                                     epicsInt16 *value,
-                                    size_t nElements,
+                                   size_t nElements,
                                     size_t *nIn);
   virtual asynStatus writeInt16Array(asynUser *pasynUser,
                                      epicsInt16 *value,
@@ -153,7 +155,7 @@ private:
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,
                                      adsParamInfo *paramInfo);
   asynParamType dtypStringToAsynType(char *dtype);
-  asynStatus reconnect();
+  asynStatus refreshParams();
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
@@ -161,12 +163,11 @@ private:
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
   asynStatus adsConnect();
-  asynStatus adsAddRoute();
   asynStatus adsDisconnect();
-  asynStatus adsWrite(adsParamInfo *paramInfo,
+  asynStatus adsWriteParam(adsParamInfo *paramInfo,
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
-  asynStatus adsRead(adsParamInfo *paramInfo);
+  asynStatus adsReadParam(adsParamInfo *paramInfo);
   asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsGenericArrayWrite(int paramIndex,
                                   long allowedType,
@@ -177,6 +178,8 @@ private:
                                  void *epicsDataBuffer,
                                  size_t nEpicsBufferBytes,
                                  size_t *nBytesRead);
+  asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
+
   //Static methods
   static const char *adsErrorToString(long error);
   static const char *adsTypeToString(long type);
@@ -196,9 +199,12 @@ private:
   int paramTableSize_;
   int defaultSampleTimeMS_;
   int defaultMaxDelayTimeMS_;
+  int adsTimeoutMS_;
   //ADS
   long adsPort_; //handle
   AmsNetId remoteNetId_;
+  int connected_;
+  int paramRefreshNeeded_;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */
