@@ -162,13 +162,6 @@ private:
                                  size_t *nBytesRead);
   asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
 
-  //Static methods
-  /*static const char *adsErrorToString(long error);
-  static const char *adsTypeToString(long type);
-  static const char *asynTypeToString(long type);
-  static const char *asynStateToString(long state);
-  static size_t adsTypeSize(long type);*/
-
   //Variables
   char *ipaddr_;
   char *amsaddr_;
