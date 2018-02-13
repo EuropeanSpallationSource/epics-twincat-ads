@@ -20,13 +20,10 @@ typedef struct adsParamInfo{
   char          *drvInfo;
   asynParamType asynType;
   int           asynAddr;
-  //bool          isInput;
-  //bool          isOutput;
   bool          isIOIntr;
   double        sampleTimeMS;  //milli seconds
   double        maxDelayTimeMS;  //milli seconds
   uint16_t      amsPort;
-  bool          amsPortConnected;
   int           paramIndex;  //also used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
   bool          isAdrCommand;
@@ -37,14 +34,13 @@ typedef struct adsParamInfo{
   uint32_t      plcDataType;
   bool          plcDataTypeWarn;
   bool          plcDataIsArray;
-  //callback information
   uint32_t      hCallbackNotify;
   bool          bCallbackNotifyValid;
   uint32_t      hSymbolicHandle;
   bool          bSymbolicHandleValid;
-  //Array buffer
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
+  bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
 }adsParamInfo;
 
 class adsAsynPortDriver : public asynPortDriver {
@@ -134,14 +130,18 @@ private:
                                       adsParamInfo *paramInfo);
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,
                                      adsParamInfo *paramInfo);
-  //asynParamType dtypStringToAsynType(char *dtype);
   asynStatus refreshParams();
+  asynStatus refreshParams(uint16_t amsPort);
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
+  asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo,
+                                        bool blockErrorMsg);
   asynStatus adsGetSymInfoByName(adsParamInfo *paramInfo);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
+  asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo,
+                                      bool blockErrorMsg);
   asynStatus adsConnect();
   asynStatus adsDisconnect();
   asynStatus adsWriteParam(adsParamInfo *paramInfo,
@@ -162,25 +162,23 @@ private:
                                  size_t *nBytesRead);
   asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
 
-  //Variables
-  char *ipaddr_;
-  char *amsaddr_;
-  uint16_t amsportDefault_;
-  unsigned int priority_;
-  int autoConnect_;
-  int noProcessEos_;
-  adsParamInfo **pAdsParamArray_;
-  int adsParamArrayCount_;
-  int paramTableSize_;
-  int defaultSampleTimeMS_;
-  int defaultMaxDelayTimeMS_;
-  int adsTimeoutMS_;
-  //ADS
-  long adsPort_; //handle
-  AmsNetId remoteNetId_;
-  int connected_;
-  int paramRefreshNeeded_;
-  std::vector<std::uint16_t> amsPortsList_;
+  char                           *ipaddr_;
+  char                           *amsaddr_;
+  int                            autoConnect_;
+  int                            noProcessEos_;
+  int                            adsParamArrayCount_;
+  int                            paramTableSize_;
+  int                            defaultSampleTimeMS_;
+  int                            defaultMaxDelayTimeMS_;
+  int                            adsTimeoutMS_;
+  int                            connectedAds_;
+  int                            paramRefreshNeeded_;
+  long                           adsPort_;
+  uint16_t                       amsportDefault_;
+  unsigned int                   priority_;
+  AmsNetId                       remoteNetId_;
+  adsParamInfo                   **pAdsParamArray_;
+  std::vector<amsPortInfo*>      amsPortList_;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */

@@ -21,8 +21,15 @@
 #define ADS_COM_ERROR_READ_SYMBOLIC_INFO 1007
 
 #ifndef ASYN_TRACE_INFO
-#define ASYN_TRACE_INFO      0x0040
+  #define ASYN_TRACE_INFO      0x0040
 #endif
+
+typedef struct amsPortInfo{
+  uint16_t amsPort;
+  int connected;
+  int paramRefreshNeeded;
+  int allowCallback;
+}amsPortInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
 typedef struct {
@@ -61,11 +68,11 @@ typedef enum{
   ADST_MAXTYPES
 } ADSDATATYPEID;
 
-
 const char *adsErrorToString(long error);
 const char *adsTypeToString(long type);
 const char *asynTypeToString(long type);
 const char *asynStateToString(long state);
+const char *epicsStateToString(int state);
 size_t adsTypeSize(long type);
 asynParamType dtypStringToAsynType(char *dtype);
 

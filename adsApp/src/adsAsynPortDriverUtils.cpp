@@ -3,6 +3,8 @@
 
 #include "adsAsynPortDriverUtils.h"
 #include <string.h>
+#include <initHooks.h>
+
 
 const char *adsErrorToString(long error)
 {
@@ -358,4 +360,77 @@ asynParamType dtypStringToAsynType(char *dtype)
   //  asynParamGenericPointer
 
   return asynParamNotDefined;
+}
+
+const char* epicsStateToString(int state)
+{
+  switch(state) {
+    case initHookAtIocBuild:
+      return "initHookAtIocBuild";
+      break;
+    case initHookAtBeginning:
+      return "initHookAtBeginning";
+      break;
+    case initHookAfterCallbackInit:
+      return "initHookAfterCallbackInit";
+      break;
+    case initHookAfterCaLinkInit:
+      return "initHookAfterCaLinkInit";
+      break;
+    case initHookAfterInitDrvSup:
+      return "initHookAfterInitDrvSup";
+      break;
+    case initHookAfterInitRecSup:
+      return "initHookAfterInitRecSup";
+      break;
+    case initHookAfterInitDevSup:
+      return "initHookAfterInitDevSup";
+      break;
+    case initHookAfterInitDatabase:
+      return "initHookAfterInitDatabase";
+      break;
+    case initHookAfterFinishDevSup:
+      return "initHookAfterFinishDevSup";
+      break;
+    case initHookAfterScanInit:
+      return "initHookAfterScanInit";
+      break;
+    case initHookAfterInitialProcess:
+      return "initHookAfterInitialProcess";
+      break;
+    case initHookAfterIocBuilt:
+      return "initHookAfterIocBuilt";
+      break;
+    case initHookAtIocRun:
+      return "initHookAtIocRun";
+      break;
+    case initHookAfterDatabaseRunning:
+      return "initHookAfterDatabaseRunning";
+      break;
+    case initHookAfterCaServerRunning:
+      return "initHookAfterCaServerRunning";
+      break;
+    case initHookAfterIocRunning:
+      return "initHookAfterIocRunning";
+      break;
+    case initHookAtIocPause:
+      return "initHookAtIocPause";
+      break;
+    case initHookAfterCaServerPaused:
+      return "initHookAfterCaServerPaused";
+      break;
+    case initHookAfterDatabasePaused:
+      return "initHookAfterDatabasePaused";
+      break;
+    case initHookAfterIocPaused:
+      return "initHookAfterIocPaused";
+      break;
+     case initHookAfterInterruptAccept:
+      return "initHookAfterInterruptAccept";
+      break;
+    default:
+      return "Unknown state";
+      break;
+  }
+  return "Unknown state";
 }
