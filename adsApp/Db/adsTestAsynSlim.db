@@ -3,5 +3,13 @@ record(ai,"$(P)GetBTestSCAN"){
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT),0,1)T_DLY_MS=1000/TS_MS=1000/ADSPORT=851/Main.bTest?")
   field(PREC, "3")
-  field(SCAN,"1 second")
+  field(SCAN,"10 second")
+}
+
+record(ai,"$(P)GetNTestSCAN"){
+  field(PINI, "1")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)T_DLY_MS=1000/TS_MS=1000/ADSPORT=852/Main.nTest?")
+  field(PREC, "3")
+  field(SCAN,"10 second")
 }

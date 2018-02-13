@@ -25,8 +25,9 @@ require ads,anderssandstrom
 # 8. noProcessEOS
 # 9. default sample time ms
 # 10. max delay time ms (buffer time in plc)
+# 11. ADS command timeout in ms
 
-adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100)
+adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100,1000)
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")

@@ -8,6 +8,7 @@
 #include <dbBase.h>
 #include <dbStaticLib.h>
 #include "AdsLib.h"
+#include <vector>
 
 #define ADS_MAX_FIELD_CHAR_LENGTH 128
 #define ADS_ADR_COMMAND_PREFIX ".ADR."
@@ -31,6 +32,7 @@ typedef struct adsParamInfo{
   double        sampleTimeMS;  //milli seconds
   double        maxDelayTimeMS;  //milli seconds
   uint16_t      amsPort;
+  bool          amsPortConnected;
   int           paramIndex;  //also used as hUser for ads callback
   bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
   bool          isAdrCommand;
@@ -46,6 +48,7 @@ typedef struct adsParamInfo{
   bool          bCallbackNotifyValid;
   uint32_t      hSymbolicHandle;
   bool          bSymbolicHandleValid;
+  //Array buffer
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
 }adsParamInfo;
@@ -169,6 +172,8 @@ private:
                       uint32_t bytesToWrite);
   asynStatus adsReadParam(adsParamInfo *paramInfo);
   asynStatus adsReadState(uint16_t *adsState);
+  asynStatus adsReadState(uint16_t amsport,
+                          uint16_t *adsState);
   asynStatus adsGenericArrayWrite(int paramIndex,
                                   long allowedType,
                                   const void *epicsDataBuffer,
@@ -205,6 +210,7 @@ private:
   AmsNetId remoteNetId_;
   int connected_;
   int paramRefreshNeeded_;
+  std::vector<std::uint16_t> amsPortsList_;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */
