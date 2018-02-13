@@ -134,7 +134,7 @@ private:
                                       adsParamInfo *paramInfo);
   asynStatus parsePlcInfofromDrvInfo(const char* drvInfo,
                                      adsParamInfo *paramInfo);
-  asynParamType dtypStringToAsynType(char *dtype);
+  //asynParamType dtypStringToAsynType(char *dtype);
   asynStatus refreshParams();
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);

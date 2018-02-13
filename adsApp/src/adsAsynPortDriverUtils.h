@@ -2,15 +2,27 @@
 #ifndef ADSASYNPORTDRIVERUTILS_H_
 #define ADSASYNPORTDRIVERUTILS_H_
 
-#include "asynPortDriver.h"
-#include "AdsLib.h"
-#include "adsCom.h"
+#include "asynPortDriver.h"  //data types
+#include "AdsLib.h"          //error codes
 
 #define ADS_MAX_FIELD_CHAR_LENGTH 128
 #define ADS_ADR_COMMAND_PREFIX ".ADR."
 #define ADS_OPTION_T_MAX_DLY_MS "T_DLY_MS"
 #define ADS_OPTION_T_SAMPLE_RATE_MS "TS_MS"
 #define ADS_OPTION_ADSPORT "ADSPORT"
+
+//#define ADS_COM_ERROR_INVALID_AMS_PORT 1000
+//#define ADS_COM_ERROR_INVALID_AMS_ADDRESS 1001
+//#define ADS_COM_ERROR_OPEN_ADS_PORT_FAIL 1002
+//#define ADS_COM_ERROR_ADD_ADS_ROUTE_FAIL 1003
+//#define ADS_COM_ERROR_INVALID_DATA_TYPE 1004
+//#define ADS_COM_ERROR_ADS_READ_BUFFER_INDEX_EXCEEDED_SIZE 1005
+//#define ADS_COM_ERROR_BUFFER_TO_EPICS_FULL 1006
+#define ADS_COM_ERROR_READ_SYMBOLIC_INFO 1007
+
+#ifndef ASYN_TRACE_INFO
+#define ASYN_TRACE_INFO      0x0040
+#endif
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
 typedef struct {
@@ -29,11 +41,33 @@ typedef struct {
   char* symComment;
 } adsSymbolEntry;
 
+typedef enum{
+  ADST_VOID     = 0,
+  ADST_INT8     = 16,
+  ADST_UINT8    = 17,
+  ADST_INT16    = 2,
+  ADST_UINT16   = 18,
+  ADST_INT32    = 3,
+  ADST_UINT32   = 19,
+  ADST_INT64    = 20,
+  ADST_UINT64   = 21,
+  ADST_REAL32   = 4,
+  ADST_REAL64   = 5,
+  ADST_BIGTYPE  = 65,
+  ADST_STRING   = 30,
+  ADST_WSTRING  = 31,
+  ADST_REAL80   = 32,
+  ADST_BIT      = 33,
+  ADST_MAXTYPES
+} ADSDATATYPEID;
+
+
 const char *adsErrorToString(long error);
 const char *adsTypeToString(long type);
 const char *asynTypeToString(long type);
 const char *asynStateToString(long state);
 size_t adsTypeSize(long type);
+asynParamType dtypStringToAsynType(char *dtype);
 
 #endif /* ADSASYNPORTDRIVERUTILS_H_ */
 

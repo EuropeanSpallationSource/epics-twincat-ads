@@ -2,7 +2,7 @@
  */
 
 #include "adsAsynPortDriverUtils.h"
-
+#include <string.h>
 
 const char *adsErrorToString(long error)
 {
@@ -190,7 +190,6 @@ const char *adsTypeToString(long type)
   }
 }
 
-
 const char *asynTypeToString(long type)
 {
   switch (type) {
@@ -329,4 +328,34 @@ size_t adsTypeSize(long type)
     default:
       return -1;
   }
+}
+
+asynParamType dtypStringToAsynType(char *dtype)
+{
+  if(strcmp("asynFloat64",dtype)==0){
+    return asynParamFloat64;
+  }
+  if(strcmp("asynInt32",dtype)==0){
+    return asynParamInt32;
+  }
+  if(strcmp("asynInt8ArrayIn",dtype)==0 || strcmp("asynInt8ArrayOut",dtype)==0){
+    return asynParamInt8Array;
+  }
+  if(strcmp("asynInt16ArrayIn",dtype)==0 || strcmp("asynInt16ArrayOut",dtype)==0){
+    return asynParamInt16Array;
+  }
+  if(strcmp("asynInt32ArrayIn",dtype)==0 || strcmp("asynInt32ArrayOut",dtype)==0){
+    return asynParamInt32Array;
+  }
+  if(strcmp("asynFloat32ArrayIn",dtype)==0 || strcmp("asynFloat32ArrayOut",dtype)==0){
+    return asynParamFloat32Array;
+  }
+  if(strcmp("asynFloat64ArrayIn",dtype)==0 || strcmp("asynFloat64ArrayOut",dtype)==0){
+    return asynParamFloat64Array;
+  }
+  //  asynParamUInt32Digital,
+  //  asynParamOctet,
+  //  asynParamGenericPointer
+
+  return asynParamNotDefined;
 }

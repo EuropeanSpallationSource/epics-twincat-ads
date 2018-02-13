@@ -16,10 +16,6 @@
 #include "AdsLib.h"
 #include "adsAsynPortDriverUtils.h"
 
-#define ADS_ADR_COMMAND_PREFIX ".ADR."
-#define ADS_OPTION_T_MAX_DLY_MS "T_DLY_MS"
-#define ADS_OPTION_T_SAMPLE_RATE_MS "TS_MS"
-#define ADS_OPTION_ADSPORT "ADSPORT"
 
 const char*   driverName_="adsParameter";
 
@@ -44,7 +40,6 @@ public:
 private:
   void          initVars();
   asynStatus    validateDrvInfo(const char *drvInfo);
-  asynParamType dtypStringToAsynType(char *dtype);
   asynStatus    parsePlcInfofromDrvInfo(const char *drvInfo);
   asynStatus    getRecordInfoFromDrvInfo(const char *drvInfo);
 

@@ -24,7 +24,7 @@
 #include <dbStaticLib.h>
 #include <dbAccess.h>
 
-#include "adsCom.h"
+//#include "adsCom.h"
 
 static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
@@ -829,7 +829,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
-asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
+/*asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
 {
   const char* functionName = "dtypStringToAsynType";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
@@ -860,7 +860,7 @@ asynParamType adsAsynPortDriver::dtypStringToAsynType(char *dtype)
   //  asynParamGenericPointer
 
   return asynParamNotDefined;
-}
+}*/
 
 asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsParamInfo *paramInfo)
 {
