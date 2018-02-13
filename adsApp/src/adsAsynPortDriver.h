@@ -1,4 +1,3 @@
-
 #ifndef ADSASYNPORTDRIVER_H_
 #define ADSASYNPORTDRIVER_H_
 
@@ -9,12 +8,7 @@
 #include <dbStaticLib.h>
 #include "AdsLib.h"
 #include <vector>
-
-#define ADS_MAX_FIELD_CHAR_LENGTH 128
-#define ADS_ADR_COMMAND_PREFIX ".ADR."
-#define ADS_OPTION_T_MAX_DLY_MS "T_DLY_MS"
-#define ADS_OPTION_T_SAMPLE_RATE_MS "TS_MS"
-#define ADS_OPTION_ADSPORT "ADSPORT"
+#include "adsAsynPortDriverUtils.h"
 
 typedef struct adsParamInfo{
   char          *recordName;
@@ -52,23 +46,6 @@ typedef struct adsParamInfo{
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
 }adsParamInfo;
-
-//For info from symbolic name Actually this data type should be in the adslib (but missing)..
-typedef struct {
-  uint32_t entryLen;
-  uint32_t iGroup;
-  uint32_t iOffset;
-  uint32_t size;
-  uint32_t dataType;
-  uint32_t flags;
-  uint16_t nameLength;
-  uint16_t typeLength;
-  uint16_t commentLength;
-  char  buffer[768]; //256*3, 256 is string size in TwinCAT then 768 is max
-  char* variableName;
-  char* symDataType;
-  char* symComment;
-} adsSymbolEntry;
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
@@ -186,11 +163,11 @@ private:
   asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
 
   //Static methods
-  static const char *adsErrorToString(long error);
+  /*static const char *adsErrorToString(long error);
   static const char *adsTypeToString(long type);
   static const char *asynTypeToString(long type);
   static const char *asynStateToString(long state);
-  static size_t adsTypeSize(long type);
+  static size_t adsTypeSize(long type);*/
 
   //Variables
   char *ipaddr_;

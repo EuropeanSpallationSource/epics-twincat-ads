@@ -2661,47 +2661,7 @@ const char *adsAsynPortDriver::adsTypeToString(long type)
   }
 }
 
-size_t adsAsynPortDriver::adsTypeSize(long type)
-{
-  switch (type) {
-    case ADST_VOID:
-      return 0;
-    case ADST_INT16:
-      return 2;
-    case ADST_INT32:
-      return 4;
-    case ADST_REAL32:
-      return 4;
-    case ADST_REAL64:
-      return 8;
-    case ADST_INT8:
-      return 1;
-    case ADST_UINT8:
-      return 1;
-    case ADST_UINT16:
-      return 2;
-    case ADST_UINT32:
-      return 4;
-    case ADST_INT64:
-      return 8;
-    case ADST_UINT64:
-      return 8;
-    case ADST_STRING:
-      return 1;  //Array of char
-    case ADST_WSTRING:
-      return -1;
-    case ADST_REAL80:
-      return 10;
-    case ADST_BIT:
-      return 1;
-    case ADST_BIGTYPE:
-      return -1;
-    case ADST_MAXTYPES:
-      return -1;
-    default:
-      return -1;
-  }
-}
+
 const char *adsAsynPortDriver::asynTypeToString(long type)
 {
   switch (type) {
