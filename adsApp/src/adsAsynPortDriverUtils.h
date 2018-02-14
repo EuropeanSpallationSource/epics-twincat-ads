@@ -63,7 +63,11 @@ typedef struct adsParamInfo{
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
   bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
+  //timing
   ADSTIMEBASE   timeBase;
+  uint64_t      plcTimeStampRaw;
+  epicsTimeStamp plcTimeStamp;
+  epicsTimeStamp epicsTimestamp;
 }adsParamInfo;
 
 typedef struct amsPortInfo{
@@ -116,6 +120,7 @@ const char *asynStateToString(long state);
 const char *epicsStateToString(int state);
 size_t adsTypeSize(long type);
 asynParamType dtypStringToAsynType(char *dtype);
+int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts);
 
 #endif /* ADSASYNPORTDRIVERUTILS_H_ */
 

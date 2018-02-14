@@ -4,7 +4,7 @@
 #include "adsAsynPortDriverUtils.h"
 #include <string.h>
 #include <initHooks.h>
-
+#include "epicsTime.h"
 
 const char *adsErrorToString(long error)
 {
@@ -433,4 +433,21 @@ const char* epicsStateToString(int state)
       break;
   }
   return "Unknown state";
+}
+
+#define WINDOWS_TICK_PER_SEC 10000000
+#define SEC_TO_UNIX_EPOCH 11644473600LL
+
+int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts)
+{
+  if(!ts){
+    return 1;
+  }
+  //move from WindowsTime to Epics time 1601 jan 1 to 1990 jan 1 (POSIX_TIME_AT_EPICS_EPOCH defined in epicsTime.h)
+  plcTime=plcTime-(POSIX_TIME_AT_EPICS_EPOCH + SEC_TO_UNIX_EPOCH)*WINDOWS_TICK_PER_SEC;
+
+  ts->secPastEpoch=(uint32_t)(plcTime/WINDOWS_TICK_PER_SEC);
+  ts->nsec=(uint32_t)((plcTime-(ts->secPastEpoch*WINDOWS_TICK_PER_SEC))*100);
+
+  return 0;
 }

@@ -33,14 +33,26 @@ record(ai,"$(P)GetFAmplitude"){
 # fTest: Fast update rate:
 # TS_MS=10:      10ms sample rate in PLC)
 # T_DLY_MS=500:  500ms max delay for data to be sent from PLC (buffers in max 500ms). This could result in that 50 values (T_DLY_MS/TS_MS) are sent each 500ms (depending on if other communication is filling the PLC AMS buffers or not).
+# One with timestamp from PLC and one with EPICS timestamp
 
-record(ai,"$(P)GetFTest"){
+record(ai,"$(P)GetFTestPLCTime"){
   field(PINI, "1")
+  field(TSE, -2)
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)T_DLY_MS=500/TS_MS=10/ADSPORT=851/Main.fTest?")
+  field(INP,  "@asyn($(PORT),0,1)TIMEBASE=PLC/T_DLY_MS=500/TS_MS=10/ADSPORT=851/Main.fTest?")
   field(PREC, "3")
   field(SCAN,"I/O Intr")
 }
+
+record(ai,"$(P)GetFTestEpicsTime"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)TIMEBASE=EPICS/T_DLY_MS=500/TS_MS=10/ADSPORT=851/Main.fTest?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+}
+
 
 ###############################################################################
 # bTest:  Two different types:

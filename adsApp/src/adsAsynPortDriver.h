@@ -127,12 +127,13 @@ private:
                                   long allowedType,
                                   const void *epicsDataBuffer,
                                   size_t nEpicsBufferBytes);
-  asynStatus adsGenericArrayRead(int paramIndex,
+  asynStatus adsGenericArrayRead(asynUser *pasynUser,
                                  long allowedType,
                                  void *epicsDataBuffer,
                                  size_t nEpicsBufferBytes,
                                  size_t *nBytesRead);
   asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
+  asynStatus refreshParamTime(adsParamInfo *paramInfo);
 
   char                           *ipaddr_;
   char                           *amsaddr_;

@@ -115,6 +115,8 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
     return;
   }
 
+  paramInfo->plcTimeStampRaw=pNotification->nTimeStamp;
+
   adsAsynPortObj->adsUpdateParameterLock(paramInfo,data,pNotification->cbSampleSize);
 }
 
@@ -384,6 +386,8 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Param isIOIntr:            %s\n",paramInfo->isIOIntr ? "true" : "false");
       fprintf(fp,"    Param asyn addr:           %d\n",paramInfo->asynAddr);
       fprintf(fp,"    Param time base:           %s\n",paramInfo->timeBase ? ADS_OPTION_TIMEBASE_PLC : ADS_OPTION_TIMEBASE_EPICS);
+      fprintf(fp,"    Param plc time:            %us:%uns\n",paramInfo->plcTimeStamp.secPastEpoch,paramInfo->plcTimeStamp.nsec);
+      fprintf(fp,"    Param epics time:          %us:%uns\n",paramInfo->epicsTimestamp.secPastEpoch,paramInfo->epicsTimestamp.nsec);
       fprintf(fp,"    Param array buffer alloc:  %s\n",paramInfo->arrayDataBuffer ? "true" : "false");
       fprintf(fp,"    Param array buffer size:   %lu\n",paramInfo->arrayDataBufferSize);
       fprintf(fp,"    Plc ams port:              %d\n",paramInfo->amsPort);
@@ -1279,11 +1283,17 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
   return asynPortDriver::writeFloat64(pasynUser,value);
 }
 
-asynStatus adsAsynPortDriver::adsGenericArrayRead(int paramIndex,long allowedType,void *epicsDataBuffer,size_t nEpicsBufferBytes,size_t *nBytesRead)
+asynStatus adsAsynPortDriver::adsGenericArrayRead(asynUser *pasynUser,long allowedType,void *epicsDataBuffer,size_t nEpicsBufferBytes,size_t *nBytesRead)
 {
   const char* functionName = "adsGenericArrayRead";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
+  int paramIndex=pasynUser->reason;
+
+  if(paramIndex>=paramTableSize_){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Parameter index (pasynUser->reason) out of range. %d>=%d.\n", driverName, functionName,paramIndex,paramTableSize_);
+    return asynError;
+  }
 
   if(!pAdsParamArray_[paramIndex]){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: pAdsParamArray NULL\n", driverName, functionName);
@@ -1310,6 +1320,14 @@ asynStatus adsAsynPortDriver::adsGenericArrayRead(int paramIndex,long allowedTyp
 
   memcpy(epicsDataBuffer,paramInfo->arrayDataBuffer,bytesToWrite);
   *nBytesRead=bytesToWrite;
+
+  //update timestamp
+  pasynUser->timestamp=paramInfo->epicsTimestamp;
+
+  //update status
+  //pasynUser->alarmStatus=
+  //update severity
+  //pasynUser->alarmSeverity=
 
   return asynSuccess;
 }
@@ -1369,7 +1387,7 @@ asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser,epicsInt8 *value
   }
 
   size_t nBytesRead=0;
-  asynStatus stat=adsGenericArrayRead(pasynUser->reason, allowedType,(void *)value,nElements*sizeof(epicsInt8),&nBytesRead);
+  asynStatus stat=adsGenericArrayRead(pasynUser, allowedType,(void *)value,nElements*sizeof(epicsInt8),&nBytesRead);
   if(stat!=asynSuccess){
     return asynError;
   }
@@ -1407,7 +1425,7 @@ asynStatus adsAsynPortDriver::readInt16Array(asynUser *pasynUser,epicsInt16 *val
   long allowedType=ADST_INT16;
 
   size_t nBytesRead=0;
-  asynStatus stat=adsGenericArrayRead(pasynUser->reason, allowedType,(void *)value,nElements*sizeof(epicsInt16),&nBytesRead);
+  asynStatus stat=adsGenericArrayRead(pasynUser, allowedType,(void *)value,nElements*sizeof(epicsInt16),&nBytesRead);
   if(stat!=asynSuccess){
     return asynError;
   }
@@ -1434,7 +1452,7 @@ asynStatus adsAsynPortDriver::readInt32Array(asynUser *pasynUser,epicsInt32 *val
   long allowedType=ADST_INT32;
 
   size_t nBytesRead=0;
-  asynStatus stat=adsGenericArrayRead(pasynUser->reason, allowedType,(void *)value,nElements*sizeof(epicsInt32),&nBytesRead);
+  asynStatus stat=adsGenericArrayRead(pasynUser, allowedType,(void *)value,nElements*sizeof(epicsInt32),&nBytesRead);
   if(stat!=asynSuccess){
     return asynError;
   }
@@ -1460,7 +1478,7 @@ asynStatus adsAsynPortDriver::readFloat32Array(asynUser *pasynUser,epicsFloat32 
   long allowedType=ADST_REAL32;
 
   size_t nBytesRead=0;
-  asynStatus stat=adsGenericArrayRead(pasynUser->reason, allowedType,(void *)value,nElements*sizeof(epicsFloat32),&nBytesRead);
+  asynStatus stat=adsGenericArrayRead(pasynUser, allowedType,(void *)value,nElements*sizeof(epicsFloat32),&nBytesRead);
   if(stat!=asynSuccess){
     return asynError;
   }
@@ -1485,7 +1503,7 @@ asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser,epicsFloat64 
   long allowedType=ADST_REAL64;
 
   size_t nBytesRead=0;
-  asynStatus stat=adsGenericArrayRead(pasynUser->reason, allowedType,(void *)value,nElements*sizeof(epicsFloat64),&nBytesRead);
+  asynStatus stat=adsGenericArrayRead(pasynUser, allowedType,(void *)value,nElements*sizeof(epicsFloat64),&nBytesRead);
   if(stat!=asynSuccess){
     return asynError;
   }
@@ -1964,6 +1982,8 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
     return asynError;
   }
 
+  //No timestamp available
+  paramInfo->plcTimeStampRaw=0;
   return adsUpdateParameter(paramInfo,(const void *)data,bytesRead);
 }
 
@@ -2009,6 +2029,51 @@ adsParamInfo *adsAsynPortDriver::getAdsParamInfo(int index)
   }
 }
 
+asynStatus adsAsynPortDriver::refreshParamTime(adsParamInfo *paramInfo)
+{
+  const char* functionName = "setParamTime";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: plcTime %lu.\n", driverName, functionName,paramInfo->plcTimeStampRaw);
+
+  //Convert plc timeStamp (windows format) to epicsTimeStamp
+  if(windowsToEpicsTimeStamp(paramInfo->plcTimeStampRaw,&paramInfo->plcTimeStamp)){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: windowsToEpicsTimeStamp() failed.\n", driverName, functionName);
+    return asynError;
+  }
+
+  epicsTimeStamp ts;
+  //if(getTimeStamp(&ts)!=asynSuccess){
+  //  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: getTimeStamp() failed.\n", driverName, functionName);
+  //  return asynError;
+  //}
+
+  //printf("#########################\n");
+  //printf("%us:%uns  (epicsTime before).\n",ts.secPastEpoch,ts.nsec);
+
+  //Update time stamp
+  if(paramInfo->timeBase==ADS_TIME_BASE_EPICS || paramInfo->plcTimeStampRaw==0){
+    if(updateTimeStamp()!=asynSuccess){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: updateTimeStamp() failed.\n", driverName, functionName);
+      return asynError;
+    }
+  }
+  else{ //ADS_TIME_BASE_PLC
+    if(setTimeStamp(&paramInfo->plcTimeStamp)!=asynSuccess){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: updateTimeStamp() failed.\n", driverName, functionName);
+      return asynError;
+    }
+  }
+
+  if(getTimeStamp(&ts)!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: getTimeStamp() failed.\n", driverName, functionName);
+    return asynError;
+  }
+  //printf("%us:%uns  (epicsTime after).\n",ts.secPastEpoch,ts.nsec);
+
+  paramInfo->epicsTimestamp=ts;
+
+  return asynSuccess;
+}
+
 asynStatus adsAsynPortDriver::adsUpdateParameterLock(adsParamInfo* paramInfo,const void *data,size_t dataSize)
 {
   lock();
@@ -2039,9 +2104,8 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
     writeSize=paramInfo->plcSize;
   }
 
-  //Update time stamp (later take timestamp from callback instead somehow)
-  if(updateTimeStamp()!=asynSuccess){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: updateTimeStamp() failed.\n", driverName, functionName);
+  if(refreshParamTime(paramInfo)!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: refreshParamTime() failed.\n", driverName, functionName);
     return asynError;
   }
 
