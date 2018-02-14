@@ -9,6 +9,9 @@
 #define ADS_ADR_COMMAND_PREFIX ".ADR."
 #define ADS_OPTION_T_MAX_DLY_MS "T_DLY_MS"
 #define ADS_OPTION_T_SAMPLE_RATE_MS "TS_MS"
+#define ADS_OPTION_TIMEBASE "TIMEBASE"  //PLC or EPICS
+#define ADS_OPTION_TIMEBASE_EPICS "EPICS"
+#define ADS_OPTION_TIMEBASE_PLC "PLC"
 #define ADS_OPTION_ADSPORT "ADSPORT"
 
 //#define ADS_COM_ERROR_INVALID_AMS_PORT 1000
@@ -23,6 +26,45 @@
 #ifndef ASYN_TRACE_INFO
   #define ASYN_TRACE_INFO      0x0040
 #endif
+
+typedef enum{
+  ADS_TIME_BASE_EPICS=0,
+  ADS_TIME_BASE_PLC=1
+} ADSTIMEBASE;
+
+typedef struct adsParamInfo{
+  char          *recordName;
+  char          *recordType;
+  char          *scan;
+  char          *dtyp;
+  char          *inp;
+  char          *out;
+  char          *drvInfo;
+  asynParamType asynType;
+  int           asynAddr;
+  bool          isIOIntr;
+  double        sampleTimeMS;  //milli seconds
+  double        maxDelayTimeMS;  //milli seconds
+  uint16_t      amsPort;
+  int           paramIndex;  //also used as hUser for ads callback
+  bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
+  bool          isAdrCommand;
+  char          *plcAdrStr;
+  uint32_t      plcAbsAdrGroup;
+  uint32_t      plcAbsAdrOffset;
+  uint32_t      plcSize;
+  uint32_t      plcDataType;
+  bool          plcDataTypeWarn;
+  bool          plcDataIsArray;
+  uint32_t      hCallbackNotify;
+  bool          bCallbackNotifyValid;
+  uint32_t      hSymbolicHandle;
+  bool          bSymbolicHandleValid;
+  size_t        arrayDataBufferSize;
+  void*         arrayDataBuffer;
+  bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
+  ADSTIMEBASE   timeBase;
+}adsParamInfo;
 
 typedef struct amsPortInfo{
   uint16_t amsPort;

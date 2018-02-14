@@ -10,39 +10,6 @@
 #include <vector>
 #include "adsAsynPortDriverUtils.h"
 
-typedef struct adsParamInfo{
-  char          *recordName;
-  char          *recordType;
-  char          *scan;
-  char          *dtyp;
-  char          *inp;
-  char          *out;
-  char          *drvInfo;
-  asynParamType asynType;
-  int           asynAddr;
-  bool          isIOIntr;
-  double        sampleTimeMS;  //milli seconds
-  double        maxDelayTimeMS;  //milli seconds
-  uint16_t      amsPort;
-  int           paramIndex;  //also used as hUser for ads callback
-  bool          plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
-  bool          isAdrCommand;
-  char          *plcAdrStr;
-  uint32_t      plcAbsAdrGroup;
-  uint32_t      plcAbsAdrOffset;
-  uint32_t      plcSize;
-  uint32_t      plcDataType;
-  bool          plcDataTypeWarn;
-  bool          plcDataIsArray;
-  uint32_t      hCallbackNotify;
-  bool          bCallbackNotifyValid;
-  uint32_t      hSymbolicHandle;
-  bool          bSymbolicHandleValid;
-  size_t        arrayDataBufferSize;
-  void*         arrayDataBuffer;
-  bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
-}adsParamInfo;
-
 class adsAsynPortDriver : public asynPortDriver {
 public:
   adsAsynPortDriver(const char *portName,

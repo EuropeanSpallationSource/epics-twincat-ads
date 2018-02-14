@@ -24,8 +24,6 @@
 #include <dbStaticLib.h>
 #include <dbAccess.h>
 
-//#include "adsCom.h"
-
 static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
 static long oldTimeStamp=0;
@@ -50,7 +48,6 @@ static void getEpicsState(initHookState state)
       allowCallbackEpicsState=1;
       break;
     default:
-      //allowCallbackEpicsState=0;
       break;
   }
   currentEpicsState=state;
@@ -76,7 +73,6 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
 
 
   if(!allowCallbackEpicsState){
-    //asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Callback for hUser %u is not allowed. EPICS in state %s (%d). Data discarded.\n", driverName, functionName,hUser,epicsStateToString((int)currentEpicsState),(int)currentEpicsState);
     return;
   }
 
@@ -104,7 +100,6 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   }
 
   if(!adsAsynPortObj->isCallbackAllowed(paramInfo)){
-    //asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Callback for %s (hUser %u) is not allowed. amsPort %u not connected. Data discarded.\n", driverName, functionName,paramInfo->drvInfo,hUser,paramInfo->amsPort);
     return;
   }
 
@@ -388,6 +383,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Param max delay time [ms]: %lf\n",paramInfo->maxDelayTimeMS);
       fprintf(fp,"    Param isIOIntr:            %s\n",paramInfo->isIOIntr ? "true" : "false");
       fprintf(fp,"    Param asyn addr:           %d\n",paramInfo->asynAddr);
+      fprintf(fp,"    Param time base:           %s\n",paramInfo->timeBase ? ADS_OPTION_TIMEBASE_PLC : ADS_OPTION_TIMEBASE_EPICS);
       fprintf(fp,"    Param array buffer alloc:  %s\n",paramInfo->arrayDataBuffer ? "true" : "false");
       fprintf(fp,"    Param array buffer size:   %lu\n",paramInfo->arrayDataBufferSize);
       fprintf(fp,"    Plc ams port:              %d\n",paramInfo->amsPort);
@@ -805,13 +801,13 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: drvInfo %s is %s\n", driverName, functionName,drvInfo,paramInfo->isIOIntr ? "I/O Intr (end with ?)": " not I/O Intr (end with =)");
 
   //take part after last "/" if option or complete string..
-  char plcAdrLocal[ADS_MAX_FIELD_CHAR_LENGTH];
+  char buffer[ADS_MAX_FIELD_CHAR_LENGTH];
   //See if option (find last '/')
   const char *drvInfoEnd=strrchr(drvInfo,'/');
   if(drvInfoEnd){ // found '/'
-    int nvals=sscanf(drvInfoEnd,"/%s",plcAdrLocal);
+    int nvals=sscanf(drvInfoEnd,"/%s",buffer);
     if(nvals==1){
-      paramInfo->plcAdrStr=strdup(plcAdrLocal);
+      paramInfo->plcAdrStr=strdup(buffer);
       paramInfo->plcAdrStr[strlen(paramInfo->plcAdrStr)-1]=0; //Strip ? or = from end
     }
     else{
@@ -865,8 +861,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       return asynError;
     }
     int nvals;
-    nvals = sscanf(isThere+strlen(option),"=%lf/",
-             &paramInfo->maxDelayTimeMS);
+    nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->maxDelayTimeMS);
 
     if(nvals!=1){
       paramInfo->maxDelayTimeMS=defaultMaxDelayTimeMS_;
@@ -885,13 +880,38 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       return asynError;
     }
     int nvals;
-    nvals = sscanf(isThere+strlen(option),"=%lf/",
-             &paramInfo->sampleTimeMS);
+    nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->sampleTimeMS);
 
     if(nvals!=1){
       paramInfo->sampleTimeMS=defaultSampleTimeMS_;
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
       return asynError;
+    }
+  }
+
+  //Check if ADS_OPTION_TIMEBASE option
+  option=ADS_OPTION_TIMEBASE;
+  paramInfo->timeBase=ADS_TIME_BASE_EPICS;
+  isThere=strstr(drvInfo,option);
+  if(isThere){
+    int minLen=strlen(ADS_OPTION_TIMEBASE_PLC);
+    int epicsLen=strlen(ADS_OPTION_TIMEBASE_EPICS);
+    if(epicsLen<minLen){
+      minLen=epicsLen;
+    }
+    if(strlen(isThere)<(strlen(option)+strlen("=/")+minLen)){ //Allowed "PLC" or "EPICS"
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). String to short.\n", driverName, functionName,option,drvInfo);
+      return asynError;
+    }
+    int nvals;
+    nvals = sscanf(isThere+strlen(option),"=%[^/]/",buffer);
+    if(nvals!=1){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
+      return asynError;
+    }
+    //Defaults to EPICS so only need to check PLC
+    if(strcmp(ADS_OPTION_TIMEBASE_PLC,buffer)==0){
+      paramInfo->timeBase=ADS_TIME_BASE_PLC;
     }
   }
 
@@ -906,8 +926,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     }
     int nvals;
     int val;
-    nvals = sscanf(isThere+strlen(option),"=%d/",
-             &val);
+    nvals = sscanf(isThere+strlen(option),"=%d/",&val);
     if(nvals==1){
       paramInfo->amsPort=(uint16_t)val;
     }
