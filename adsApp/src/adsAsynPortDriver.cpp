@@ -353,15 +353,19 @@ void adsAsynPortDriver::report(FILE *fp, int details)
 
   if (details >= 1) {
     fprintf(fp, "General information:\n");
-    fprintf(fp, "  Port:                %s\n",portName);
-    fprintf(fp, "  Ip-address:          %s\n",ipaddr_);
-    fprintf(fp, "  Ams-address:         %s\n",amsaddr_);
-    fprintf(fp, "  Default Ams-port :   %d\n",amsportDefault_);
-    fprintf(fp, "  Auto-connect:        %s\n",autoConnect_ ? "true" : "false");
-    fprintf(fp, "  Priority:            %d\n",priority_); //Used?
-    fprintf(fp, "  ProcessEos:          %s\n",noProcessEos_ ? "false" : "true"); //Inverted
-    fprintf(fp, "  Param. table size:   %d\n",paramTableSize_);
-    fprintf(fp, "  Param. count:        %d\n",adsParamArrayCount_);
+    fprintf(fp, "  Port:                        %s\n",portName);
+    fprintf(fp, "  Ip-address:                  %s\n",ipaddr_);
+    fprintf(fp, "  Ams-address:                 %s\n",amsaddr_);
+    fprintf(fp, "  Default Ams-port :           %d\n",amsportDefault_);
+    fprintf(fp, "  Auto-connect:                %s\n",autoConnect_ ? "true" : "false");
+    fprintf(fp, "  Priority:                    %d\n",priority_); //Used?
+    fprintf(fp, "  ProcessEos:                  %s\n",noProcessEos_ ? "false" : "true"); //Inverted
+    fprintf(fp, "  Param. table size:           %d\n",paramTableSize_);
+    fprintf(fp, "  Param. count:                %d\n",adsParamArrayCount_);
+    fprintf(fp, "  ADS command timeout [ms]:    %d\n",adsTimeoutMS_);
+    fprintf(fp, "  Default sample time [ms]     %d\n",defaultSampleTimeMS_);
+    fprintf(fp, "  Default max delay time [ms]: %d\n",defaultMaxDelayTimeMS_);
+    fprintf(fp, "  Default time source:         %s\n",(defaultTimeSource_==ADS_TIME_BASE_PLC) ? ADS_OPTION_TIMEBASE_PLC : ADS_OPTION_TIMEBASE_EPICS);
     fprintf(fp, "  NOTE: Several records can be linked to the same parameter.\n");
     fprintf(fp,"\n");
   }
@@ -387,7 +391,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Param max delay time [ms]: %lf\n",paramInfo->maxDelayTimeMS);
       fprintf(fp,"    Param isIOIntr:            %s\n",paramInfo->isIOIntr ? "true" : "false");
       fprintf(fp,"    Param asyn addr:           %d\n",paramInfo->asynAddr);
-      fprintf(fp,"    Param time base:           %s\n",paramInfo->timeBase ? ADS_OPTION_TIMEBASE_PLC : ADS_OPTION_TIMEBASE_EPICS);
+      fprintf(fp,"    Param time source:         %s\n",(paramInfo->timeBase==ADS_TIME_BASE_PLC) ? ADS_OPTION_TIMEBASE_PLC : ADS_OPTION_TIMEBASE_EPICS);
       fprintf(fp,"    Param plc time:            %us:%uns\n",paramInfo->plcTimeStamp.secPastEpoch,paramInfo->plcTimeStamp.nsec);
       fprintf(fp,"    Param epics time:          %us:%uns\n",paramInfo->epicsTimestamp.secPastEpoch,paramInfo->epicsTimestamp.nsec);
       fprintf(fp,"    Param array buffer alloc:  %s\n",paramInfo->arrayDataBuffer ? "true" : "false");
