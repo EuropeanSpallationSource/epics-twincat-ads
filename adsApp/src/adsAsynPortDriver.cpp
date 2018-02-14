@@ -138,7 +138,8 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      int noProcessEos,
                                      int defaultSampleTimeMS,
                                      int maxDelayTimeMS,
-                                     int adsTimeoutMS)
+                                     int adsTimeoutMS,
+                                     ADSTIMESOURCE defaultTimeSource)
                      :asynPortDriver(portName,
                                      1, /* maxAddr */
                                      paramTableSize,
@@ -167,6 +168,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   adsTimeoutMS_=adsTimeoutMS;
   connectedAds_=0;
   paramRefreshNeeded_=1;
+  defaultTimeSource_=defaultTimeSource;
 
   //ADS
   adsPort_=0; //handle
@@ -835,8 +837,8 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       return asynError;
     }
     paramInfo->isAdrCommand=true;
-    int nvals;
-    nvals = sscanf(isThere+strlen(option),"16#%x,16#%x,%u,%u",
+
+    int nvals = sscanf(isThere+strlen(option),"16#%x,16#%x,%u,%u",
              &paramInfo->plcAbsAdrGroup,
              &paramInfo->plcAbsAdrOffset,
              &paramInfo->plcSize,
@@ -864,8 +866,8 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). String to short.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    int nvals;
-    nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->maxDelayTimeMS);
+
+    int nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->maxDelayTimeMS);
 
     if(nvals!=1){
       paramInfo->maxDelayTimeMS=defaultMaxDelayTimeMS_;
@@ -883,8 +885,8 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). String to short.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    int nvals;
-    nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->sampleTimeMS);
+
+    int nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->sampleTimeMS);
 
     if(nvals!=1){
       paramInfo->sampleTimeMS=defaultSampleTimeMS_;
@@ -895,7 +897,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
 
   //Check if ADS_OPTION_TIMEBASE option
   option=ADS_OPTION_TIMEBASE;
-  paramInfo->timeBase=ADS_TIME_BASE_EPICS;
+  paramInfo->timeBase=defaultTimeSource_;
   isThere=strstr(drvInfo,option);
   if(isThere){
     int minLen=strlen(ADS_OPTION_TIMEBASE_PLC);
@@ -907,15 +909,19 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). String to short.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    int nvals;
-    nvals = sscanf(isThere+strlen(option),"=%[^/]/",buffer);
+
+    int nvals = sscanf(isThere+strlen(option),"=%[^/]/",buffer);
     if(nvals!=1){
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    //Defaults to EPICS so only need to check PLC
+
     if(strcmp(ADS_OPTION_TIMEBASE_PLC,buffer)==0){
       paramInfo->timeBase=ADS_TIME_BASE_PLC;
+    }
+
+    if(strcmp(ADS_OPTION_TIMEBASE_EPICS,buffer)==0){
+      paramInfo->timeBase=ADS_TIME_BASE_EPICS;
     }
   }
 
@@ -2041,13 +2047,6 @@ asynStatus adsAsynPortDriver::refreshParamTime(adsParamInfo *paramInfo)
   }
 
   epicsTimeStamp ts;
-  //if(getTimeStamp(&ts)!=asynSuccess){
-  //  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: getTimeStamp() failed.\n", driverName, functionName);
-  //  return asynError;
-  //}
-
-  //printf("#########################\n");
-  //printf("%us:%uns  (epicsTime before).\n",ts.secPastEpoch,ts.nsec);
 
   //Update time stamp
   if(paramInfo->timeBase==ADS_TIME_BASE_EPICS || paramInfo->plcTimeStampRaw==0){
@@ -2067,7 +2066,6 @@ asynStatus adsAsynPortDriver::refreshParamTime(adsParamInfo *paramInfo)
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: getTimeStamp() failed.\n", driverName, functionName);
     return asynError;
   }
-  //printf("%us:%uns  (epicsTime after).\n",ts.secPastEpoch,ts.nsec);
 
   paramInfo->epicsTimestamp=ts;
 
@@ -2394,7 +2392,8 @@ extern "C" {
                              int noProcessEos,
                              int defaultSampleTimeMS,
                              int maxDelayTimeMS,
-                             int adsTimeoutMS)
+                             int adsTimeoutMS,
+                             int defaultTimeSource)
   {
 
     if (!portName) {
@@ -2410,19 +2409,24 @@ extern "C" {
       printf("adsAsynPortDriverConfigure bad amsaddr: %s\n",amsaddr ? amsaddr : "");
       return -1;
     }
-    if (!defaultSampleTimeMS) {
+    if (defaultSampleTimeMS<0) {
       printf("adsAsynPortDriverConfigure bad defaultSampleTimeMS: %dms. Standard value of 100ms will be used.\n",defaultSampleTimeMS);
       defaultSampleTimeMS=100;
     }
 
-    if (!maxDelayTimeMS) {
+    if (!maxDelayTimeMS<0) {
       printf("adsAsynPortDriverConfigure bad maxDelayTimeMS: %dms. Standard value of 500ms will be used.\n",maxDelayTimeMS);
       maxDelayTimeMS=500;
     }
 
-    if (!adsTimeoutMS) {
+    if (!adsTimeoutMS<0) {
       printf("adsAsynPortDriverConfigure bad adsTimeoutMS: %dms. Standard value of 2000ms will be used.\n",adsTimeoutMS);
       adsTimeoutMS=2000;
+    }
+
+    if(defaultTimeSource<0 || defaultTimeSource>=ADS_TIME_BASE_MAX){
+      printf("adsAsynPortDriverConfigure bad default time source: %d. EPICS time stamps will be used. Valid options are: EPICS=%d and PLC=%d.\n",defaultTimeSource,(int)ADS_TIME_BASE_EPICS,(int)ADS_TIME_BASE_PLC);
+      defaultTimeSource=ADS_TIME_BASE_EPICS;
     }
 
     adsAsynPortObj=new adsAsynPortDriver(portName,
@@ -2435,7 +2439,8 @@ extern "C" {
                                          noProcessEos,
                                          defaultSampleTimeMS,
                                          maxDelayTimeMS,
-                                         adsTimeoutMS);
+                                         adsTimeoutMS,
+                                         (ADSTIMESOURCE)defaultTimeSource);
     if(adsAsynPortObj){
       asynUser *traceUser= adsAsynPortObj->getTraceAsynUser();
       if(!traceUser){
@@ -2464,20 +2469,21 @@ extern "C" {
   static const iocshArg adsAsynPortDriverConfigureArg8 = { "default sample time ms",iocshArgInt};
   static const iocshArg adsAsynPortDriverConfigureArg9 = { "max delay time ms",iocshArgInt};
   static const iocshArg adsAsynPortDriverConfigureArg10 = { "ADS communication timeout ms",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg11 = { "default time source (EPCIS=0,PLC=1)",iocshArgInt};
   static const iocshArg *adsAsynPortDriverConfigureArgs[] = {
     &adsAsynPortDriverConfigureArg0, &adsAsynPortDriverConfigureArg1,
     &adsAsynPortDriverConfigureArg2, &adsAsynPortDriverConfigureArg3,
     &adsAsynPortDriverConfigureArg4, &adsAsynPortDriverConfigureArg5,
     &adsAsynPortDriverConfigureArg6, &adsAsynPortDriverConfigureArg7,
     &adsAsynPortDriverConfigureArg8,&adsAsynPortDriverConfigureArg9,
-    &adsAsynPortDriverConfigureArg10};
+    &adsAsynPortDriverConfigureArg10,&adsAsynPortDriverConfigureArg11};
 
   static const iocshFuncDef adsAsynPortDriverConfigureFuncDef =
-    {"adsAsynPortDriverConfigure",11,adsAsynPortDriverConfigureArgs};
+    {"adsAsynPortDriverConfigure",12,adsAsynPortDriverConfigureArgs};
 
   static void adsAsynPortDriverConfigureCallFunc(const iocshArgBuf *args)
   {
-    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival,args[8].ival,args[9].ival,args[10].ival);
+    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival,args[8].ival,args[9].ival,args[10].ival,args[11].ival);
   }
 
   /*

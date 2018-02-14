@@ -29,8 +29,9 @@
 
 typedef enum{
   ADS_TIME_BASE_EPICS=0,
-  ADS_TIME_BASE_PLC=1
-} ADSTIMEBASE;
+  ADS_TIME_BASE_PLC=1,
+  ADS_TIME_BASE_MAX
+} ADSTIMESOURCE;
 
 typedef struct adsParamInfo{
   char          *recordName;
@@ -64,7 +65,7 @@ typedef struct adsParamInfo{
   void*         arrayDataBuffer;
   bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
   //timing
-  ADSTIMEBASE   timeBase;
+  ADSTIMESOURCE timeBase;
   uint64_t      plcTimeStampRaw;
   epicsTimeStamp plcTimeStamp;
   epicsTimeStamp epicsTimestamp;

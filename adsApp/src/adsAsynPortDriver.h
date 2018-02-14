@@ -22,7 +22,8 @@ public:
                     int noProcessEos,
                     int defaultSampleTimeMS,
                     int maxDelayTimeMS,
-                    int adsTimeoutMS);
+                    int adsTimeoutMS,
+                    ADSTIMESOURCE defaultTimeSource);
 
   virtual ~adsAsynPortDriver();
   virtual void report(FILE *fp, int details);
@@ -152,6 +153,7 @@ private:
   AmsNetId                       remoteNetId_;
   adsParamInfo                   **pAdsParamArray_;
   std::vector<amsPortInfo*>      amsPortList_;
+  ADSTIMESOURCE                  defaultTimeSource_;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */
