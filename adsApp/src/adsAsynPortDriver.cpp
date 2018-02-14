@@ -30,7 +30,8 @@ static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
 static long oldTimeStamp=0;
 static struct timeval oldTime={0};
-static int allowCallback=0;
+static int allowCallbackEpicsState=0;
+static initHookState currentEpicsState=initHookAtIocBuild;
 
 
 static void getEpicsState(initHookState state)
@@ -46,14 +47,14 @@ static void getEpicsState(initHookState state)
 
   switch(state) {
     case initHookAfterIocRunning:
-      allowCallback=1;
+      allowCallbackEpicsState=1;
       break;
     default:
-      //allowCallback=0;
+      //allowCallbackEpicsState=0;
       break;
   }
-
-  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: EPICS state: %s (%d). Allow ADS callbacks: %s.\n", driverName, functionName,epicsStateToString((int)state),(int)state,allowCallback ? "true" : "false");
+  currentEpicsState=state;
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: EPICS state: %s (%d). Allow ADS callbacks: %s.\n", driverName, functionName,epicsStateToString((int)state),(int)state,allowCallbackEpicsState ? "true" : "false");
 }
 
 int initHook(void)
@@ -70,11 +71,14 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
     return;
   }
 
-  if(!allowCallback){
+  asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+
+  if(!allowCallbackEpicsState){
+    //asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Callback for hUser %u is not allowed. EPICS in state %s (%d). Data discarded.\n", driverName, functionName,hUser,epicsStateToString((int)currentEpicsState),(int)currentEpicsState);
     return;
   }
-  asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
-
 
   const uint8_t* data = reinterpret_cast<const uint8_t*>(pNotification + 1);
   struct timeval newTime;
@@ -96,6 +100,11 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   adsParamInfo *paramInfo=adsAsynPortObj->getAdsParamInfo(hUser);
   if(!paramInfo){
     asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: getAdsParamInfo() for hUser %u failed\n", driverName, functionName,hUser);
+    return;
+  }
+
+  if(!adsAsynPortObj->isCallbackAllowed(paramInfo)){
+    //asynPrint(asynTraceUser, ASYN_TRACE_ERROR, "%s:%s: Callback for %s (hUser %u) is not allowed. amsPort %u not connected. Data discarded.\n", driverName, functionName,paramInfo->drvInfo,hUser,paramInfo->amsPort);
     return;
   }
 
@@ -291,24 +300,21 @@ void adsAsynPortDriver::cyclicThread()
       for(amsPortInfo *port : amsPortList_){
         oneAmsConnectionOK=oneAmsConnectionOK || port->connected;
         if(port->connected){
-          if(port->paramRefreshNeeded){
+          if(!port->paramsOK){
             stat=refreshParams(port->amsPort);
             if(stat==asynSuccess){
-              port->paramRefreshNeeded=0;
-              port->allowCallback=1;
+              port->paramsOK=1;
             }
             else{
-              port->paramRefreshNeeded=1;
-              port->allowCallback=0;
+              port->paramsOK=0;
             }
           }
         }
         else{
-          port->paramRefreshNeeded=1;
-          port->allowCallback=0;
+          port->paramsOK=0;
         }
       }
-      //If not atleast one amsPort connection OK then reconnect completelly
+      //If not atleast one amsPort connection OK then reconnect completely
       if(!oneAmsConnectionOK){
         asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: No amsPort connection OK. Try complete reconnect\n",driverName,functionName);
         connectedAds_=0;
@@ -321,17 +327,15 @@ void adsAsynPortDriver::cyclicThread()
         disconnect(pasynUserSelf);
         connect(pasynUserSelf);
         for(amsPortInfo *port : amsPortList_){
-           port->paramRefreshNeeded=true;
+           port->paramsOK=false;
            port->connected=false;
-           port->allowCallback=false;
         }
         unlock();
       }
     }
 
-    //Temporary. Allow callback if atleast one amsport connection is ok
     for(amsPortInfo *port : amsPortList_){
-       allowCallback=allowCallback || port->allowCallback;
+      asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Amsport %d, connected %d, params OK %d.\n",driverName,functionName,(int)port->amsPort, (int)port->connected,(int)port->paramsOK);
     }
 
     epicsThreadSleep(sampleTime);
@@ -937,6 +941,23 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   }
 
   return asynSuccess;
+}
+
+bool adsAsynPortDriver::isCallbackAllowed(adsParamInfo *paramInfo)
+{
+  return isCallbackAllowed(paramInfo->amsPort);
+}
+
+bool adsAsynPortDriver::isCallbackAllowed(uint16_t amsPort)
+{
+  const char* functionName = "isCallbackAllowed";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: amsPort:%u\n", driverName, functionName,amsPort);
+
+  for(amsPortInfo *port : amsPortList_){
+    if(port->amsPort==amsPort)
+     return port->paramsOK;
+  }
+  return false;
 }
 
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)

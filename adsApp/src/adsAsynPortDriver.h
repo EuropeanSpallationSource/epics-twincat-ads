@@ -119,6 +119,9 @@ public:
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
                                  const void *data,
                                  size_t dataSize);
+  bool isCallbackAllowed(adsParamInfo *paramInfo);
+  bool isCallbackAllowed(uint16_t amsPort);
+
   void cyclicThread();
 protected:
 

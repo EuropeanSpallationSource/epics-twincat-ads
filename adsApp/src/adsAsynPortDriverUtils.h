@@ -27,8 +27,7 @@
 typedef struct amsPortInfo{
   uint16_t amsPort;
   int connected;
-  int paramRefreshNeeded;
-  int allowCallback;
+  int paramsOK;
 }amsPortInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
