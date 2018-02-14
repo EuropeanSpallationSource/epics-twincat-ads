@@ -120,7 +120,7 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
     return;
   }
 
-  adsAsynPortObj->adsUpdateParameter(paramInfo,data,pNotification->cbSampleSize);
+  adsAsynPortObj->adsUpdateParameterLock(paramInfo,data,pNotification->cbSampleSize);
 }
 
 //Check ads state and, supervise connection (reconnect if needed)
@@ -1990,25 +1990,29 @@ adsParamInfo *adsAsynPortDriver::getAdsParamInfo(int index)
   }
 }
 
-asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const void *data,size_t dataSize)
+asynStatus adsAsynPortDriver::adsUpdateParameterLock(adsParamInfo* paramInfo,const void *data,size_t dataSize)
 {
   lock();
+  asynStatus stat=adsUpdateParameter(paramInfo,data,dataSize);
+  unlock();
+  return stat;
+}
+
+asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const void *data,size_t dataSize)
+{
+
   const char* functionName = "adsUpdateParameter";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   if(!paramInfo){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: paramInfo NULL.\n", driverName, functionName);
-    unlock();
     return asynError;
   }
 
   if(!data){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: data NULL.\n", driverName, functionName);
-    unlock();
     return asynError;
   }
-
-  asynStatus ret=asynError;
 
   //Write size used for arrays
   size_t writeSize=dataSize;
@@ -2019,15 +2023,15 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
   //Update time stamp (later take timestamp from callback instead somehow)
   if(updateTimeStamp()!=asynSuccess){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: updateTimeStamp() failed.\n", driverName, functionName);
-    unlock();
     return asynError;
   }
+
+  asynStatus ret=asynError;
 
   //Check if array
   if(paramInfo->plcDataIsArray){
     if(!paramInfo->arrayDataBuffer){
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Array but buffer is NULL.\n", driverName, functionName);
-      unlock();
       return asynError;
     }
     //Copy data to param buffer
@@ -2051,7 +2055,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2072,7 +2076,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2092,7 +2096,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2111,7 +2115,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         // No 64 bit int array callback type (also no 64bit int in EPICS)
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2130,7 +2134,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         // Arrays of unsigned not supported
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2149,7 +2153,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         // Arrays of unsigned not supported
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2168,7 +2172,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         // Arrays of unsigned not supported
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2186,7 +2190,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         // Arrays of unsigned not supported
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2206,7 +2210,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2227,7 +2231,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2247,7 +2251,7 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
       }
       break;
@@ -2261,29 +2265,26 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
           break;
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-          ret=asynError;
+          return asynError;
           break;
         }
       break;
 
     default:
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-      ret=asynError;
+      return asynError;
       break;
   }
 
   if(ret!=asynSuccess){
-    unlock();
     return ret;
   }
 
   ret=callParamCallbacks();
   if(ret!=asynSuccess){
-    unlock();
     return ret;
   }
 
-  unlock();
   return asynSuccess;
 }
 

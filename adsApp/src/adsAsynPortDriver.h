@@ -113,12 +113,12 @@ public:
   virtual asynStatus writeFloat64Array(asynUser *pasynUser,
                                        epicsFloat64 *value,
                                        size_t nElements);
+  asynStatus adsUpdateParameterLock(adsParamInfo* paramInfo,
+                                    const void *data,
+                                    size_t dataSize);
   asynUser *getTraceAsynUser();
   int getParamTableSize();
   adsParamInfo *getAdsParamInfo(int index);
-  asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
-                                 const void *data,
-                                 size_t dataSize);
   bool isCallbackAllowed(adsParamInfo *paramInfo);
   bool isCallbackAllowed(uint16_t amsPort);
 
@@ -127,7 +127,6 @@ protected:
 
 private:
   //Asyn and EPICS methods
-  asynStatus addParam(asynUser *pasynUser,const char *drvInfo,int *index);
   asynStatus validateDrvInfo(const char *drvInfo);
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,
                                       adsParamInfo *paramInfo);
@@ -135,6 +134,9 @@ private:
                                      adsParamInfo *paramInfo);
   asynStatus refreshParams();
   asynStatus refreshParams(uint16_t amsPort);
+  asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
+                                 const void *data,
+                                 size_t dataSize);
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
