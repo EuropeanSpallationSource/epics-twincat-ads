@@ -9,6 +9,7 @@ record(ai,"$(P)GetBTestSCAN"){
 
 record(ai,"$(P)GetNTestSCAN"){
   field(PINI, "1")
+  field(TSE, -2)
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT),0,1)TIMEBASE=PLC/T_DLY_MS=1000/TS_MS=1000/ADSPORT=852/Main.nTest?")
   field(PREC, "3")
