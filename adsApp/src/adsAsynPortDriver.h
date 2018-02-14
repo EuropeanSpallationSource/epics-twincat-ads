@@ -122,6 +122,8 @@ private:
                       uint32_t bytesToWrite);
   asynStatus adsReadParam(adsParamInfo *paramInfo);
   asynStatus adsReadState(uint16_t *adsState);
+  asynStatus adsReadStateLock(uint16_t amsport,
+                              uint16_t *adsState);
   asynStatus adsReadState(uint16_t amsport,
                           uint16_t *adsState);
   asynStatus adsGenericArrayWrite(int paramIndex,
@@ -135,6 +137,9 @@ private:
                                  size_t *nBytesRead);
   asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
   asynStatus refreshParamTime(adsParamInfo *paramInfo);
+  asynStatus setAlarmPortLock(uint16_t amsPort,int alarm,int severity);
+  asynStatus setAlarmPort(uint16_t amsPort,int alarm,int severity);
+  asynStatus setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity);
 
   char                           *ipaddr_;
   char                           *amsaddr_;

@@ -23,6 +23,7 @@
 #include <epicsExport.h>
 #include <dbStaticLib.h>
 #include <dbAccess.h>
+#include <alarm.h>
 
 static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
@@ -271,7 +272,6 @@ adsAsynPortDriver::~adsAsynPortDriver()
   for(amsPortInfo *port : amsPortList_){
     delete port;
   }
-
 }
 
 void adsAsynPortDriver::cyclicThread()
@@ -286,7 +286,7 @@ void adsAsynPortDriver::cyclicThread()
     //Check state of all used ams ports
     if(connectedAds_){
       for(amsPortInfo *port : amsPortList_){
-        asynStatus stat=adsReadState(port->amsPort,&adsState);
+        asynStatus stat=adsReadStateLock(port->amsPort,&adsState);
         bool portConnected=(stat==asynSuccess);
         port->connected=portConnected;
         asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: ADS state: %s (amsPort %d).\n",driverName,functionName,asynStateToString(adsState),port->amsPort);
@@ -335,6 +335,7 @@ void adsAsynPortDriver::cyclicThread()
 
     for(amsPortInfo *port : amsPortList_){
       asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Amsport %d, connected %d, params OK %d.\n",driverName,functionName,(int)port->amsPort, (int)port->connected,(int)port->paramsOK);
+      setAlarmPortLock(port->amsPort,port->connected ? NO_ALARM : COMM_ALARM,port->connected ? NO_ALARM : INVALID_ALARM );
     }
 
     epicsThreadSleep(sampleTime);
@@ -1997,6 +1998,15 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
   return adsUpdateParameter(paramInfo,(const void *)data,bytesRead);
 }
 
+asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState)
+{
+  asynStatus stat;
+  lock();
+  stat=adsReadState(amsport,adsState);
+  unlock();
+  return stat;
+}
+
 asynStatus adsAsynPortDriver::adsReadState(uint16_t *adsState)
 {
   return adsReadState(amsportDefault_,adsState);
@@ -2372,7 +2382,56 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
 
   return asynSuccess;
 }
+asynStatus adsAsynPortDriver::setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity)
+{
+  const char* functionName = "setAlarmParam";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
+  if(!paramInfo){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: paramInfo==NULL.\n", driverName, functionName);
+    return asynError;
+  }
+
+  asynStatus stat=setParamAlarmStatus(paramInfo->paramIndex,COMM_ALARM);
+  if(stat!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed set com alarm for parameter %s (%d).\n", driverName, functionName,paramInfo->drvInfo,paramInfo->paramIndex);
+    return asynError;
+  }
+
+  stat=setParamAlarmSeverity(paramInfo->paramIndex,INVALID_ALARM);
+  if(stat!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed set com alarm for parameter %s (%d).\n", driverName, functionName,paramInfo->drvInfo,paramInfo->paramIndex);
+    return asynError;
+  }
+  return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::setAlarmPortLock(uint16_t amsPort,int alarm,int severity)
+{
+  asynStatus stat;
+  lock();
+  stat=setAlarmPort(amsPort,alarm,severity);
+  unlock();
+  return stat;
+}
+
+asynStatus adsAsynPortDriver::setAlarmPort(uint16_t amsPort,int alarm,int severity)
+{
+  const char* functionName = "setAlarmPort";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  for(int i=0;i<adsParamArrayCount_;i++){
+    if(!pAdsParamArray_[i]){
+      continue;
+    }
+    if(pAdsParamArray_[i]->amsPort==amsPort){
+      if(setAlarmParam(pAdsParamArray_[i],alarm,severity)!=asynSuccess){
+        return asynError;
+      }
+    }
+  }
+  return asynSuccess;
+}
 /* Configuration routine.  Called directly, or from the iocsh function below */
 
 extern "C" {
