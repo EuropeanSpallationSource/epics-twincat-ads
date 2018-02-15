@@ -29,7 +29,7 @@ asynOctetSetInputEos("ADS_1", -1, "\n")
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
 
-asynSetTraceMask("ADS_1", -1, 0x01)
+asynSetTraceMask("ADS_1", -1, 0xFF)
 
 #############################################################################
 

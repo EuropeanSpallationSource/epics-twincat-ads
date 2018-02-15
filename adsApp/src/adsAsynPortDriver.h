@@ -106,6 +106,8 @@ private:
   asynStatus refreshParams();
   asynStatus refreshParams(uint16_t amsPort);
   asynStatus refreshParamsLock(uint16_t amsPort);
+  asynStatus invalidateParams(uint16_t amsPort);
+  asynStatus invalidateParamsLock(uint16_t amsPort);
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
                                  const void *data,
                                  size_t dataSize);
@@ -116,6 +118,8 @@ private:
                                         bool blockErrorMsg);
   asynStatus adsGetSymInfoByName(adsParamInfo *paramInfo);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
+  asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo,
+                                   bool blockErrorMsg);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo);
   asynStatus adsReleaseSymbolicHandle(adsParamInfo *paramInfo,
                                       bool blockErrorMsg);
@@ -125,6 +129,7 @@ private:
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
   asynStatus adsReadParam(adsParamInfo *paramInfo);
+  asynStatus adsReadParam(adsParamInfo *paramInfo,long *error);
   asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsReadStateLock(uint16_t amsport,
                               uint16_t *adsState);

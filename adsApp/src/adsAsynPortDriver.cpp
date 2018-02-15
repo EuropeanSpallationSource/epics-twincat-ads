@@ -298,18 +298,21 @@ void adsAsynPortDriver::cyclicThread()
       }
     }
 
+
     if(connectedAds_){
+      stat=refreshParamsLock(0);
+
       //Ensure that all amsports are connected (otherwise destroyed when disconnecting)
       bool oneAmsConnectionOK=false;
       for(amsPortInfo *port : amsPortList_){
         oneAmsConnectionOK=oneAmsConnectionOK || port->connected;
         if(port->connected){
-          if(!port->paramsOK){
-            stat=refreshParamsLock(port->amsPort);
-            if(stat==asynSuccess){
-              port->paramsOK=1;
-            }
-          }
+//          if(!port->paramsOK){
+
+//            if(stat==asynSuccess){
+            port->paramsOK=1;
+//            }
+//          }
         }
         else{
           port->paramsOK=0;
@@ -329,6 +332,7 @@ void adsAsynPortDriver::cyclicThread()
         for(amsPortInfo *port : amsPortList_){
            port->paramsOK=0;
            port->connected=0;
+           invalidateParamsLock(port->amsPort);
         }
       }
     }
@@ -456,11 +460,12 @@ asynStatus adsAsynPortDriver::refreshParamsLock(uint16_t amsPort)
   unlock();
   return stat;
 }
+
 asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
 {
   const char* functionName = "refreshParams";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-
+  //bool oneParamOK=true;
   if(connectedAds_){
     if(adsParamArrayCount_>1){
       for(int i=1; i<adsParamArrayCount_;i++){  //Skip first param since used for motorrecord or stream device
@@ -468,12 +473,36 @@ asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
           continue;
         }
         adsParamInfo *paramInfo=pAdsParamArray_[i];
-        if(amsPort==0 || paramInfo->amsPort==amsPort){
-          asynStatus stat=updateParamInfoWithPLCInfo(paramInfo);
-          if(stat!=asynSuccess){
-            return asynError;
-          }
+        if((amsPort==0 || paramInfo->amsPort==amsPort) && paramInfo->paramRefreshNeeded){
+          updateParamInfoWithPLCInfo(paramInfo);
         }
+      }
+    }
+  }
+  return asynSuccess; //oneParamOK ? asynSuccess : asynError;
+}
+
+asynStatus adsAsynPortDriver::invalidateParamsLock(uint16_t amsPort)
+{
+  lock();
+  asynStatus stat=invalidateParams(amsPort);
+  unlock();
+  return stat;
+}
+
+asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
+{
+  const char* functionName = "refreshParams";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  if(adsParamArrayCount_>1){
+    for(int i=1; i<adsParamArrayCount_;i++){  //Skip first param since used for motorrecord or stream device
+      if(!pAdsParamArray_[i]){
+        continue;
+      }
+      adsParamInfo *paramInfo=pAdsParamArray_[i];
+      if(amsPort==0 || paramInfo->amsPort==amsPort){
+        paramInfo->paramRefreshNeeded=true;
       }
     }
   }
@@ -684,30 +713,56 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
     }
   }
 
-  //Add callback only for I/O intr
-  if(paramInfo->isIOIntr){
-    if(paramInfo->bCallbackNotifyValid){
-      adsDelNotificationCallback(paramInfo,true);   //try to delete
-    }
-    //Release symbolic handle if needed
-    if(paramInfo->bSymbolicHandleValid){
-      adsReleaseSymbolicHandle(paramInfo,true); //try to delete (dont care if fails)
-    }
 
-    status=adsAddNotificationCallback(paramInfo);
-    if(status!=asynSuccess){
-      return asynError;
-    }
-  }
 
   //Make first read
-  if(!paramInfo->firstReadDone || !paramInfo->isIOIntr){
-    status =adsReadParam(paramInfo);
-    if(status!=asynSuccess){
+  //if(!paramInfo->firstReadDone || !paramInfo->isIOIntr){
+  long errorCode=0;
+  status = adsReadParam(paramInfo,&errorCode);
+  if(status!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: adsReadParam failed with errorcode %s (%ld).\n.", driverName, functionName,adsErrorToString(errorCode),errorCode);
+    bool renewHandles=errorCode == ADSERR_DEVICE_NOTIFYHNDINVALID ||
+                      errorCode == ADSERR_DEVICE_SYMBOLVERSIONINVALID ||
+                      errorCode == ADSERR_DEVICE_SYMBOLNOTFOUND ||
+                      errorCode == ADSERR_DEVICE_SYMBOLNOTACTIVE;
+    if(renewHandles){
+      if(paramInfo->isIOIntr){
+        adsDelNotificationCallback(paramInfo,true);   //try to delete
+        adsReleaseSymbolicHandle(paramInfo,true); //try to delete
+        adsGetSymHandleByName(paramInfo);
+        adsAddNotificationCallback(paramInfo);
+      }
+      else{
+        adsReleaseSymbolicHandle(paramInfo,true); //try to delete
+        adsGetSymHandleByName(paramInfo);
+      }
+    }
+    // try read again
+    asynStatus stat=adsReadParam(paramInfo);
+    if(stat!=asynSuccess){
+      paramInfo->paramRefreshNeeded=true;
       return asynError;
     }
   }
+  else
+    {
+    //Add callback only for I/O intr
+    if(paramInfo->isIOIntr){
+      /*if(paramInfo->bCallbackNotifyValid){
+        adsDelNotificationCallback(paramInfo,true);   //try to delete
+      }
+      //Release symbolic handle if needed
+      if(paramInfo->bSymbolicHandleValid){
+        adsReleaseSymbolicHandle(paramInfo,true); //try to delete (dont care if fails)
+      }*/
 
+      status=adsAddNotificationCallback(paramInfo);
+      if(status!=asynSuccess){
+        return asynError;
+      }
+    }
+  }
+  paramInfo->paramRefreshNeeded=false;
   return asynSuccess;
 }
 
@@ -1007,7 +1062,8 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
 
 bool adsAsynPortDriver::isCallbackAllowed(adsParamInfo *paramInfo)
 {
-  return isCallbackAllowed(paramInfo->amsPort);
+  //return isCallbackAllowed(paramInfo->amsPort);
+  return !paramInfo->paramRefreshNeeded;
 }
 
 bool adsAsynPortDriver::isCallbackAllowed(uint16_t amsPort)
@@ -1594,6 +1650,11 @@ asynUser *adsAsynPortDriver::getTraceAsynUser()
 
 asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo)
 {
+  return adsGetSymHandleByName(paramInfo,false);
+}
+
+asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo,bool blockErrorMsg)
+{
   const char* functionName = "adsGetSymHandleByName";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
@@ -1620,7 +1681,9 @@ asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo)
                                                    paramInfo->plcAdrStr,
                                                    nullptr);
   if (handleStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(handleStatus),handleStatus);
+    if(!blockErrorMsg){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(handleStatus),handleStatus);
+    }
     return asynError;
   }
 
@@ -1726,6 +1789,9 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
   const char* functionName = "delNotificationCallback";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
+  paramInfo->bCallbackNotifyValid=false;
+  paramInfo->hCallbackNotify=-1;
+
   AmsAddr amsServer;
   if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
     amsServer={remoteNetId_,amsportDefault_};
@@ -1735,13 +1801,12 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
   }
 
   const long delStatus = AdsSyncDelDeviceNotificationReqEx(adsPort_, &amsServer,paramInfo->hCallbackNotify);
-  if (delStatus && !blockErrorMsg){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
+  if (delStatus){
+    if(!blockErrorMsg){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
+    }
     return asynError;
   }
-
-  paramInfo->bCallbackNotifyValid=false;
-  paramInfo->hCallbackNotify=-1;
 
   return asynSuccess;
 }
@@ -1887,6 +1952,7 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   paramInfo->bSymbolicHandleValid=false;
+  paramInfo->hSymbolicHandle=-1;
 
   AmsAddr amsServer;
   if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
@@ -1902,7 +1968,6 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
     return asynError;
   }
 
-  paramInfo->hSymbolicHandle=-1;
   return asynSuccess;
 }
 
@@ -1982,12 +2047,18 @@ asynStatus adsAsynPortDriver::adsWriteParam(adsParamInfo *paramInfo,const void *
 
 asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
 {
+  long notused=0;
+  return adsReadParam(paramInfo,&notused);
+}
 
+asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo,long *error)
+{
   const char* functionName = "adsReadParam";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
 
   uint32_t group=0;
   uint32_t offset=0;
+  *error=0;
 
   AmsAddr amsServer;
   if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
@@ -2032,7 +2103,7 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
 
   char *data=new char[paramInfo->plcSize];
   uint32_t bytesRead=0;
-  const long statusRead = AdsSyncReadReqEx2(adsPort_,
+  *error = AdsSyncReadReqEx2(adsPort_,
                                      &amsServer,
                                      group,
                                      offset,
@@ -2040,8 +2111,8 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
                                      (void *)data,
                                      &bytesRead);
 
-  if(statusRead){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncReadReqEx2 failed: %s (%lu).\n", driverName, functionName,adsErrorToString(statusRead),statusRead);
+  if(*error){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncReadReqEx2 failed: %s (%lu).\n", driverName, functionName,adsErrorToString(*error),*error);
     return asynError;
   }
 
@@ -2053,6 +2124,13 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
   //No timestamp available
   paramInfo->plcTimeStampRaw=0;
   paramInfo->firstReadDone=true;
+
+  /*asynStatus stat =asynSuccess;
+  if(updateAsynPar){
+    stat=adsUpdateParameter(paramInfo,(const void *)data,bytesRead);
+  }
+
+  return stat;*/
   return adsUpdateParameter(paramInfo,(const void *)data,bytesRead);
 }
 
