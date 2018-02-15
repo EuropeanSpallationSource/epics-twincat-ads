@@ -95,6 +95,9 @@ protected:
 
 private:
   //Asyn and EPICS methods
+  asynStatus connectLock(asynUser *pasynUser);
+  asynStatus disconnectLock(asynUser *pasynUser);
+
   asynStatus validateDrvInfo(const char *drvInfo);
   asynStatus getRecordInfoFromDrvInfo(const char *drvInfo,
                                       adsParamInfo *paramInfo);
@@ -102,6 +105,7 @@ private:
                                      adsParamInfo *paramInfo);
   asynStatus refreshParams();
   asynStatus refreshParams(uint16_t amsPort);
+  asynStatus refreshParamsLock(uint16_t amsPort);
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
                                  const void *data,
                                  size_t dataSize);
@@ -126,7 +130,7 @@ private:
                               uint16_t *adsState);
   asynStatus adsReadState(uint16_t amsport,
                           uint16_t *adsState);
-  asynStatus adsGenericArrayWrite(int paramIndex,
+  asynStatus adsGenericArrayWrite(asynUser *pasynUser,
                                   long allowedType,
                                   const void *epicsDataBuffer,
                                   size_t nEpicsBufferBytes);

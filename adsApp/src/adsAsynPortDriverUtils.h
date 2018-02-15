@@ -28,8 +28,8 @@
 #endif
 
 typedef enum{
-  ADS_TIME_BASE_EPICS=0,
-  ADS_TIME_BASE_PLC=1,
+  ADS_TIME_BASE_PLC=0,
+  ADS_TIME_BASE_EPICS=1,
   ADS_TIME_BASE_MAX
 } ADSTIMESOURCE;
 
@@ -69,10 +69,14 @@ typedef struct adsParamInfo{
   uint64_t      plcTimeStampRaw;
   epicsTimeStamp plcTimeStamp;
   epicsTimeStamp epicsTimestamp;
+  int            alarmStatus;
+  int            alarmSeverity;
+  bool           firstReadDone;
 }adsParamInfo;
 
 typedef struct amsPortInfo{
   uint16_t amsPort;
+  int connectedOld;
   int connected;
   int paramsOK;
 }amsPortInfo;
