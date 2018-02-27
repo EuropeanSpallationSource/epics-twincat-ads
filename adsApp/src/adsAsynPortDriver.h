@@ -9,6 +9,7 @@
 #include "AdsLib.h"
 #include <vector>
 #include "adsAsynPortDriverUtils.h"
+#include <mutex>
 
 class adsAsynPortDriver : public asynPortDriver {
 public:
@@ -83,6 +84,8 @@ public:
                                        size_t nElements);
   asynStatus adsUpdateParameterLock(adsParamInfo* paramInfo,
                                     const void *data);
+  asynStatus adsDelRouteLock(int force);
+  asynStatus adsAddRouteLock();
   asynStatus fireAllCallbacksLock();
   asynUser *getTraceAsynUser();
   int getParamTableSize();
@@ -113,6 +116,9 @@ private:
                                  const void *data);
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
                                  const void *data,size_t dataSize);
+  asynStatus adsUpdateParameterLock(adsParamInfo* paramInfo,
+                                    const void *data,
+                                    size_t dataSize);
 
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
@@ -138,8 +144,13 @@ private:
   asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsReadStateLock(uint16_t amsport,
                               uint16_t *adsState);
+  asynStatus adsReadStateLock(uint16_t amsport,
+                              uint16_t *adsState,
+                              long *error);
   asynStatus adsReadState(uint16_t amsport,
-                          uint16_t *adsState);
+                          uint16_t *adsState,
+                          long *error);
+  asynStatus adsDelRoute(int force);
   asynStatus adsGenericArrayWrite(asynUser *pasynUser,
                                   long allowedType,
                                   const void *epicsDataBuffer,
@@ -155,7 +166,8 @@ private:
   asynStatus setAlarmPort(uint16_t amsPort,int alarm,int severity);
   asynStatus setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity);
   asynStatus fireCallbacks(adsParamInfo* paramInfo);
-
+  void       adsLock();
+  void       adsUnlock();
   char                           *ipaddr_;
   char                           *amsaddr_;
   int                            autoConnect_;
@@ -169,12 +181,15 @@ private:
   int                            paramRefreshNeeded_;
   long                           adsPort_;
   int                            routeAdded_;
+  int                            notConnectedCounter_;
+  //int                            disconnectMadeOnce_;
   uint16_t                       amsportDefault_;
   unsigned int                   priority_;
   AmsNetId                       remoteNetId_;
   adsParamInfo                   **pAdsParamArray_;
   std::vector<amsPortInfo*>      amsPortList_;
   ADSTIMESOURCE                  defaultTimeSource_;
+  std::mutex                     adsMutex;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */
