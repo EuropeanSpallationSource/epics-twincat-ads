@@ -24,11 +24,6 @@ adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000,
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
-
-
-asynOctetSetOutputEos("ADS_1", -1, "\n")
-asynOctetSetInputEos("ADS_1", -1, "\n")
-
 asynSetTraceMask("ADS_1", -1, 0x01)
 
 #############################################################################
