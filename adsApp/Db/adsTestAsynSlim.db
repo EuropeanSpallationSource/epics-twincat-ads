@@ -15,3 +15,12 @@ record(ai,"$(P)GetNTestSCAN"){
   field(PREC, "3")
   field(SCAN,"10 second")
 }
+
+record(ai,"$(P)GetFAmplitude"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.fAmplitude?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+}

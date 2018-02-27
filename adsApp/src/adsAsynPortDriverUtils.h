@@ -61,6 +61,7 @@ typedef struct adsParamInfo{
   bool          bCallbackNotifyValid;
   uint32_t      hSymbolicHandle;
   bool          bSymbolicHandleValid;
+  size_t        lastCallbackSize;
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
   bool          paramRefreshNeeded;  //Communication broken update handles and callbacks

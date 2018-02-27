@@ -82,11 +82,12 @@ public:
                                        epicsFloat64 *value,
                                        size_t nElements);
   asynStatus adsUpdateParameterLock(adsParamInfo* paramInfo,
-                                    const void *data,
-                                    size_t dataSize);
+                                    const void *data);
+  asynStatus fireAllCallbacksLock();
   asynUser *getTraceAsynUser();
   int getParamTableSize();
   adsParamInfo *getAdsParamInfo(int index);
+  int getAdsParamCount();
   bool isCallbackAllowed(adsParamInfo *paramInfo);
   bool isCallbackAllowed(uint16_t amsPort);
 
@@ -109,8 +110,10 @@ private:
   asynStatus invalidateParams(uint16_t amsPort);
   asynStatus invalidateParamsLock(uint16_t amsPort);
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
-                                 const void *data,
-                                 size_t dataSize);
+                                 const void *data);
+  asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
+                                 const void *data,size_t dataSize);
+
   // ADS methods
   asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
@@ -129,7 +132,9 @@ private:
                       const void *binaryBuffer,
                       uint32_t bytesToWrite);
   asynStatus adsReadParam(adsParamInfo *paramInfo);
-  asynStatus adsReadParam(adsParamInfo *paramInfo,long *error);
+  asynStatus adsReadParam(adsParamInfo *paramInfo,
+                          long *error,
+                          int updateAsynPar);
   asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsReadStateLock(uint16_t amsport,
                               uint16_t *adsState);
@@ -149,6 +154,7 @@ private:
   asynStatus setAlarmPortLock(uint16_t amsPort,int alarm,int severity);
   asynStatus setAlarmPort(uint16_t amsPort,int alarm,int severity);
   asynStatus setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity);
+  asynStatus fireCallbacks(adsParamInfo* paramInfo);
 
   char                           *ipaddr_;
   char                           *amsaddr_;
@@ -162,6 +168,7 @@ private:
   int                            connectedAds_;
   int                            paramRefreshNeeded_;
   long                           adsPort_;
+  int                            routeAdded_;
   uint16_t                       amsportDefault_;
   unsigned int                   priority_;
   AmsNetId                       remoteNetId_;
