@@ -143,12 +143,15 @@ private:
                           int updateAsynPar);
   asynStatus adsReadState(uint16_t *adsState);
   asynStatus adsReadStateLock(uint16_t amsport,
-                              uint16_t *adsState);
+                              uint16_t *adsState,
+                              bool blockErrorMsg);
   asynStatus adsReadStateLock(uint16_t amsport,
                               uint16_t *adsState,
+                              bool blockErrorMsg,
                               long *error);
   asynStatus adsReadState(uint16_t amsport,
                           uint16_t *adsState,
+                          bool blockErrorMsg,
                           long *error);
   asynStatus adsDelRoute(int force);
   asynStatus adsGenericArrayWrite(asynUser *pasynUser,

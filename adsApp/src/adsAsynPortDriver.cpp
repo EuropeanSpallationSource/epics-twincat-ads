@@ -301,7 +301,7 @@ void adsAsynPortDriver::cyclicThread()
     if(connectedAds_){
       for(amsPortInfo *port : amsPortList_){
         long error=0;
-        asynStatus stat=adsReadStateLock(port->amsPort,&adsState,&error);
+        asynStatus stat=adsReadStateLock(port->amsPort,&adsState,true,&error);
         bool portConnected=(stat==asynSuccess);
 
         port->connected=portConnected;
@@ -320,6 +320,9 @@ void adsAsynPortDriver::cyclicThread()
       }
       connectedAds_=oneAmsConnectionOK;
     }
+    if(!oneAmsConnectionOKold_ && oneAmsConnectionOK){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: Connection OK!\n",driverName,functionName);
+    }
 
     if(!oneAmsConnectionOK && notConnectedCounter_<100){
       notConnectedCounter_++;
@@ -331,7 +334,7 @@ void adsAsynPortDriver::cyclicThread()
 
     if(!oneAmsConnectionOK && autoConnect_){
       if(oneAmsConnectionOKold_){
-        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: No amsPort connection OK. Try complete reconnect\n",driverName,functionName);
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: No connection! Try to reconnect...\n",driverName,functionName);
       }
       connectedAds_=0;
       if(notConnectedCounter_==0){ //Only disconnect once
@@ -2130,21 +2133,21 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo,long *error,i
   return stat;
 }
 
-asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState)
+asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState,bool blockErrorMsg)
 {
   asynStatus stat;
   lock();
   long error=0;
-  stat=adsReadState(amsport,adsState,&error);
+  stat=adsReadState(amsport,adsState,blockErrorMsg,&error);
   unlock();
   return stat;
 }
 
-asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState,long *error)
+asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState,bool blockErrorMsg,long *error)
 {
   asynStatus stat;
   lock();
-  stat=adsReadState(amsport,adsState,error);
+  stat=adsReadState(amsport,adsState,blockErrorMsg,error);
   unlock();
   return stat;
 }
@@ -2152,10 +2155,10 @@ asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsSta
 asynStatus adsAsynPortDriver::adsReadState(uint16_t *adsState)
 {
   long error=0;
-  return adsReadState(amsportDefault_,adsState,&error);
+  return adsReadState(amsportDefault_,adsState,false,&error);
 }
 
-asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,long *error)
+asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,bool blockErrorMsg,long *error)
 {
 
   const char* functionName = "adsReadState";
@@ -2169,7 +2172,10 @@ asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,l
   *error=status;
   adsUnlock();
   if (status) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
+    if(!blockErrorMsg){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
+    }
+    asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
 
