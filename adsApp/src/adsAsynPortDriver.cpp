@@ -50,7 +50,7 @@ static void getEpicsState(initHookState state)
     case initHookAfterScanInit:
       allowCallbackEpicsState=1;
 
-      //make all callbacks if data arrived from callback before interupts were registered
+      //make all callbacks if data arrived from callback before interrupts were registered (before allowCallbackEpicsState==1)
       if(!adsAsynPortObj){
         printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
         return;
@@ -288,11 +288,11 @@ void adsAsynPortDriver::cyclicThread()
   const char* functionName = "cyclicThread";
   double sampleTime=0.5;
   while (1){
-
     asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Sample time [s]= %lf.\n",driverName,functionName,sampleTime);
+
     epicsThreadSleep(sampleTime);
     if(!allowCallbackEpicsState){
-      continue;
+      continue; //Epics not started
     }
 
     uint16_t adsState=0;
@@ -1470,6 +1470,7 @@ asynStatus adsAsynPortDriver::adsGenericArrayWrite(asynUser *pasynUser,long allo
   //Write to ADS
   asynStatus stat=adsWriteParam(paramInfo,data,bytesToWrite);
   if(stat!=asynSuccess){
+    setAlarmParam(paramInfo,WRITE_ALARM,INVALID_ALARM);
     return asynError;
   }
 
