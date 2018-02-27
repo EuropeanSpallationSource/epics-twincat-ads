@@ -2253,570 +2253,276 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
 
   if(!paramInfo){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: paramInfo NULL.\n", driverName, functionName);
-    return asynError; const char* functionName = "adsUpdateParameter";
-    asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+    return asynError;
+  }
 
-    if(!paramInfo){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: paramInfo NULL.\n", driverName, functionName);
+  if(!data){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: data NULL.\n", driverName, functionName);
+    return asynError;
+  }
+
+  if(refreshParamTime(paramInfo)!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: refreshParamTime() failed.\n", driverName, functionName);
+    return asynError;
+  }
+
+  asynStatus ret=asynError;
+
+  //Ensure check if array
+  if(paramInfo->plcDataIsArray){
+    if(!paramInfo->arrayDataBuffer){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Array but buffer is NULL.\n", driverName, functionName);
       return asynError;
     }
+    //Copy data to param buffer
+    memcpy(paramInfo->arrayDataBuffer,data,paramInfo->lastCallbackSize);
+  }
 
-    if(!data){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: data NULL.\n", driverName, functionName);
-      return asynError;
-    }
-
-    if(refreshParamTime(paramInfo)!=asynSuccess){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: refreshParamTime() failed.\n", driverName, functionName);
-      return asynError;
-    }
-
-    asynStatus ret=asynError;
-
-    //Ensure check if array
-    if(paramInfo->plcDataIsArray){
-      if(!paramInfo->arrayDataBuffer){
-        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Array but buffer is NULL.\n", driverName, functionName);
-        return asynError;
+  switch(paramInfo->plcDataType){
+    case ADST_INT8:
+      int8_t *ADST_INT8Var;
+      ADST_INT8Var=((int8_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT8Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT8Var));
+          break;
+        case asynParamInt8Array:
+//          ret=doCallbacksInt8Array((epicsInt8 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
       }
-      //Copy data to param buffer
-      memcpy(paramInfo->arrayDataBuffer,data,dataSize);
-    }
+      break;
 
-    switch(paramInfo->plcDataType){
-      case ADST_INT8:
-        int8_t *ADST_INT8Var;
-        ADST_INT8Var=((int8_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT8Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT8Var));
-            break;
-          case asynParamInt8Array:
-  //          ret=doCallbacksInt8Array((epicsInt8 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-      case ADST_INT16:
-        int16_t *ADST_INT16Var;
-        ADST_INT16Var=((int16_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT16Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT16Var));
-            break;
-          case asynParamInt16Array:
-  //          ret=doCallbacksInt16Array((epicsInt16 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-      case ADST_INT32:
-        int32_t *ADST_INT32Var;
-        ADST_INT32Var=((int32_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT32Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT32Var));
-            break;
-          case asynParamInt32Array:
-  //          ret=doCallbacksInt32Array((epicsInt32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
+    case ADST_INT16:
+      int16_t *ADST_INT16Var;
+      ADST_INT16Var=((int16_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT16Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT16Var));
+          break;
+        case asynParamInt16Array:
+//          ret=doCallbacksInt16Array((epicsInt16 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_INT32:
+      int32_t *ADST_INT32Var;
+      ADST_INT32Var=((int32_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT32Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT32Var));
+          break;
+        case asynParamInt32Array:
+//          ret=doCallbacksInt32Array((epicsInt32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_INT64:
+      int64_t *ADST_INT64Var;
+      ADST_INT64Var=((int64_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT64Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT64Var));
+          break;
+        // No 64 bit int array callback type (also no 64bit int in EPICS)
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_UINT8:
+      uint8_t *ADST_UINT8Var;
+      ADST_UINT8Var=((uint8_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT8Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT8Var));
+          break;
+        // Arrays of unsigned not supported
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_UINT16:
+      uint16_t *ADST_UINT16Var;
+      ADST_UINT16Var=((uint16_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT16Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT16Var));
+          break;
+        // Arrays of unsigned not supported
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_UINT32:
+      uint32_t *ADST_UINT32Var;
+      ADST_UINT32Var=((uint32_t*)data);
+      //Asyn types
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT32Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT32Var));
+          break;
+        // Arrays of unsigned not supported
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_UINT64:
+      uint64_t *ADST_UINT64Var;
+      ADST_UINT64Var=((uint64_t*)data);
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT64Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT64Var));
+          break;
+        // Arrays of unsigned not supported
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_REAL32:
+      float *ADST_REAL32Var;
+      ADST_REAL32Var=((float*)data);
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL32Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL32Var));
+          break;
+        case asynParamFloat32Array:
+//          ret=doCallbacksFloat32Array((epicsFloat32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
+    case ADST_REAL64:
+      double *ADST_REAL64Var;
+      ADST_REAL64Var=((double*)data);
+      switch(paramInfo->asynType){
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL64Var));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL64Var));
+          break;
+        case asynParamFloat64Array:
+//          ret=doCallbacksFloat64Array((epicsFloat64 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
 
-      case ADST_INT64:
-        int64_t *ADST_INT64Var;
-        ADST_INT64Var=((int64_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT64Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT64Var));
-            break;
-          // No 64 bit int array callback type (also no 64bit int in EPICS)
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-       case ADST_UINT8:
-        uint8_t *ADST_UINT8Var;
-        ADST_UINT8Var=((uint8_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT8Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT8Var));
-            break;
-          // Arrays of unsigned not supported
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-      case ADST_UINT16:
-        uint16_t *ADST_UINT16Var;
-        ADST_UINT16Var=((uint16_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT16Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT16Var));
-            break;
-          // Arrays of unsigned not supported
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-      case ADST_UINT32:
-        uint32_t *ADST_UINT32Var;
-        ADST_UINT32Var=((uint32_t*)data);
-        //Asyn types
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT32Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT32Var));
-            break;
-          // Arrays of unsigned not supported
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-
-      case ADST_UINT64:
-        uint64_t *ADST_UINT64Var;
-        ADST_UINT64Var=((uint64_t*)data);
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT64Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT64Var));
-            break;
-          // Arrays of unsigned not supported
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-      case ADST_REAL32:
-        float *ADST_REAL32Var;
-        ADST_REAL32Var=((float*)data);
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL32Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL32Var));
-            break;
-          case asynParamFloat32Array:
-  //          ret=doCallbacksFloat32Array((epicsFloat32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-
-      case ADST_REAL64:
-        double *ADST_REAL64Var;
-        ADST_REAL64Var=((double*)data);
-
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL64Var));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL64Var));
-            break;
-          case asynParamFloat64Array:
-  //          ret=doCallbacksFloat64Array((epicsFloat64 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-
-      case ADST_BIT:
-        int8_t *ADST_BitVar;
-        ADST_BitVar=((int8_t*)data);
-
-        switch(paramInfo->asynType){
-          case asynParamInt32:
-            ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_BitVar));
-            break;
-          case asynParamFloat64:
-            ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_BitVar));
-            break;
-          case asynParamInt8Array:
-  //          ret=doCallbacksInt8Array((epicsInt8 *) ADST_BitVar,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-        }
-        break;
-      case ADST_STRING:
-        switch(paramInfo->asynType){
-          case asynParamInt8Array:
-  //          ret=doCallbacksInt8Array((epicsInt8 *) ADST_STRINGVar,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-            ret=asynSuccess;
-            break;
-          default:
-            asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-            return asynError;
-            break;
-          }
-        break;
-      default:
-        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-        return asynError;
-        break;
-    }
-
-    if(ret!=asynSuccess){
-      return ret;
-    }
-
-    if(allowCallbackEpicsState){
-      return fireCallbacks(paramInfo);
-    }
-
-   //  if(!paramInfo->plcDataIsArray){
-   //    return callParamCallbacks();
-   //  }
-
-     return asynSuccess;
-   }
-
-   if(!data){
-     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: data NULL.\n", driverName, functionName);
-     return asynError;
-   }
-
-   if(refreshParamTime(paramInfo)!=asynSuccess){
-     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: refreshParamTime() failed.\n", driverName, functionName);
-     return asynError;
-   }
-
-   asynStatus ret=asynError;
-
-   //Ensure check if array
-   if(paramInfo->plcDataIsArray){
-     if(!paramInfo->arrayDataBuffer){
-       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Array but buffer is NULL.\n", driverName, functionName);
-       return asynError;
-     }
-     //Copy data to param buffer
-     memcpy(paramInfo->arrayDataBuffer,data,paramInfo->lastCallbackSize);
-   }
-
-   switch(paramInfo->plcDataType){
-     case ADST_INT8:
-       int8_t *ADST_INT8Var;
-       ADST_INT8Var=((int8_t*)data);
-       //Asyn types
+    case ADST_BIT:
+      int8_t *ADST_BitVar;
+      ADST_BitVar=((int8_t*)data);
        switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT8Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT8Var));
-           break;
-         case asynParamInt8Array:
- //          ret=doCallbacksInt8Array((epicsInt8 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_INT16:
-       int16_t *ADST_INT16Var;
-       ADST_INT16Var=((int16_t*)data);
-       //Asyn types
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT16Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT16Var));
-           break;
-         case asynParamInt16Array:
- //          ret=doCallbacksInt16Array((epicsInt16 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-     case ADST_INT32:
-       int32_t *ADST_INT32Var;
-       ADST_INT32Var=((int32_t*)data);
-       //Asyn types
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT32Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT32Var));
-           break;
-         case asynParamInt32Array:
- //          ret=doCallbacksInt32Array((epicsInt32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_INT64:
-       int64_t *ADST_INT64Var;
-       ADST_INT64Var=((int64_t*)data);
-       //Asyn types
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT64Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT64Var));
-           break;
-         // No 64 bit int array callback type (also no 64bit int in EPICS)
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_UINT8:
-       uint8_t *ADST_UINT8Var;
-       ADST_UINT8Var=((uint8_t*)data);
-       //Asyn types
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT8Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT8Var));
-           break;
-         // Arrays of unsigned not supported
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_UINT16:
-       uint16_t *ADST_UINT16Var;
-       ADST_UINT16Var=((uint16_t*)data);
-       //Asyn types
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT16Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT16Var));
-           break;
-         // Arrays of unsigned not supported
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_UINT32:
-       uint32_t *ADST_UINT32Var;
-       ADST_UINT32Var=((uint32_t*)data);
-       //Asyn types
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT32Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT32Var));
-           break;
-         // Arrays of unsigned not supported
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_UINT64:
-       uint64_t *ADST_UINT64Var;
-       ADST_UINT64Var=((uint64_t*)data);
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT64Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT64Var));
-           break;
-         // Arrays of unsigned not supported
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_REAL32:
-       float *ADST_REAL32Var;
-       ADST_REAL32Var=((float*)data);
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL32Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL32Var));
-           break;
-         case asynParamFloat32Array:
- //          ret=doCallbacksFloat32Array((epicsFloat32 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_REAL64:
-       double *ADST_REAL64Var;
-       ADST_REAL64Var=((double*)data);
-
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL64Var));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL64Var));
-           break;
-         case asynParamFloat64Array:
- //          ret=doCallbacksFloat64Array((epicsFloat64 *)paramInfo->arrayDataBuffer,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
-     case ADST_BIT:
-       int8_t *ADST_BitVar;
-       ADST_BitVar=((int8_t*)data);
-
-       switch(paramInfo->asynType){
-         case asynParamInt32:
-           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_BitVar));
-           break;
-         case asynParamFloat64:
-           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_BitVar));
-           break;
-         case asynParamInt8Array:
- //          ret=doCallbacksInt8Array((epicsInt8 *) ADST_BitVar,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-       }
-       break;
-
+        case asynParamInt32:
+          ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_BitVar));
+          break;
+        case asynParamFloat64:
+          ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_BitVar));
+          break;
+        case asynParamInt8Array:
+//          ret=doCallbacksInt8Array((epicsInt8 *) ADST_BitVar,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+      }
+      break;
      case ADST_STRING:
-       switch(paramInfo->asynType){
-         case asynParamInt8Array:
- //          ret=doCallbacksInt8Array((epicsInt8 *) ADST_STRINGVar,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
-           ret=asynSuccess;
-           break;
-         default:
-           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-           return asynError;
-           break;
-         }
-       break;
+      switch(paramInfo->asynType){
+        case asynParamInt8Array:
+//          ret=doCallbacksInt8Array((epicsInt8 *) ADST_STRINGVar,writeSize, paramInfo->paramIndex,paramInfo->asynAddr);
+          ret=asynSuccess;
+          break;
+        default:
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+          return asynError;
+          break;
+        }
+      break;
+    default:
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
+      return asynError;
+      break;
+  }
 
-     default:
-       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
-       return asynError;
-       break;
-   }
+  if(ret!=asynSuccess){
+    return ret;
+  }
 
-   if(ret!=asynSuccess){
-     return ret;
-   }
+  ret=setAlarmParam(paramInfo,NO_ALARM, NO_ALARM);
+  if(ret!=asynSuccess){
+    return ret;
+  }
 
-   ret=setAlarmParam(paramInfo,NO_ALARM, NO_ALARM);
-   if(ret!=asynSuccess){
-     return ret;
-   }
-
-   if(allowCallbackEpicsState){
-     return fireCallbacks(paramInfo);
-   }
-
- //  if(!paramInfo->plcDataIsArray){
- //    return callParamCallbacks();
- //  }
+  if(allowCallbackEpicsState){
+    return fireCallbacks(paramInfo);
+  }
 
    return asynSuccess;
 }
