@@ -182,6 +182,7 @@ private:
   long                           adsPort_;
   int                            routeAdded_;
   int                            notConnectedCounter_;
+  int                            oneAmsConnectionOKold_;
   //int                            disconnectMadeOnce_;
   uint16_t                       amsportDefault_;
   unsigned int                   priority_;

@@ -173,6 +173,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   paramRefreshNeeded_=1;
   defaultTimeSource_=defaultTimeSource;
   routeAdded_=0;
+  oneAmsConnectionOKold_=0;
   adsUnlock();
 
   //ADS
@@ -329,8 +330,10 @@ void adsAsynPortDriver::cyclicThread()
     }
 
     if(!oneAmsConnectionOK && autoConnect_){
+      if(oneAmsConnectionOKold_){
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: No amsPort connection OK. Try complete reconnect\n",driverName,functionName);
+      }
       connectedAds_=0;
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: No amsPort connection OK. Try complete reconnect\n",driverName,functionName);
       if(notConnectedCounter_==0){ //Only disconnect once
         disconnectLock(pasynUserSelf);
       }
@@ -338,7 +341,7 @@ void adsAsynPortDriver::cyclicThread()
         connectLock(pasynUserSelf);
       }
     }
-
+    oneAmsConnectionOKold_=oneAmsConnectionOK;
   }
 }
 
