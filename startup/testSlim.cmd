@@ -18,7 +18,7 @@ require ads,anderssandstrom
 # 9. default sample time ms                 : 500
 # 10. max delay time ms (buffer time in plc): 1000
 # 11. ADS command timeout in ms             : 1000  
-# 12. default time source (PLC=0,EPICS=0).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
+# 12. default time source (PLC=0,EPICS=1).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
 
 adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100,1000,0)
 
