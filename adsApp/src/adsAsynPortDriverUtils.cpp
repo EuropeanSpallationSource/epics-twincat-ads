@@ -692,7 +692,7 @@ int octetBinary2ascii(bool returnVarName,
         int8_t *ADST_INT8Var;
         ADST_INT8Var=((int8_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%hhd",*ADST_INT8Var);
-        printf("Binary 2 ASCII ADST_INT8, value: %d\n", *ADST_INT8Var);
+        //printf("Binary 2 ASCII ADST_INT8, value: %d\n", *ADST_INT8Var);
         bytesPerDataPoint=1;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -701,7 +701,7 @@ int octetBinary2ascii(bool returnVarName,
         int16_t *ADST_INT16Var;
         ADST_INT16Var=((int16_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%d",*ADST_INT16Var);
-        printf("Binary 2 ASCII ADST_INT16, value: %d\n", *ADST_INT16Var);
+        //printf("Binary 2 ASCII ADST_INT16, value: %d\n", *ADST_INT16Var);
         bytesPerDataPoint=2;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -710,7 +710,7 @@ int octetBinary2ascii(bool returnVarName,
         int32_t *ADST_INT32Var;
         ADST_INT32Var=((int32_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%d",*ADST_INT32Var);
-        printf("Binary 2 ASCII ADST_INT32, value: %d\n", *ADST_INT32Var);
+        //printf("Binary 2 ASCII ADST_INT32, value: %d\n", *ADST_INT32Var);
         bytesPerDataPoint=4;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -719,7 +719,7 @@ int octetBinary2ascii(bool returnVarName,
         int64_t *ADST_INT64Var;
         ADST_INT64Var=((int64_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"% PRId64",*ADST_INT64Var);
-        printf("Binary 2 ASCII ADST_INT64, value: %" PRId64 "\n", *ADST_INT64Var);
+        //printf("Binary 2 ASCII ADST_INT64, value: %" PRId64 "\n", *ADST_INT64Var);
         bytesPerDataPoint=8;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -728,7 +728,7 @@ int octetBinary2ascii(bool returnVarName,
         uint8_t *ADST_UINT8Var;
         ADST_UINT8Var=((uint8_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%hhu",*ADST_UINT8Var);
-        printf("Binary 2 ASCII ADST_UINT8, value: %d\n", *ADST_UINT8Var);
+        //printf("Binary 2 ASCII ADST_UINT8, value: %d\n", *ADST_UINT8Var);
         bytesPerDataPoint=1;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -737,7 +737,7 @@ int octetBinary2ascii(bool returnVarName,
         uint16_t *ADST_UINT16Var;
         ADST_UINT16Var=((uint16_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%d",*ADST_UINT16Var);
-        printf("Binary 2 ASCII ADST_UINT16, value: %d\n", *ADST_UINT16Var);
+        //printf("Binary 2 ASCII ADST_UINT16, value: %d\n", *ADST_UINT16Var);
         bytesPerDataPoint=2;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -746,7 +746,7 @@ int octetBinary2ascii(bool returnVarName,
         uint32_t *ADST_UINT32Var;
         ADST_UINT32Var=((uint32_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%d",*ADST_UINT32Var);
-        printf("Binary 2 ASCII ADST_UINT32, value: %d\n", *ADST_UINT32Var);
+        //printf("Binary 2 ASCII ADST_UINT32, value: %d\n", *ADST_UINT32Var);
         bytesPerDataPoint=4;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -755,7 +755,7 @@ int octetBinary2ascii(bool returnVarName,
         uint64_t *ADST_UINT64Var;
         ADST_UINT64Var=((uint64_t*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"% PRIu64",*ADST_UINT64Var);
-        printf("Binary 2 ASCII ADST_UINT64, value: %" PRIu64 "\n", *ADST_UINT64Var);
+        //printf("Binary 2 ASCII ADST_UINT64, value: %" PRIu64 "\n", *ADST_UINT64Var);
         bytesPerDataPoint=8;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -764,7 +764,7 @@ int octetBinary2ascii(bool returnVarName,
         float *ADST_REAL32Var;
         ADST_REAL32Var=((float*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%f",*ADST_REAL32Var);
-        printf("Binary 2 ASCII ADST_REAL32, value: %lf\n", *ADST_REAL32Var);
+        //printf("Binary 2 ASCII ADST_REAL32, value: %lf\n", *ADST_REAL32Var);
         bytesPerDataPoint=4;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -773,7 +773,7 @@ int octetBinary2ascii(bool returnVarName,
         double *ADST_REAL64Var;
         ADST_REAL64Var=((double*)binaryBuffer)+cycles;
         octetCmdBuf_printf(asciiBuffer,"%lf",*ADST_REAL64Var);
-        printf("Binary 2 ASCII ADST_REAL64, value: %lf\n", *ADST_REAL64Var);
+        //printf("Binary 2 ASCII ADST_REAL64, value: %lf\n", *ADST_REAL64Var);
         bytesPerDataPoint=8;
         bytesProcessed+=bytesPerDataPoint;
         break;
@@ -789,14 +789,14 @@ int octetBinary2ascii(bool returnVarName,
         }
         bytesPerDataPoint=1;//TODO: Check if each bit takes one byte or actually only one bit?!
         bytesProcessed+=bytesPerDataPoint;
-        printf("Binary 2 ASCII ADST_BIT, value: %c\n", *charVar);
+        //printf("Binary 2 ASCII ADST_BIT, value: %c\n", *charVar);
         break;
       case ADST_STRING:
         RETURN_VAR_NAME_IF_NEEDED;
         char *ADST_STRINGVar;
         ADST_STRINGVar = (char*)binaryBuffer;
         octetCmdBuf_printf(asciiBuffer,"%s",ADST_STRINGVar);
-        printf("Binary 2 ASCII ADST_STRING, value: %s\n", ADST_STRINGVar);
+        //printf("Binary 2 ASCII ADST_STRING, value: %s\n", ADST_STRINGVar);
         bytesProcessed=info->size;
         break;
       case ADST_BIGTYPE:
@@ -889,14 +889,14 @@ int octetBinary2ascii(bool returnVarName,
           else{
             octetCmdBuf_printf(asciiBuffer,"0;");
           }
-          printf("Binary 2 ASCII ADST_BIGTYPE, type: %s\n", info->symDataType);
+          //printf("Binary 2 ASCII ADST_BIGTYPE, type: %s\n", info->symDataType);
           bytesProcessed=info->size;
           break; //end DUT_AXIS_STATUS
         }
         break;
       default:
         error=ADS_COM_ERROR_INVALID_DATA_TYPE;
-        printf("Data type %s (%d) not implemented. Error: %d\n", info->symDataType, info->dataType,error);
+        //printf("Data type %s (%d) not implemented. Error: %d\n", info->symDataType, info->dataType,error);
         bytesPerDataPoint=0;
         break;
     }
@@ -904,11 +904,11 @@ int octetBinary2ascii(bool returnVarName,
 
     if(binaryBufferSize<bytesProcessed+bytesPerDataPoint){
       error=ADS_COM_ERROR_ADS_READ_BUFFER_INDEX_EXCEEDED_SIZE;
-      printf("Buffer size exceeded. Error: %d\n",error);
+      //printf("Buffer size exceeded. Error: %d\n",error);
     }
     if((asciiBuffer->bufferSize-asciiBuffer->bytesUsed)<20){
       error=ADS_COM_ERROR_BUFFER_TO_EPICS_FULL;
-      printf("Buffer size exceeded. Error: %d\n",error);
+      //printf("Buffer size exceeded. Error: %d\n",error);
     }
   }
   return error;
@@ -1009,7 +1009,7 @@ int octetAscii2binary(const char *asciiBuffer,uint16_t dataType,void *binaryBuff
         *bytesProcessed=binaryBufferSize;
         break;
       default:
-        printf("ERROR: Data type: %d not implemented.\n",dataType);
+        //printf("ERROR: Data type: %d not implemented.\n",dataType);
         error=ADS_COM_ERROR_INVALID_DATA_TYPE;
         bytesPerDataPoint=0;
         break;
