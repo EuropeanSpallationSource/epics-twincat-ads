@@ -51,10 +51,8 @@ ADSSOURCES = \
 
 
 ads_SRCS += ads_registerRecordDeviceDriver.cpp
-ads_SRCS += adsCom.cpp 
-ads_SRCS += drvAsynAdsPort.cpp
-ads_SRCS += cmd.c
-ads_SRCS += cmd_EAT.c
+ads_SRCS += adsAsynPortDriver.cpp
+ads_SRCS += adsAsynPortDriverUtils.cpp
 ads_SRCS += ${ADSSOURCES}
 
 
