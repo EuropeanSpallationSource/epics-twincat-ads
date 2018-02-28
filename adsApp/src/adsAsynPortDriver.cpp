@@ -10,8 +10,6 @@
 #include <math.h>
 #include <sys/time.h>
 
-#include "cmd.h"
-
 #include <epicsTypes.h>
 #include <epicsTime.h>
 #include <epicsThread.h>
@@ -24,7 +22,6 @@
 #include <dbStaticLib.h>
 #include <dbAccess.h>
 #include <alarm.h>
-
 
 static const char *driverName="adsAsynPortDriver";
 static adsAsynPortDriver *adsAsynPortObj;
@@ -176,6 +173,12 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   oneAmsConnectionOKold_=0;
   adsUnlock();
 
+  //Octet interface
+  octetAsciiBuffer_.bufferSize = ADS_CMD_BUFFER_SIZE;
+  octetAsciiBuffer_.bytesUsed=0;
+  memset(&octetBinaryBuffer_,0,ADS_CMD_BUFFER_SIZE);
+  octetReturnVarName_=0;
+
   //ADS
   adsPort_=0; //handle
   remoteNetId_={0,0,0,0,0,0};
@@ -185,6 +188,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Invalid default AMS port: %d\n", driverName, functionName,amsportDefault_);
     return;
   }
+  addNewAmsPortToList(amsportDefault_);
 
   int nvals = sscanf(amsaddr_, "%hhu.%hhu.%hhu.%hhu.%hhu.%hhu",
                      &remoteNetId_.b[0],
@@ -1025,27 +1029,39 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     }
   }
 
+  return addNewAmsPortToList(paramInfo->amsPort);
+}
+
+asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
+{
+  const char* functionName = "addNewAmsPortToList";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: amsPort:%u\n", driverName, functionName,amsPort);
+
   //See if new amsPort, then update list
   bool newAmsPort=true;
   for(amsPortInfo *port : amsPortList_){
-    if(port->amsPort==paramInfo->amsPort){
+    if(port->amsPort==amsPort){
       newAmsPort=false;
     }
   }
-  if(newAmsPort){
-    try{
-      amsPortInfo *newPort=new amsPortInfo();
-      newPort->amsPort=paramInfo->amsPort;
-      newPort->connected=0;
-      amsPortList_.push_back(newPort);
-      asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Added new amsPort to amsPortList: %d .\n", driverName, functionName,(int)paramInfo->amsPort);
-    }
-    catch(std::exception &e)
-    {
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to add new amsPort to list for pareameter %s. Exception: %s.\n", driverName, functionName,drvInfo,e.what());
-      return asynError;
-    }
+
+  if(!newAmsPort){
+    asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Amsport %d already in list.\n", driverName, functionName,amsPort);
+    return asynSuccess;
   }
+
+  try{
+    amsPortInfo *newPort=new amsPortInfo();
+    newPort->amsPort=amsPort;
+    newPort->connected=0;
+    amsPortList_.push_back(newPort);
+  }
+  catch(std::exception &e)
+  {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to add new amsPort to list. Exception: %s.\n", driverName, functionName,e.what());
+    return asynError;
+  }
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Added new amsPort to amsPortList: %d .\n", driverName, functionName,amsPort);
 
   return asynSuccess;
 }
@@ -1079,7 +1095,7 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
 
   *value = '\0';
   lock();
-  int error=CMDreadIt(value, maxChars);
+  int error=octetCMDreadIt(value, maxChars);
   if (error) {
     status = asynError;
     asynPrint(pasynUser, ASYN_TRACE_ERROR,
@@ -1119,6 +1135,34 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
   return status;
 }
 
+int adsAsynPortDriver::octetCMDreadIt(char *outbuf, size_t outlen)
+{
+  const char* functionName = "octetCMDreadIt";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Buffer: %s, size: %d\n", driverName, functionName,outbuf,(int)outlen);
+
+  int ret;
+  if (!outbuf || !outlen) return -1;
+  ret = snprintf(outbuf, outlen+1, "%s",octetAsciiBuffer_.buffer);
+
+  if (ret < 0){
+    octetClearBuffer(&octetAsciiBuffer_);
+    return ret;
+  }
+
+  /*if (PRINT_STDOUT_BIT1() && stdout) {
+    fprintf(stdout,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
+    cmd_dump_to_std(outbuf, strlen(outbuf));
+    fprintf(stdout,"\"\n");
+  }*/
+
+  if(ret>=(int)outlen+1){
+    ret=outlen;
+  }
+  octetRemoveFromBuffer(&octetAsciiBuffer_,ret);
+
+  return 0;
+}
+
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
 {
   const char* functionName = "writeOctet";
@@ -1139,7 +1183,7 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
     return asynSuccess;
   }
   //lock();
-  if (!(CMDwriteIt(value, maxChars))) {
+  if (!(octetCMDwriteIt(value, maxChars))) {
     thisWrite = maxChars;
     *nActual = thisWrite;
     status = asynSuccess;
@@ -1151,6 +1195,348 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
             (unsigned long)*nActual,
             pasynManager->strStatus(status));
   return status;
+}
+
+int adsAsynPortDriver::octetCMDwriteIt(const char *inbuf, size_t inlen)
+{
+  const char* functionName = "octetCMDwriteIt";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Write command: %s, length: %d\n", driverName, functionName,inbuf,(int) inlen);
+
+  int had_cr = 0;
+  int had_lf = 0;
+  int errorCode;
+  char *new_buf = (char *)inbuf;
+  if (!inbuf || !inlen) return -1;
+
+/*  if (PRINT_STDOUT_BIT1() && stdout) {
+    fprintf(stdout,"%s/%s:%d IN=\"", __FILE__, __FUNCTION__, __LINE__);
+    cmd_dump_to_std(inbuf, inlen);
+    fprintf(stdout,"\"\n");
+  }*/
+
+  new_buf = (char *)malloc(inlen + 1);
+  memcpy(new_buf, inbuf, inlen);
+  new_buf[inlen] = 0;
+
+  if (inlen > 1 && new_buf[inlen-1] == '\n') {
+    had_lf = 1;
+    new_buf[inlen-1] = '\0';
+    inlen--;
+    if (inlen > 1 && new_buf[inlen-1] == '\r') {
+      had_cr = 1;
+      new_buf[inlen-1] = '\0';
+      inlen--;
+    }
+  }
+
+  errorCode = octetCmdHandleInputLine(new_buf,&octetAsciiBuffer_);
+  free(new_buf);
+
+  if (errorCode) {
+    OCTET_RETURN_ERROR_OR_DIE(&octetAsciiBuffer_,__LINE__, "%s/%s:%d cmd_buf_printf returned error: 0x%x.",
+                        __FILE__, __FUNCTION__, __LINE__,errorCode);
+  }
+  octetCmdBuf_printf(&octetAsciiBuffer_,"%s%s",had_cr ? "\r" : "", had_lf ? "\n" : "");
+  return 0;
+}
+
+int adsAsynPortDriver::octetCmdHandleInputLine(const char *input_line, adsOctetOutputBufferType *buffer)
+{
+  const char* functionName = "octetCmdHandleInputLine";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Input line: %s\n", driverName, functionName,input_line);
+
+  const char **my_argv = NULL;
+  char **my_sepv = NULL;
+  int argc = octetCreateArgvSepv(input_line,
+                              (const char*** )&my_argv,
+                              (char*** )&my_sepv);
+
+  for (int i = 1; i <= argc; i++) {
+    int errorCode=octetMotorHandleOneArg(my_argv[i],buffer);
+    if(errorCode){
+      OCTET_RETURN_ERROR_OR_DIE(buffer,errorCode, "%s/%s:%d motorHandleOneArg returned errorcode: 0x%x\n",
+                                __FILE__, __FUNCTION__, __LINE__,errorCode);
+    }
+    octetCmdBuf_printf(buffer,"%s", my_sepv[i]);
+  }
+
+  for (int i=0; i < argc; i++)
+  {
+    free((void *)my_argv[i]);
+    free((void *)my_sepv[i]);
+  }
+  free(my_argv);
+  free(my_sepv);
+
+/*  if (PRINT_STDOUT_BIT2()) {
+    fprintf(stdout, "%s/%s:%d (%u)\n",
+            __FILE__, __FUNCTION__, __LINE__,
+            counter++);
+  }*/
+  return 0;
+}
+
+int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutputBufferType *buffer)
+{
+  const char* functionName = "octetMotorHandleOneArg";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Command: %s\n", driverName, functionName,myarg_1);
+
+  //const char *myarg = myarg_1;
+  int err_code;
+
+  uint16_t amsPort=amsportDefault_; //should actually be called amsport ( 851 for first plc as default) ...
+
+  /* ADSPORT= */
+  if (!strncmp(myarg_1, ADS_OPTION_ADSPORT, strlen(ADS_OPTION_ADSPORT))) {
+    myarg_1 += strlen(ADS_OPTION_ADSPORT)+1; //+1 beacuse equal sign
+    int nvals=sscanf(myarg_1,"%" SCNu16,&amsPort);
+    if(nvals!=1){
+      OCTET_RETURN_ERROR_OR_DIE(buffer,__LINE__,"%s/%s:%d myarg_1=%s err_code=%d: ADS port parse error",
+                      __FILE__, __FUNCTION__, __LINE__,
+                      myarg_1,
+                      __LINE__);
+    }
+    myarg_1=strchr(myarg_1, '/');
+    myarg_1++;
+  }
+
+  /* .THIS.sFeatures? */
+  if (0 == strcmp(myarg_1,ADS_OCTET_FEATURES_COMMAND)) {
+#ifdef DUT_AXIS_STATUS
+    const char *feature_str = "ads;stv1";
+#else
+    const char *feature_str = "ads";
+#endif
+    octetCmdBuf_printf(buffer, "%s", feature_str);
+    return 0;
+  }
+
+  /*.ADR.*/
+  const char *adr=strstr(myarg_1,ADS_ADR_COMMAND_PREFIX);
+  if(adr) {
+    myarg_1 = adr;
+
+    err_code = octetMotorHandleADRCmd(myarg_1,amsPort,buffer);
+    if (err_code == -1) return 0;
+    if (err_code == 0) {
+      return 0;
+    }
+    OCTET_RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
+                  __FILE__, __FUNCTION__, __LINE__,
+                  myarg_1,
+                  err_code);
+  }
+
+  char variableName[255];
+  memset(&variableName,0,sizeof(variableName));
+
+  //symbolic write
+  adr=strchr(myarg_1,'=');
+  if(adr)
+  {
+    //Copy variable name
+    strncpy(variableName,myarg_1,adr-myarg_1);
+    adr++; //Jump over '='
+    err_code = octetAdsWriteByName(amsPort,variableName,adr,buffer);
+    if (err_code) {
+      OCTET_RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
+                          __FILE__, __FUNCTION__, __LINE__,
+                          myarg_1,
+                          err_code);
+    }
+    octetCmdBuf_printf(buffer,"OK");
+    return 0;
+  }
+
+  //symbolic read
+  adr = strchr(myarg_1, '?');
+  if (adr)
+  {
+    //Copy variable name
+    strncpy(variableName,myarg_1,adr-myarg_1);
+    variableName[adr-myarg_1]=0;
+    err_code = octetAdsReadByName(amsPort,variableName,buffer);
+    return err_code;
+  }
+  /*  if we come here, it is a bad command */
+  octetCmdBuf_printf(buffer,"Error bad command");
+  return 0;
+}
+
+int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,adsOctetOutputBufferType *buffer)
+{
+  const char* functionName = "octetMotorHandleOneArg";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Command: %s, amsPort: %d\n",driverName,functionName,arg,(int)amsport);
+
+  const char *myarg_1 = NULL;
+  unsigned group_no = 0;
+  unsigned offset_in_group = 0;
+  unsigned len_in_PLC = 0;
+  unsigned type_in_PLC = 0;
+  int nvals;
+  nvals = sscanf(arg, ".ADR.16#%x,16#%x,%u,%u=",
+                 &group_no,
+                 &offset_in_group,
+                 &len_in_PLC,
+                 &type_in_PLC);
+
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: nvals=%d amsport=%u group_no=0x%x offset_in_group=0x%x len_in_PLC=%u type_in_PLC=%u\n",
+            driverName,
+            functionName,
+            nvals,
+            amsport,
+            group_no,
+            offset_in_group,
+            len_in_PLC,
+            type_in_PLC);
+
+  if (nvals != 4){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse .ADR. command.\n", driverName, functionName);
+    return __LINE__;
+  }
+
+  //WRITE
+  myarg_1 = strchr(arg, '=');
+  if (myarg_1) {
+    myarg_1++; /* Jump over '=' */
+
+    int error=octetAdsWriteByGroupOffset(amsport,(uint32_t)group_no,(uint32_t) offset_in_group,(uint16_t)type_in_PLC,(uint32_t)len_in_PLC,myarg_1,buffer);
+    if (error){
+      OCTET_RETURN_ERROR_OR_DIE(buffer,error,"%s/%s:%d myarg_1=%s err_code=%d",
+                __FILE__, __FUNCTION__, __LINE__,
+                myarg_1,
+                error);
+        return error;
+    }
+    octetCmdBuf_printf(buffer,"OK");
+    return 0;
+  }
+
+  //READ
+  myarg_1 = strchr(arg, '?');
+  if (myarg_1) {
+    myarg_1++; /* Jump over '?' */
+    adsSymbolEntry info;
+    memset(&info,0,sizeof(info));
+    info.dataType=type_in_PLC;
+    info.size=len_in_PLC;
+    info.iGroup=group_no;
+    info.iOffset=offset_in_group;
+
+    int error=octetAdsReadByGroupOffset(amsport,&info,buffer);
+    if (error){
+      OCTET_RETURN_ERROR_OR_DIE(buffer,error,"%s/%s:%d myarg_1=%s err_code=%d",
+                __FILE__, __FUNCTION__, __LINE__,
+                myarg_1,
+                error);
+
+        return error;
+    }
+    return 0;
+  }
+  return __LINE__;
+}
+
+int adsAsynPortDriver::octetAdsReadByName(uint16_t amsPort,const char *variableAddr,adsOctetOutputBufferType* outBuffer)
+{
+  const char* functionName = "octetAdsReadByName";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Variable:%s, amsPort %u\n", driverName, functionName,variableAddr,amsPort);
+
+  adsSymbolEntry infoStruct;
+  memset(&infoStruct,0,sizeof(infoStruct));
+
+  asynStatus stat=adsGetSymInfoByName(amsPort,variableAddr,&infoStruct);
+  if (stat!=asynSuccess) {
+    return stat;
+  }
+
+  return octetAdsReadByGroupOffset(amsPort,&infoStruct,outBuffer);
+}
+
+int adsAsynPortDriver::octetAdsWriteByName(uint16_t amsPort,const char *variableAddr,const char *asciiValueToWrite,adsOctetOutputBufferType *outBuffer)
+{
+  const char* functionName = "octetAdsWriteByName";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Variable: %s, value: %s.\n", driverName, functionName,variableAddr,asciiValueToWrite);
+
+  adsSymbolEntry infoStruct;
+  memset(&infoStruct,0,sizeof(infoStruct));
+
+  asynStatus stat=adsGetSymInfoByName(amsPort,variableAddr,&infoStruct);
+  if (stat!=asynSuccess) {
+    return stat;
+  }
+
+ return octetAdsWriteByGroupOffset(amsPort,infoStruct.iGroup,infoStruct.iOffset,infoStruct.dataType,infoStruct.size,asciiValueToWrite,outBuffer);
+}
+
+int adsAsynPortDriver::octetAdsReadByGroupOffset(uint16_t amsPort,adsSymbolEntry *info, adsOctetOutputBufferType *outBuffer)
+{
+  const char* functionName = "octetAdsReadByGroupOffset";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: amsPort: %d, group: %d, offset: %d, dataType: %s (%d), dataSize: %d.\n", driverName, functionName,(int)amsPort,(int)info->iGroup,(int)info->iOffset,adsTypeToString(info->dataType),(int)info->dataType,(int)info->size);
+
+  uint32_t bytesRead=0;
+  AmsAddr amsServer={remoteNetId_,amsPort};
+
+  int dataSize=info->size;
+  if(info->size>ADS_CMD_BUFFER_SIZE){
+    dataSize=ADS_CMD_BUFFER_SIZE;
+    asynPrint(pasynUserSelf, ASYN_TRACE_WARNING, "%s:%s: Read buffer size smaller than size in plc.\n", driverName, functionName);
+  }
+
+  adsLock();
+  memset(&octetBinaryBuffer_,0,ADS_CMD_BUFFER_SIZE);
+
+  int error = AdsSyncReadReqEx2(adsPort_, &amsServer, info->iGroup,info->iOffset,dataSize, &octetBinaryBuffer_, &bytesRead);
+
+  if (error) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read failed with: %s (0x%x).\n", driverName, functionName,adsErrorToString(error),error);
+    adsUnlock();
+    return error;
+  }
+
+  error=octetBinary2ascii(octetReturnVarName_,&octetBinaryBuffer_,ADS_CMD_BUFFER_SIZE,info,outBuffer);
+  if (error) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Binary to ASCII conversion failed with: %d\n", driverName, functionName,error);
+    adsUnlock();
+    return error;
+  }
+  adsUnlock();
+  return 0;
+}
+
+int adsAsynPortDriver::octetAdsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize, const char *asciiValueToWrite,adsOctetOutputBufferType *asciiResponseBuffer)
+{
+  const char* functionName = "octetAdsWriteByGroupOffset";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: amsPort: %d, group: %d, offset: %d, dataType: %s (%d), dataSize: %d.\n", driverName, functionName,(int)amsPort,(int)group,(int)offset,adsTypeToString(dataType),(int)dataType,(int)dataSize);
+
+  uint32_t bytesToWrite=0;
+  AmsAddr amsServer={remoteNetId_,amsPort};
+
+  adsLock();
+  memset(&octetBinaryBuffer_,0,ADS_CMD_BUFFER_SIZE);
+
+  int error=octetAscii2binary(asciiValueToWrite,dataType,&octetBinaryBuffer_,ADS_CMD_BUFFER_SIZE,&bytesToWrite);
+  if(error){
+    adsUnlock();
+    octetCmdBuf_printf(asciiResponseBuffer,"Error: %x", error);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ASCII to binary conversion failed with: %d.\n", driverName, functionName,error);
+    return error;
+  }
+
+  if(bytesToWrite>dataSize){
+    bytesToWrite=dataSize;
+  }
+
+  error = AdsSyncWriteReqEx(adsPort_, &amsServer, group, offset, bytesToWrite, &octetBinaryBuffer_);
+
+  if (error) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write failed with: %s (0x%x).\n", driverName, functionName,adsErrorToString(error),error);
+    adsUnlock();
+    return error;
+  }
+
+  adsUnlock();
+  return 0;
 }
 
 asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
@@ -1803,70 +2189,84 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
-asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
+asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *varName, adsSymbolEntry *info)
 {
-  const char* functionName = "getSymInfoByName";
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-  adsSymbolEntry infoStruct;
+  const char* functionName = "adsGetSymInfoByName";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Variable name: %s, amsPort: %d.\n", driverName, functionName,varName,(int)amsPort);
+
+  if(!info || !varName){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Info struct or varName NULL.\n", driverName, functionName);
+    return asynError;
+  }
 
   uint32_t bytesRead=0;
   AmsAddr amsServer;
 
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
-
+  amsServer={remoteNetId_,amsPort};
   adsLock();
   const long infoStatus = AdsSyncReadWriteReqEx2(adsPort_,
                                                  &amsServer,
                                                  ADSIGRP_SYM_INFOBYNAMEEX,
                                                  0,
                                                  sizeof(adsSymbolEntry),
-                                                 &infoStruct,
-                                                 strlen(paramInfo->plcAdrStr),
-                                                 paramInfo->plcAdrStr,
+                                                 info,
+                                                 strlen(varName),
+                                                 varName,
                                                  &bytesRead);
   adsUnlock();
 
   if (infoStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(infoStatus),infoStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,varName,adsErrorToString(infoStatus),infoStatus);
     return asynError;
   }
 
-  infoStruct.variableName = infoStruct.buffer;
+  info->variableName = info->buffer;
 
-  if(infoStruct.nameLength>=sizeof(infoStruct.buffer)-1){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcAdrStr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+  if(info->nameLength>=sizeof(info->buffer)-1){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of type in AdsSyncReadWriteReqEx2 return struct for %s\n", driverName, functionName,varName);
     return asynError;
   }
-  infoStruct.symDataType = infoStruct.buffer+infoStruct.nameLength+1;
+  info->symDataType = info->buffer+info->nameLength+1;
 
-  if(infoStruct.nameLength + infoStruct.typeLength+2>=(uint16_t)(sizeof(infoStruct.buffer)-1)){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s: 0x%x\n", driverName, functionName,paramInfo->plcAdrStr,ADS_COM_ERROR_READ_SYMBOLIC_INFO);
+  if(info->nameLength + info->typeLength+2>=(uint16_t)(sizeof(info->buffer)-1)){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Missalignment of comment in AdsSyncReadWriteReqEx2 return struct for %s\n", driverName, functionName,varName);
   }
-  infoStruct.symComment= infoStruct.symDataType+infoStruct.typeLength+1;
+  info->symComment= info->symDataType+info->typeLength+1;
 
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Symbolic information\n");
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"SymEntrylength: %d\n",infoStruct.entryLen);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxGroup: 0x%x\n",infoStruct.iGroup);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxOffset: 0x%x\n",infoStruct.iOffset);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"ByteSize: %d\n",infoStruct.size);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"adsDataType: %d\n",infoStruct.dataType);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Flags: %d\n",infoStruct.flags);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Name length: %d\n",infoStruct.nameLength);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct.typeLength);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",infoStruct.commentLength);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Variable name: %s\n",infoStruct.variableName);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Data type: %s\n",infoStruct.symDataType);
-  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Comment: %s\n",infoStruct.symComment);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"SymEntrylength: %d\n",info->entryLen);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxGroup: 0x%x\n",info->iGroup);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"idxOffset: 0x%x\n",info->iOffset);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"ByteSize: %d\n",info->size);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"adsDataType: %d\n",info->dataType);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Flags: %d\n",info->flags);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Name length: %d\n",info->nameLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",info->typeLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Type length: %d\n",info->commentLength);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Variable name: %s\n",info->variableName);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Data type: %s\n",info->symDataType);
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"Comment: %s\n",info->symComment);
 
-  //fill data in structure
-  paramInfo->plcAbsAdrGroup=infoStruct.iGroup; //However hopefully this adress should never be used (use symbol intstead since safer if memory moves in plc)..
-  paramInfo->plcAbsAdrOffset=infoStruct.iOffset; // -"- -"-
-  paramInfo->plcSize=infoStruct.size;  //Needed also for symbolic access
+  return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
+{
+  const char* functionName = "adsGetSymInfoByName";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
+
+  adsSymbolEntry infoStruct;
+  memset(&infoStruct,0,sizeof(infoStruct));
+
+  asynStatus stat=adsGetSymInfoByName(paramInfo->amsPort,paramInfo->plcAdrStr,&infoStruct);
+  if (stat) {
+    return asynError;
+  }
+
+  //fill paramInfo data structure
+  paramInfo->plcAbsAdrGroup=infoStruct.iGroup;
+  paramInfo->plcAbsAdrOffset=infoStruct.iOffset;
+  paramInfo->plcSize=infoStruct.size;
   paramInfo->plcDataType=infoStruct.dataType;
   paramInfo->plcAbsAdrValid=true;
 
@@ -2825,6 +3225,7 @@ asynStatus adsAsynPortDriver::adsAddRouteLock()
   routeAdded_=1;
   return asynSuccess;
 }
+
 
 /* Configuration routine.  Called directly, or from the iocsh function below */
 

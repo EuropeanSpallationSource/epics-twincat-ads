@@ -47,6 +47,7 @@ TEMPLATES = \
   adsApp/Db/adsTestAsyn.db\
   adsApp/Db/adsTestAsynSlim.db\
   adsApp/Db/adsTestAsynSlimArray.db\
+  adsTestStreamDeviceSlim.db\
 
 
 

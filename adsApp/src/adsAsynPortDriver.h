@@ -126,6 +126,9 @@ private:
   asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo,
                                         bool blockErrorMsg);
   asynStatus adsGetSymInfoByName(adsParamInfo *paramInfo);
+  asynStatus adsGetSymInfoByName(uint16_t amsPort,
+                                 const char * varName,
+                                 adsSymbolEntry * info);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo,
                                    bool blockErrorMsg);
@@ -169,8 +172,40 @@ private:
   asynStatus setAlarmPort(uint16_t amsPort,int alarm,int severity);
   asynStatus setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity);
   asynStatus fireCallbacks(adsParamInfo* paramInfo);
+  asynStatus addNewAmsPortToList(uint16_t amsPort);
   void       adsLock();
   void       adsUnlock();
+
+  //Octet interface methods
+  int        octetCMDreadIt(char *outbuf,
+                            size_t outlen);
+  int        octetCMDwriteIt(const char *inbuf,
+                             size_t inlen);
+  int        octetCmdHandleInputLine(const char *input_line,
+                                     adsOctetOutputBufferType *buffer);
+  int        octetMotorHandleOneArg(const char *myarg_1,
+                                    adsOctetOutputBufferType *buffer);
+  int        octetMotorHandleADRCmd(const char *arg,
+                                    uint16_t adsport,
+                                    adsOctetOutputBufferType *buffer);
+  int        octetAdsReadByName(uint16_t amsPort,
+                                const char *variableAddr,
+                                adsOctetOutputBufferType* outBuffer);
+  int        octetAdsWriteByName(uint16_t amsPort,
+                                 const char *variableAddr,
+                                 const char *asciiValueToWrite,
+                                 adsOctetOutputBufferType *outBuffer);
+  int        octetAdsReadByGroupOffset(uint16_t amsPort,
+                                       adsSymbolEntry *info,
+                                       adsOctetOutputBufferType *outBuffer);
+  int        octetAdsWriteByGroupOffset(uint16_t amsPort,
+                                        uint32_t group,
+                                        uint32_t offset,
+                                        uint16_t dataType,
+                                        uint32_t dataSize,
+                                        const char *asciiValueToWrite,
+                                        adsOctetOutputBufferType *asciiResponseBuffer);
+
   char                           *ipaddr_;
   char                           *amsaddr_;
   int                            autoConnect_;
@@ -194,6 +229,11 @@ private:
   std::vector<amsPortInfo*>      amsPortList_;
   ADSTIMESOURCE                  defaultTimeSource_;
   std::mutex                     adsMutex;
+
+  //octet
+  adsOctetOutputBufferType       octetAsciiBuffer_;
+  uint8_t                        octetBinaryBuffer_[ADS_CMD_BUFFER_SIZE];
+  int                            octetReturnVarName_;
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */

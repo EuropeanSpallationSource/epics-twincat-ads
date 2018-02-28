@@ -1,0 +1,5 @@
+record(ai,"$(P)GetAmplitude"){
+	field(DTYP,"stream")
+	field(INP,"@adsTest.proto getAmplitude() $(PORT)")
+	field(SCAN,"1 second")
+}

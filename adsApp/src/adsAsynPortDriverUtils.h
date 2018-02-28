@@ -4,6 +4,9 @@
 
 #include "asynPortDriver.h"  //data types
 #include "AdsLib.h"          //error codes
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 
 #define ADS_MAX_FIELD_CHAR_LENGTH 128
 #define ADS_ADR_COMMAND_PREFIX ".ADR."
@@ -13,15 +16,7 @@
 #define ADS_OPTION_TIMEBASE_EPICS "EPICS"
 #define ADS_OPTION_TIMEBASE_PLC "PLC"
 #define ADS_OPTION_ADSPORT "ADSPORT"
-
-//#define ADS_COM_ERROR_INVALID_AMS_PORT 1000
-//#define ADS_COM_ERROR_INVALID_AMS_ADDRESS 1001
-//#define ADS_COM_ERROR_OPEN_ADS_PORT_FAIL 1002
-//#define ADS_COM_ERROR_ADD_ADS_ROUTE_FAIL 1003
-//#define ADS_COM_ERROR_INVALID_DATA_TYPE 1004
-//#define ADS_COM_ERROR_ADS_READ_BUFFER_INDEX_EXCEEDED_SIZE 1005
-//#define ADS_COM_ERROR_BUFFER_TO_EPICS_FULL 1006
-#define ADS_COM_ERROR_READ_SYMBOLIC_INFO 1007
+#define ADS_OCTET_FEATURES_COMMAND ".THIS.sFeatures?"
 
 #ifndef ASYN_TRACE_INFO
   #define ASYN_TRACE_INFO      0x0040
@@ -127,6 +122,46 @@ const char *epicsStateToString(int state);
 size_t adsTypeSize(long type);
 asynParamType dtypStringToAsynType(char *dtype);
 int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts);
+
+/*
+ * Octet interface functions and definitions
+ */
+
+#define DUT_AXIS_STATUS "DUT_AxisStatus_v0_01"
+#define ADS_CMD_BUFFER_SIZE 65536
+
+#define OCTET_RETURN_ERROR_OR_DIE(buffer,errcode,fmt, ...)   \
+  do {                                            \
+    octetCmdBuf_printf(buffer,"Error: ");             \
+    octetCmdBuf_printf(buffer,fmt, ##__VA_ARGS__);    \
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, fmt, ##__VA_ARGS__);   \
+    return errcode;                               \
+  }                                               \
+  while(0)
+
+typedef struct {
+  size_t   bufferSize;
+  size_t   bytesUsed;
+  char  buffer[ADS_CMD_BUFFER_SIZE];
+} adsOctetOutputBufferType;
+int octetCmdBuf_printf(adsOctetOutputBufferType *buffer,
+                   const char *format, ...);
+int octetRemoveFromBuffer(adsOctetOutputBufferType *buffer,
+                     size_t len);
+int octetClearBuffer(adsOctetOutputBufferType *buffer);
+int octetCreateArgvSepv(const char *line,
+                        const char*** argv_p,
+                        char*** sepv_p);
+int octetBinary2ascii(bool returnVarName,
+                      void *binaryBuffer,
+                      uint32_t binaryBufferSize,
+                      adsSymbolEntry *info,
+                      adsOctetOutputBufferType *asciiBuffer);
+int octetAscii2binary(const char *asciiBuffer,
+                      uint16_t dataType,
+                      void *binaryBuffer,
+                      uint32_t binaryBufferSize,
+                      uint32_t *bytesProcessed);
 
 #endif /* ADSASYNPORTDRIVERUTILS_H_ */
 
