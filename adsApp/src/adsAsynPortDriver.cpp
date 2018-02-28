@@ -728,20 +728,6 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   status = adsReadParam(paramInfo,&errorCode,0);
   if(status!=asynSuccess){
     asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: adsReadParam failed with errorcode %s (%ld).\n.", driverName, functionName,adsErrorToString(errorCode),errorCode);
-//    bool renewHandles=errorCode == ADSERR_DEVICE_NOTIFYHNDINVALID ||
-//                      errorCode == ADSERR_DEVICE_SYMBOLVERSIONINVALID ||
-//                      errorCode == ADSERR_DEVICE_SYMBOLNOTFOUND ||
-//                      errorCode == ADSERR_DEVICE_SYMBOLNOTACTIVE;
-//    if(renewHandles){
-//
-//    adsReleaseSymbolicHandle(paramInfo,true); //try to delete
-//    adsGetSymHandleByName(paramInfo);
-//
-//    if(paramInfo->isIOIntr){
-//      adsDelNotificationCallback(paramInfo,true);   //try to delete
-//      adsAddNotificationCallback(paramInfo);
-//    }
-//    }
     // try read again
     asynStatus stat=adsReadParam(paramInfo,&errorCode,0);
     if(stat!=asynSuccess){
@@ -1062,7 +1048,6 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
 
 bool adsAsynPortDriver::isCallbackAllowed(adsParamInfo *paramInfo)
 {
-  //return isCallbackAllowed(paramInfo->amsPort);
   return !paramInfo->paramRefreshNeeded;
 }
 
