@@ -1,6 +1,4 @@
-require asyn,4.27.0
-require streamdevice,2.7.1
-require axis,10.0.7
+require axis,10.1.5
 require ads,anderssandstrom
 
 ##############################################################################
@@ -8,22 +6,27 @@ require ads,anderssandstrom
 # 
 # 1. The ams adress of this linux client must be added to the TwinCAT ads router.
 #    Systems->routes->add route, use ip of linux plus ".1.1"=> "192.168.88.44.1.1"
-# 2. A PLC project with an instance of FB_DriveVirtual, (in "Main.M1"), must be 
-#    loaded in the PLC. See demo twincat project. 
-# 3. Start with: iocsh st.adsTestAxisRecord.cmd
-# 
 ##############################################################################
-############# Configure device (<ASYN PORT>, <IP_of_PLC>,<AMS_of_PLC>,<Default_ADS_Port>,<Not_used>,<Not_used>,<Not_used>):
 ## Configure devices
-drvAsynAdsPortConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,0, 0, 0)
-#drvAsynAdsPortConfigure("ADS_2","192.168.88.41","192.168.88.41.1.1",852,0, 0, 0)
+# 1. Asyn port name                         : "ADS_1"
+# 2. IP                                     : "192.168.88.10"
+# 3. AMS of plc                             : "192.168.88.11.1.2"
+# 4. Default ams port                       : 851 for plc 1, 852 plc 2 ...
+# 5. Parameter table size (max parameters)  : 1000 example
+# 6. priority                               : 0
+# 7. disable auto connnect                  : 0 (autoconnect enabled)
+# 8. noProcessEOS                           : 0
+# 9. default sample time ms                 : 500
+# 10. max delay time ms (buffer time in plc): 1000
+# 11. ADS command timeout in ms             : 1000  
+# 12. default time source (PLC=0,EPICS=1).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
+
+adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100,1000,0)
+
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
 
-asynSetTraceMask("ADS_1", -1, 0x41)
-asynSetTraceIOMask("ADS_1", -1, 6)
-asynSetTraceInfoMask("ADS_1", -1, 15)
-
+asynSetTraceMask("ADS_1", -1, 0xFF)
 
 ##############################################################################
 ############# Configure and load axis record:
@@ -60,7 +63,12 @@ dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME)
 
 ##############################################################################
 ############# Load records (Stream device):
-dbLoadRecords("adsTest.db","P=ADS_IOC:,PORT=ADS_1")
+#dbLoadRecords("adsTest.db","P=ADS_IOC:,PORT=ADS_1")
+
+##############################################################################
+############# Load records (asyn direct):
+#dbLoadRecords("adsTestAsynSlim.db","P=ADS_IOC:,PORT=ADS_1")
 
 #var streamDebug 1
 
+#asynReport(2,"ADS_1")
