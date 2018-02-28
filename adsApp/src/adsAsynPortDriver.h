@@ -176,7 +176,7 @@ private:
   void       adsLock();
   void       adsUnlock();
 
-  //Octet interface methods
+  //Octet interface methods (ascii command parser through readoctet() and writeoctet())
   int        octetCMDreadIt(char *outbuf,
                             size_t outlen);
   int        octetCMDwriteIt(const char *inbuf,
@@ -221,7 +221,6 @@ private:
   int                            routeAdded_;
   int                            notConnectedCounter_;
   int                            oneAmsConnectionOKold_;
-  //int                            disconnectMadeOnce_;
   uint16_t                       amsportDefault_;
   unsigned int                   priority_;
   AmsNetId                       remoteNetId_;
