@@ -2,10 +2,16 @@ require axis,10.1.5
 require ads,anderssandstrom
 
 ##############################################################################
-# Demo file to run one axis motor record (or actually axis record). 
+# Demo file to run one motor record axis (or actually axis record). 
 # 
-#  The ams adress of this linux client must be added to the TwinCAT ads router.
-#  In TwinCAT: Systems->routes->add route, use ip of linux machine plus ".1.1"=> "192.168.88.44.1.1"
+#  1. Open TwinCAT test project
+#  2. The ams adress of this linux client must be added to the TwinCAT ads router.
+#     In TwinCAT: Systems->routes->add route, use ip of linux machine plus ".1.1"=> "192.168.88.44.1.1"
+#  3. Link axis 1 to hardware and make commisioning.
+#  4. Ensure that NC axis 1 is linked to Main.M1Link.Axis
+#  5. To run motor both limitswitches need to be linked to switeches or set to 1. (Main.bLimitFwd=1,Main.bLimitBwd=1)
+#  6. Download and start plc(s)
+#  7. start ioc on linux machine with: iocsh adsMotorRecord.cmd 
 #
 ##############################################################################
 ############# Configure ads device driver:
@@ -22,14 +28,11 @@ require ads,anderssandstrom
 # 11. ADS command timeout in ms             : 1000  
 # 12. default time source (PLC=0,EPICS=1).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
 
-##############################################################################
-############# Configure and load axis record:
 adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100,1000,0)
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
 asynSetTraceMask("ADS_1", -1, 0x01)
-#asynSetTraceMask("ADS_1", -1, 0xFF)
 
 ##############################################################################
 ############# Configure and load axis record:
@@ -77,6 +80,7 @@ dbLoadRecords("adsTestAsyn.db","P=ADS_IOC:ASYN:,PORT=ADS_1")
 #  "adsApp/src/adsAsynPortDriver.cpp/octetCmdHandleInputLine:1237 motorHandleOneArg returned errorcode: 0x3"
 #
 ##############################################################################
-
+############# Usefull commands
 #var streamDebug 1
 #asynReport(2,"ADS_1")
+#asynSetTraceMask("ADS_1", -1, 0xFF)
