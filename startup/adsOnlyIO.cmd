@@ -40,14 +40,6 @@ dbLoadRecords("adsTestOctet.db","P=ADS_IOC:OCTET:,PORT=ADS_1")
 dbLoadRecords("adsTestAsyn.db","P=ADS_IOC:ASYN:,PORT=ADS_1")
 
 ##############################################################################
-############# Motor/Axis record error message:
-#
-# Note: Motor/Axis record will try to read Main.M1.stAxisStatusV2 and use it if accessible. Otherwise fallback on original version ("Main.M1.stAxisStatus"). 
-# The following error message will be displayed at startup if "Main.M1.stAxisStatusV2 "is not accessible (this error will not impact the driver):
-#  "adsAsynPortDriver:adsGetSymInfoByName: Get symbolic information failed for Main.M1.stAxisStatusV2 with: ADSERR_DEVICE_SYMBOLNOTFOUND (1808)"
-#  "adsApp/src/adsAsynPortDriver.cpp/octetCmdHandleInputLine:1237 motorHandleOneArg returned errorcode: 0x3"
-#
-##############################################################################
 ############# Usefull commands
 #var streamDebug 1
 #asynReport(2,"ADS_1")
