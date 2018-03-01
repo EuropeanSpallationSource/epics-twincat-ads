@@ -56,27 +56,61 @@ record(ai,"$(P)GetFTestEpicsTime"){
   field(SCAN,"I/O Intr")
 }
 
-###############################################################################
-# bTest:  Two different types:
-#             1. ai I/O intr
-#             3  ai scan 1 second
-
-record(ai,"$(P)GetBTest"){
-  field(PINI, "1")
-  field(TSE, -2)
-  field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.bTest?")
-  field(PREC, "3")
-  field(SCAN,"I/O Intr")
+# Make timestamp accessible in CSS
+record(stringin, "$(P)GetFTestEpicsTime:T") {
+  field(DTYP, "Soft Timestamp")
+  field(TSEL, "$(P)GetFTestEpicsTime.TIME CP")
+  field(INP, "@%b %d, %Y %H:%M:%S.%09f")
 }
 
-record(ai,"$(P)GetBTestSCAN"){
+record(stringin, "$(P)GetFTestPLCTime:T") {
+  field(DTYP, "Soft Timestamp")
+  field(TSEL, "$(P)GetFTestPLCTime.TIME CP")  
+  field(INP, "@%b %d, %Y %H:%M:%S.%09f")
+}
+
+###############################################################################
+# iTest:  Four different types:
+#             1. ao passive
+#             2. ao with readback (default sample and max delay time)
+#             3. ai I/O intr (default sample and max delay time)
+#             4  ai scan 1 second
+
+record(ao,"$(P)SetITest"){
   field(PINI, "1")
-  field(TSE, -2)
+  field(TSE,  -2)
   field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.bTest?")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest=")
   field(PREC, "3")
-  field(SCAN,"1 second")
+  field(SCAN, "Passive")
+}
+
+record(ao,"$(P)SetITestRB"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  -2)
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest?")
+  field(PREC, "3")
+  field(SCAN, "Passive")
+}
+
+record(ai,"$(P)GetITest"){
+  field(PINI, "1")
+  field(TSE,  -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest?")
+  field(PREC, "3")
+  field(SCAN, "I/O Intr")
+}
+
+record(ai,"$(P)GetITestSCAN"){
+  field(PINI, "1")
+  field(TSE,  -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest?")
+  field(PREC, "3")
+  field(SCAN, "1 second")
 }
 
 ###############################################################################

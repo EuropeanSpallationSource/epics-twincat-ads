@@ -40,11 +40,7 @@ TEMPLATES = \
   adsApp/Db/adsGeneral.template \
   adsApp/Db/DUT_AxisStatus_v0_01.template\
   adsApp/Db/FB_DriveVirtual_v1_01.template\
-  adsApp/Db/adsTest.db\
+  adsApp/Db/adsTestOctet.db\
   adsApp/Db/adsTestAsyn.db\
-  adsApp/Db/adsTestAsynSlim.db\
-  adsApp/Db/adsTestAsynSlimArray.db\
-  adsTestStreamDeviceSlim.db\
-
 
 

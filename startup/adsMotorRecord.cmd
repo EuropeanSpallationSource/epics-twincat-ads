@@ -4,10 +4,11 @@ require ads,anderssandstrom
 ##############################################################################
 # Demo file to run one axis motor record (or actually axis record). 
 # 
-# 1. The ams adress of this linux client must be added to the TwinCAT ads router.
-#    Systems->routes->add route, use ip of linux plus ".1.1"=> "192.168.88.44.1.1"
+#  The ams adress of this linux client must be added to the TwinCAT ads router.
+#  In TwinCAT: Systems->routes->add route, use ip of linux machine plus ".1.1"=> "192.168.88.44.1.1"
+#
 ##############################################################################
-## Configure devices
+############# Configure ads device driver:
 # 1. Asyn port name                         : "ADS_1"
 # 2. IP                                     : "192.168.88.10"
 # 3. AMS of plc                             : "192.168.88.11.1.2"
@@ -21,24 +22,22 @@ require ads,anderssandstrom
 # 11. ADS command timeout in ms             : 1000  
 # 12. default time source (PLC=0,EPICS=1).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
 
+##############################################################################
+############# Configure and load axis record:
 adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100,1000,0)
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
-
-asynSetTraceMask("ADS_1", -1, 0xFF)
+asynSetTraceMask("ADS_1", -1, 0x01)
+#asynSetTraceMask("ADS_1", -1, 0xFF)
 
 ##############################################################################
 ############# Configure and load axis record:
-
-#IS THIS CORRECT TO USE ASYN PORT FROM ABOVE??? NEED to test
 EthercatMCCreateController("MCU1", "ADS_1", "32", "200", "1000", "")
 
 epicsEnvSet("MOTOR_PORT",    "$(SM_MOTOR_PORT=MCU1)")
 epicsEnvSet("ASYN_PORT",     "$(SM_ASYN_PORT=MC_CPU1)")
-epicsEnvSet("PREFIX",        "$(SM_PREFIX=IOC2:)")
-
-#values for motor xl
+epicsEnvSet("PREFIX",        "$(SM_PREFIX=ADS_IOC:)")
 
 epicsEnvSet("AXISCONFIG",    "")
 epicsEnvSet("EGU",           "mm")
@@ -50,9 +49,9 @@ epicsEnvSet("JAR",           "0.0")
 epicsEnvSet("ACCL",          "1")
 epicsEnvSet("MRES",          "0.001")
 
-epicsEnvSet("MOTOR_NAME",    "xl")
-epicsEnvSet("R",             "xl-")
-epicsEnvSet("DESC",          "Left Blade")
+epicsEnvSet("MOTOR_NAME",    "M1")
+epicsEnvSet("R",             "M1-")
+epicsEnvSet("DESC",          "Motor 1")
 epicsEnvSet("AXIS_NO",       "1")
 epicsEnvSet("DLLM",          "$(SM_DLLM=0)")
 epicsEnvSet("DHLM",          "$(SM_DHLM=0)")
@@ -62,13 +61,22 @@ EthercatMCCreateAxis("MCU1", "${AXIS_NO}", "6", "")
 dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME), R=$(R), MOTOR_PORT=$(MOTOR_PORT), ASYN_PORT=$(ASYN_PORT), AXIS_NO=$(AXIS_NO), DESC=$(DESC), PREC=$(PREC), VELO=$(VELO), JVEL=$(JVEL), JAR=$(JAR), ACCL=$(ACCL), MRES=$(MRES), DLLM=$(DLLM), DHLM=$(DHLM), HOMEPROC=$(HOMEPROC)")
 
 ##############################################################################
-############# Load records (Stream device):
-#dbLoadRecords("adsTest.db","P=ADS_IOC:,PORT=ADS_1")
+############# Load records Octet interface (Stream device):
+dbLoadRecords("adsTestOctet.db","P=ADS_IOC:OCTET:,PORT=ADS_1")
 
 ##############################################################################
-############# Load records (asyn direct):
-#dbLoadRecords("adsTestAsynSlim.db","P=ADS_IOC:,PORT=ADS_1")
+############# Load records (asyn direct I/O intr):
+dbLoadRecords("adsTestAsyn.db","P=ADS_IOC:ASYN:,PORT=ADS_1")
+
+##############################################################################
+############# Motor/Axis record error message:
+#
+# Note: Motor/Axis record will try to read Main.M1.stAxisStatusV2 and use it if accessible. Otherwise fallback on original version ("Main.M1.stAxisStatus"). 
+# The following error message will be displayed at startup if "Main.M1.stAxisStatusV2 "is not accessible (this error will not impact the driver):
+#  "adsAsynPortDriver:adsGetSymInfoByName: Get symbolic information failed for Main.M1.stAxisStatusV2 with: ADSERR_DEVICE_SYMBOLNOTFOUND (1808)"
+#  "adsApp/src/adsAsynPortDriver.cpp/octetCmdHandleInputLine:1237 motorHandleOneArg returned errorcode: 0x3"
+#
+##############################################################################
 
 #var streamDebug 1
-
 #asynReport(2,"ADS_1")
