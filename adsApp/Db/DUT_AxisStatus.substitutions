@@ -1,7 +1,0 @@
-file "DUT_AxisStatus_v0_01.template"
-{
-pattern
-{P,      PORT,      A, P, VP,     VI, VN }
-{ADSTEST:,  ADS_1,  "", "", Main.M, 1,  stAxisStatus}
-}
-

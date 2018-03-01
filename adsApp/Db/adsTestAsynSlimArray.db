@@ -1,9 +1,0 @@
-record(waveform,"$(P)GetInt8Array"){
-  field(PINI, "1")
-  field(TSE, -2)
-  field(DTYP,"asynInt8ArrayIn")
-  field(INP,"@asyn($(PORT),0,1)TIMEBASE=PLC/ADSPORT=851/Main.Int8Array?")
-  field(NELM,100)
-  field(SCAN,"I/O Intr")
-  field(FTVL,"CHAR")
-}
