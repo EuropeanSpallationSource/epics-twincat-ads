@@ -1,5 +1,0 @@
-1. Must download and start TwinCAT plc program
-2. Must set limitswitches to true for test program.
-3. start with iocsh st.adsTest.cmd
-4. Check naming of Main POU in TwinCAT project (sometimes MAIN.. Needs to be Main for axis record to work).
-
