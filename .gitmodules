@@ -2,3 +2,6 @@
 	path = ADS
 	url = https://github.com/Beckhoff/ADS.git
 	branch = 7df1d60f8bf088a2be718323d27aa2156f7d7b0f
+[submodule "TwinCAT/demo_project"]
+	path = TwinCAT/demo_project
+	url = https://bitbucket.org/europeanspallationsource/tc_ads_example
