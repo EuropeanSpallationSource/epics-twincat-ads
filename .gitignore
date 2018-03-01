@@ -8,6 +8,8 @@ adsApp/src/Debug
 bin/
 builddir/
 configure/O.*
+configure/RELEASE_LIBS.local
+configure/RELEASE_PATHS.local
 db/
 dbd/
 iocBoot/iocads/
