@@ -7,6 +7,7 @@ include $(TOP)/configure/CONFIG
 
 USR_CXXFLAGS += -std=c++11
 USR_CPPFLAGS += -I ../../../ADS/AdsLib/
+USR_LDFLAGS  += -lpthread
 
 #=============================
 # Build the IOC application
