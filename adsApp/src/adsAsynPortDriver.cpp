@@ -1774,7 +1774,7 @@ asynStatus adsAsynPortDriver::adsGenericArrayRead(asynUser *pasynUser,long allow
 
   //Only support same datatype as in PLC
   if(paramInfo->plcDataType!=allowedType){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible. Read canceled.\n", driverName, functionName);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (%s vs %s). Read canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),adsTypeToString(allowedType));
     setAlarmParam(paramInfo,READ_ALARM,INVALID_ALARM);
     return asynError;
   }
@@ -1822,7 +1822,7 @@ asynStatus adsAsynPortDriver::adsGenericArrayWrite(asynUser *pasynUser,long allo
 
   //Only support same datatype as in PLC
   if(paramInfo->plcDataType!=allowedType){
-    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible. Write canceled.\n", driverName, functionName);
+    asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Data types not compatible (%s vs %s). Write canceled.\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),adsTypeToString(allowedType));
     setAlarmParam(paramInfo,WRITE_ALARM,INVALID_ALARM);
     return asynError;
   }
@@ -1868,6 +1868,10 @@ asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser,epicsInt8 *value
   if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_STRING){
     allowedType=ADST_STRING;
   }
+  else if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_BIT){
+    allowedType=ADST_BIT;
+  }
+
 
   size_t nBytesRead=0;
   asynStatus stat=adsGenericArrayRead(pasynUser, allowedType,(void *)value,nElements*sizeof(epicsInt8),&nBytesRead);
@@ -1889,6 +1893,9 @@ asynStatus adsAsynPortDriver::writeInt8Array(asynUser *pasynUser, epicsInt8 *val
   //Also allow string as int8array (special case)
   if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_STRING){
     allowedType=ADST_STRING;
+  }
+  else if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_BIT){
+    allowedType=ADST_BIT;
   }
 
   return adsGenericArrayWrite(pasynUser,allowedType,(const void *)value,nElements*sizeof(epicsInt8));
