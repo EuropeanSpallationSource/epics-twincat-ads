@@ -1864,7 +1864,7 @@ asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser,epicsInt8 *value
 
   long allowedType=ADST_INT8;
 
-  //Also allow string as int8array (special case)
+  //Also allow string and bool array as int8array (special case)
   if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_STRING){
     allowedType=ADST_STRING;
   }
@@ -1890,7 +1890,7 @@ asynStatus adsAsynPortDriver::writeInt8Array(asynUser *pasynUser, epicsInt8 *val
 
   long allowedType=ADST_INT8;
 
-  //Also allow string as int8array (special case)
+  //Also allow string and bool array as int8array (special case)
   if(pAdsParamArray_[pasynUser->reason]->plcDataType==ADST_STRING){
     allowedType=ADST_STRING;
   }
