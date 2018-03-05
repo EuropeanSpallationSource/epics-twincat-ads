@@ -1,4 +1,3 @@
-
 ###############################################################################
 # fAmplitude: Three different types:
 #             1. ao with readback  (I/O intr)
@@ -32,6 +31,7 @@ record(ai,"$(P)GetFAmplitude"){
   field(PREC, "3")
   field(SCAN,"I/O Intr")
 }
+
 ###############################################################################
 # fTest: Fast update rate:
 # TS_MS=10:      10ms sample rate in PLC)
@@ -67,6 +67,43 @@ record(stringin, "$(P)GetFTestPLCTime:T") {
   field(DTYP, "Soft Timestamp")
   field(TSEL, "$(P)GetFTestPLCTime.TIME CP")  
   field(INP, "@%b %d, %Y %H:%M:%S.%09f")
+}
+
+###############################################################################
+# bEnableUpdateSine: Three different types:
+#             1. ao with readback  (I/O intr)
+#             2. ao without readback
+#             3  ai I/O intr
+
+record(bo,"$(P)SetBEnableUpdateSineRB"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.bEnableUpdateSine?")
+  field(SCAN,"Passive")
+  field(ZNAM,"Zero")
+  field(ONAM,"One")
+}
+
+record(bo,"$(P)SetBEnableUpdateSine"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.bEnableUpdateSine=")
+  field(SCAN,"Passive")
+  field(ZNAM,"Zero")
+  field(ONAM,"One")
+}
+
+record(bi,"$(P)GetBEnableUpdateSine"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.bEnableUpdateSine?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Zero")
+  field(ONAM,"One")
 }
 
 ###############################################################################
@@ -162,6 +199,44 @@ record(waveform,"$(P)GetFTestArray2"){
   field(NELM,10)
   field(SCAN,"I/O Intr")
   field(FTVL,"DOUBLE")
+}
+
+###############################################################################
+# bArray: waveform Output and Input
+#        Three different types:
+#             1. waveform with readback  (I/O intr)
+#             2. waveform without readback
+#             3  waveform I/O intr
+
+record(waveform,"$(P)SetBArrayRB"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP,"asynInt8ArrayOut")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.bArray?")
+  field(NELM,10)
+  field(SCAN,"Passive")
+  field(FTVL,"CHAR")
+}
+
+record(waveform,"$(P)SetBArray"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP,"asynInt8ArrayOut")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.bArray=")
+  field(NELM,10)
+  field(SCAN,"Passive")
+  field(FTVL,"CHAR")
+}
+
+record(waveform,"$(P)GetBArray"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP,"asynInt8ArrayIn")
+  field(INP,"@asyn($(PORT),0,1)ADSPORT=851/Main.bArray?")
+  field(NELM,10)
+  field(SCAN,"I/O Intr")
+  field(FTVL,"CHAR")
 }
 
 ###############################################################################
