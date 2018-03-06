@@ -1,11 +1,10 @@
-require axis,10.1.5
 require ads,anderssandstrom
 
 ##############################################################################
 # Demo file to link an EPICS IOC with some I/O in a TwinCAT plc 
 # 
 #  1. Open TwinCAT test project
-#  2. The ams adress of this linux client must be added to the TwinCAT ads router.
+#  2. The ams address of this linux client must be added to the TwinCAT ads router.
 #     In TwinCAT: Systems->routes->add route, use ip of linux machine plus ".1.1"=> "192.168.88.44.1.1"
 #  3. Download and start plc(s)
 #  4. start ioc on linux machine with: iocsh adsOnlyIO.cmd 
