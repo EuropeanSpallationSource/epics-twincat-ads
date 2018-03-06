@@ -5,7 +5,7 @@ require ads,anderssandstrom
 # Demo file to run one motor record axis (or actually axis record). 
 # 
 #  1. Open TwinCAT test project
-#  2. The ams adress of this linux client must be added to the TwinCAT ads router.
+#  2. The ams address of this linux client must be added to the TwinCAT ads router.
 #     In TwinCAT: Systems->routes->add route, use ip of linux machine plus ".1.1"=> "192.168.88.44.1.1"
 #  3. Link axis 1 to hardware and make commisioning.
 #  4. Ensure that NC axis 1 is linked to Main.M1Link.Axis
