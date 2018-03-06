@@ -3936,9 +3936,12 @@ extern "C" {
     printf(" Resulting adsAsynPortDriverConfigure() command: \n");
     printf(" adsAsynPortDriverConfigure(\"ADS_1\",\"192.168.88.44\",\"192.168.88.44.1.1\",851,1000, 0, 0,0,50,100,1000,0)\n");
     printf("\n");
+    printf("\n");
+    printf(" NOTE: The ams address of this Linux client must be added to the TwinCAT PLC ams router:\n");
+    printf("       In TwinCAT: Systems->routes->add route, use ip of linux machine plus \".1.1\"=> \"x.x.x.x.1.1\"\n");
+    printf("\n");
     return;
   }
-
   /*
    * Configure and register
    */
