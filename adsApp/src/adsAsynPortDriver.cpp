@@ -1120,7 +1120,9 @@ int adsAsynPortDriver::octetCMDreadIt(char *outbuf, size_t outlen)
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Buffer: %s, size: %d\n", driverName, functionName,outbuf,(int)outlen);
 
   int ret;
-  if (!outbuf || !outlen) return -1;
+  if (!outbuf || !outlen){
+    return -1;
+  }
   ret = snprintf(outbuf, outlen+1, "%s",octetAsciiBuffer_.buffer);
 
   if (ret < 0){
@@ -1239,7 +1241,7 @@ int adsAsynPortDriver::octetCmdHandleInputLine(const char *input_line, adsOctetO
     octetCmdBuf_printf(buffer,"%s", my_sepv[i]);
   }
 
-  for (int i=0; i < argc; i++)
+  for (int i=0; i <= argc; i++)
   {
     free((void *)my_argv[i]);
     free((void *)my_sepv[i]);
