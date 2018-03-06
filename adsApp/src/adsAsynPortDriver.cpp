@@ -3900,6 +3900,29 @@ extern "C" {
 
   asynUser *pPrintOutAsynUser;
 
+  static void printHelp()
+  {
+    printf("#\n");
+    printf("# Parameters for adsAsynPortDriverConfigure:    Example:\n");
+    printf("# 0. Asyn port name                             : \"ADS_1\"\n");
+    printf("# 1. IP                                         : \"192.168.88.10\"\n");
+    printf("# 2. AMS of plc                                 : \"192.168.88.11.1.2\"\n");
+    printf("# 3. Default ams port                           : 851 for plc 1, 852 plc 2 ...\n");
+    printf("# 4. Parameter table size (max parameters)      : 1000 example\n");
+    printf("# 5. priority                                   : 0\n");
+    printf("# 6. disable auto connnect                      : 0 (autoconnect enabled)\n");
+    printf("# 7. noProcessEOS                               : 0\n");
+    printf("# 8. default sample time ms                     : 500\n");
+    printf("# 9. max delay time ms (buffer time in plc)     : 1000\n");
+    printf("# 10. ADS command timeout in ms                 : 1000\n");
+    printf("# 11. default time source (PLC=0,EPICS=1).      : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn (field(TSE, -2))\n");
+    printf("#\n");
+    printf("# Resulting command: \n");
+    printf("# adsAsynPortDriverConfigure(\"ADS_1\",\"192.168.88.44\",\"192.168.88.44.1.1\",851,1000, 0, 0,0,50,100,1000,0)\n");
+    printf("#\n");
+    return;
+  }
+
   /*
    * Configure and register
    */
@@ -3919,10 +3942,15 @@ extern "C" {
   {
 
     if (!portName) {
-      printf("adsAsynPortDriverConfigure bad portName: %s\n",
-             portName ? portName : "");
+      printHelp();
       return -1;
     }
+
+    if(strlen(portName)==0 || strcmp(portName,"-h")==0){
+      printHelp();
+      return -1;
+    }
+
     if (!ipaddr) {
       printf("adsAsynPortDriverConfigure bad ipaddr: %s\n",ipaddr ? ipaddr : "");
       return -1;
