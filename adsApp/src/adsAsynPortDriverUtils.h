@@ -1,3 +1,12 @@
+/*
+* adsAsynPortDriverUtils.h
+*
+* Utilities and definitions used by adsAsynPortDriver-class.
+*
+* Author: Anders Sandström
+*
+* Created January 30, 2018
+*/
 
 #ifndef ADSASYNPORTDRIVERUTILS_H_
 #define ADSASYNPORTDRIVERUTILS_H_
@@ -123,7 +132,8 @@ size_t adsTypeSize(long type);
 asynParamType dtypStringToAsynType(char *dtype);
 int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts);
 
-/*
+
+/**
  * Octet interface functions and definitions
  */
 

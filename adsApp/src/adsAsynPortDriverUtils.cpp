@@ -1,5 +1,12 @@
 /*
- */
+* adsAsynPortDriverUtils.cpp
+*
+* Utilities and definitions used by adsAsynPortDriver-class.
+*
+* Author: Anders Sandström
+*
+* Created January 30, 2018
+*/
 
 #include "adsAsynPortDriverUtils.h"
 #include <string.h>
@@ -45,6 +52,12 @@ typedef struct {
   }                                                            \
   while(0)
 
+/** Convert ADS error code to string.
+ *
+ * \param[in] error Ads error code (from adsLib https://github.com/Beckhoff/ADS)
+ *
+ * \return Error string.
+ */
 const char *adsErrorToString(long error)
 {
   switch (error) {
@@ -189,6 +202,12 @@ const char *adsErrorToString(long error)
   }
 }
 
+/** Convert ADS type enum to string.
+ *
+ * \param[in] type Ads type (from adsLib https://github.com/Beckhoff/ADS)
+ *
+ * \return Ads type string.
+ */
 const char *adsTypeToString(long type)
 {
   switch (type) {
@@ -231,6 +250,12 @@ const char *adsTypeToString(long type)
   }
 }
 
+/** Convert asyn type enum to string.
+ *
+ * \param[in] type Asyn type (from asynDriver https://github.com/epics-modules/asyn)
+ *
+ * \return Asyn type string.
+ */
 const char *asynTypeToString(long type)
 {
   switch (type) {
@@ -258,6 +283,13 @@ const char *asynTypeToString(long type)
       return "asynUnknownType";
   }
 }
+
+/** Convert ADS  ams port state enum to string.
+ *
+ * \param[in] state Ads state (from adsLib https://github.com/Beckhoff/ADS)
+ *
+ * \return Ads ams port state string.
+ */
 const char *asynStateToString(long state)
 {
   switch (state) {
@@ -329,6 +361,12 @@ const char *asynStateToString(long state)
   return "UNKOWN ADSSTATE";
 }
 
+/** Get size of ADS data type.
+ *
+ * \param[in] type Ads data type (from adsLib https://github.com/Beckhoff/ADS)
+ *
+ * \return Size of one element of type.
+ */
 size_t adsTypeSize(long type)
 {
   switch (type) {
@@ -371,6 +409,12 @@ size_t adsTypeSize(long type)
   }
 }
 
+/** Convert EPICS dtyp field to asyn type.
+ *
+ * \param[in] dtype field
+ *
+ * \return asyn param type enum.
+ */
 asynParamType dtypStringToAsynType(char *dtype)
 {
   if(strcmp("asynFloat64",dtype)==0){
@@ -401,6 +445,12 @@ asynParamType dtypStringToAsynType(char *dtype)
   return asynParamNotDefined;
 }
 
+/** Convert EPICS state to string.
+ *
+ * \param[in] state EPICS state enum.
+ *
+ * \return EPICS state string.
+ */
 const char* epicsStateToString(int state)
 {
   switch(state) {
@@ -477,6 +527,14 @@ const char* epicsStateToString(int state)
 #define WINDOWS_TICK_PER_SEC 10000000
 #define SEC_TO_UNIX_EPOCH 11644473600LL
 
+/** Convert Windows timestamp to EPICS timestamp
+ *
+ * \param[in] plcTime Timestamp from ams router (Windows format, epoch start jan
+ * 1 1601).
+ * \param[out] ts Epics timestamp (Epoch start jan 1 1990).
+ *
+ * \return 0 or error code.
+ */
 int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts)
 {
   if(!ts){
@@ -491,7 +549,14 @@ int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts)
   return 0;
 }
 
-// Octet interface utility function
+/** Octet interface: Add data to buffer.
+ *
+ * \param[in] buffer Output data buffer.
+ * \param[in] addText Data to add to output buffer.
+ * \param[in] addLength Length of data to add.
+ *
+ * \return 0 or error code.
+ */
 int addToBuffer(adsOctetOutputBufferType *buffer,const char *addText, size_t addLength)
 {
   if(buffer==NULL){
@@ -508,6 +573,14 @@ int addToBuffer(adsOctetOutputBufferType *buffer,const char *addText, size_t add
   return 0;
 }
 
+/** Octet interface: Print data to buffer.
+ *
+ * \param[in] buffer Output data buffer.
+ * \param[in] format Format of data to add to output buffer.
+ * \param[in] arg va_list of data
+ *
+ * \return 0 or error code.
+ */
 static int cmd_buf_vprintf(adsOctetOutputBufferType *buffer,  const char* format, va_list arg)
 {
   const static size_t len = 4096;
@@ -521,6 +594,14 @@ static int cmd_buf_vprintf(adsOctetOutputBufferType *buffer,  const char* format
   return res;
 }
 
+/** Octet interface: Print data to buffer.
+ *
+ * \param[in] buffer Output data buffer.
+ * \param[in] format Format of data to add to output buffer.
+ * \param[in] ... List of data
+ *
+ * \return 0 or error code.
+ */
 int octetCmdBuf_printf(adsOctetOutputBufferType *buffer,const char *format, ...)
 {
   if(buffer==NULL){
@@ -533,6 +614,13 @@ int octetCmdBuf_printf(adsOctetOutputBufferType *buffer,const char *format, ...)
   return 0;
 }
 
+/** Octet interface: Remove data from buffer.
+ *
+ * \param[in] buffer Output data buffer.
+ * \param[in] len Bytes to remove from buffer.
+ *
+ * \return 0 or error code.
+ */
 int octetRemoveFromBuffer(adsOctetOutputBufferType *buffer,size_t len)
 {
   if(buffer==NULL){
@@ -550,6 +638,12 @@ int octetRemoveFromBuffer(adsOctetOutputBufferType *buffer,size_t len)
   return 0;
 }
 
+/** Octet interface: Clear buffer.
+ *
+ * \param[in] buffer Output data buffer.
+ *
+ * \return 0 or error code.
+ */
 int octetClearBuffer(adsOctetOutputBufferType *buffer)
 {
   if(buffer==NULL){
@@ -560,6 +654,14 @@ int octetClearBuffer(adsOctetOutputBufferType *buffer)
   return 0;
 }
 
+/** Octet interface: Divide line into commands.
+ *
+ * \param[in] line Line of ASCII commands.
+ * \param[out] argv_p Array of commands.
+ * \param[out] sepv_p Array of separators.
+ *
+ * \return 0 or error code.
+ */
 int octetCreateArgvSepv(const char *line,
                         const char*** argv_p,
                         char*** sepv_p)
@@ -670,6 +772,15 @@ int octetCreateArgvSepv(const char *line,
   return argc;
 }
 
+/** Octet interface: Convert binary data to ASCII.
+ *
+ * \param[in] returnVarName Print variable name in output buffer.
+ * \param[in] binaryBuffer Binary data buffer.
+ * \param[in] info Information of data type
+ * \param[out] asciiBuffer Output buffer (ASCII).
+ *
+ * \return 0 or error code.
+ */
 int octetBinary2ascii(bool returnVarName,
                       void *binaryBuffer,
                       uint32_t binaryBufferSize,
@@ -914,6 +1025,16 @@ int octetBinary2ascii(bool returnVarName,
   return error;
 }
 
+/** Octet interface: Convert ASCII data to binary.
+ *
+ * \param[in] asciiBuffer ASCII buffer.
+ * \param[in] dataType Data type.
+ * \param[out] binaryBuffer Output buffer (binary)
+ * \param[in] binaryBufferSize Binary buffer size.
+ * \param[out] Bytes written to binary buffer.
+ *
+ * \return 0 or error code.
+ */
 int octetAscii2binary(const char *asciiBuffer,uint16_t dataType,void *binaryBuffer, uint32_t binaryBufferSize, uint32_t *bytesProcessed)
 {
   int cycles=0;
