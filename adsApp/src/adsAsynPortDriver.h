@@ -11,6 +11,8 @@
 #include "adsAsynPortDriverUtils.h"
 #include <mutex>
 
+/** Class derived of asynPortDriver for ads communication with TwinCAT plc:s */
+
 class adsAsynPortDriver : public asynPortDriver {
 public:
   adsAsynPortDriver(const char *portName,

@@ -1,5 +1,13 @@
 /*
- */
+* adsAsynPortDriver.cpp
+*
+* Class derived of asynPortDriver for ADS communication with TwinCAT plc:s.
+* AdsLib written by Beckhoff is used for communication: https://github.com/Beckhoff/ADS
+*
+* Author: Anders Sandström
+*
+* Created January 25, 2018
+*/
 
 #include "adsAsynPortDriver.h"
 
@@ -31,6 +39,11 @@ static int allowCallbackEpicsState=0;
 static initHookState currentEpicsState=initHookAtIocBuild;
 
 
+/** Callback hook for EPICS state.
+ * \param[in] state EPICS state
+ * \return void
+ * Will be called be the EPICS framework with the current EPICS state as it changes.
+ */
 static void getEpicsState(initHookState state)
 {
   const char* functionName = "getEpicsState";
@@ -62,11 +75,21 @@ static void getEpicsState(initHookState state)
   asynPrint(asynTraceUser, ASYN_TRACE_INFO, "%s:%s: EPICS state: %s (%d). Allow ADS callbacks: %s.\n", driverName, functionName,epicsStateToString((int)state),(int)state,allowCallbackEpicsState ? "true" : "false");
 }
 
+/** Register EPICS hook function
+ * \return void
+ */
 int initHook(void)
 {
   return(initHookRegister(getEpicsState));
 }
 
+/** Callback from ads lib.
+ * \param[in] pAddr AmsAddr of the system generating the callback.
+ * \param[in] pNotification Data structure containing the updated data and timestamp information.
+ * \param[in] hUser Identification index of the callback parameter.
+ * \return void
+ * This function will be called by the ADS lib when a registered parameter is updated (changed in PLC).
+ */
 static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
   const char* functionName = "adsNotifyCallback";
@@ -120,14 +143,40 @@ static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader*
   adsAsynPortObj->adsUpdateParameterLock(paramInfo,data);
 }
 
-//Check ads state and, supervise connection (reconnect if needed)
+/** Start cyclic thread for supervision of connection.
+ * \param[in] drvPvt adsAsynPortDriver object
+ * \return void
+ */
 void cyclicThread(void *drvPvt)
 {
   adsAsynPortDriver *pPvt = (adsAsynPortDriver *)drvPvt;
   pPvt->cyclicThread();
 }
 
-// Constructor for the adsAsynPortDriver class.
+/** Constructor for the adsAsynPortDriver class.
+ * \param[in] portName Asyn port name.
+ * \param[in] ipAddr Ip address of PLC.
+ * \param[in] amsaddr Ams Address of PLC.
+ * \param[in] amsport Default amsport in PLC (851 for first PLC).
+ * \param[in] paramTableSize Maximum parameter/varaiable count.
+ * \param[in] priority Asyn prio.
+ * \param[in] autoConnect Enable auto connect.
+ * \param[in] noProcessEos Asyn noProcessEos.
+ * \param[in] defaultSampleTimeMS Default sample of varaible (PLC ams router
+ *            checks if variable changed, if changed then add to send buffer).
+ * \param[in] maxDelayTimeMS Maximum delay before  variable that has changed is
+ *            sent to client (linux). The variable can also be sent sooner if the
+ *            ams router send buffer is filled.
+ * \param[in] defaultTimeSource Default time stamp source of changed variable:\n
+ *            defaultTimeSource=PLC: The PLC time stamp from when the value was
+ *            changedis used and set as timestamp in the EPICS record
+ *            (if record TSE field is set to -2 (enable asyn timestamp)).
+ *            This is the preferred setting.\n
+ *            defaultTimeSource=EPICS: The time stamp will be made when the
+ *            updated data arrives in the EPCIS client.\n
+
+ * Initializes all variables and tries to connect to PLC system.
+ */
 adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      const char *ipaddr,
                                      const char *amsaddr,
@@ -247,6 +296,9 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   connect(pasynUserSelf);
 }
 
+/** Destructor for the adsAsynPortDriver class.
+ * Cleanup and deallocation of variables.
+*/
 adsAsynPortDriver::~adsAsynPortDriver()
 {
   const char* functionName = "~adsAsynPortDriver";
@@ -281,6 +333,11 @@ adsAsynPortDriver::~adsAsynPortDriver()
   }
 }
 
+/** Cyclic thread for supervision of connection.
+ * \return void
+ * Check ads state of all connected ams ports and reconnects if needed.
+ * At reconnect all symbolic handles and callbacks will be reregistered.
+ */
 void adsAsynPortDriver::cyclicThread()
 {
   const char* functionName = "cyclicThread";
@@ -346,6 +403,13 @@ void adsAsynPortDriver::cyclicThread()
   }
 }
 
+/** Report of configured parameters.
+ * \param[in] fp Output file.
+ * \param[in] details Details of printout. A higher number results in more
+ *            details.
+ * \return void
+ * Check ads state of all connected ams ports and reconnects if needed.
+ */
 void adsAsynPortDriver::report(FILE *fp, int details)
 {
   const char* functionName = "report";
@@ -423,6 +487,11 @@ void adsAsynPortDriver::report(FILE *fp, int details)
   }
 }
 
+/** Disconencts the PLC with asyn lock.
+ * \param[in] pasynUser Asyn user.
+ * \return asynSuccess or asynError.
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::disconnectLock(asynUser *pasynUser)
 {
   lock();
@@ -431,6 +500,10 @@ asynStatus adsAsynPortDriver::disconnectLock(asynUser *pasynUser)
   return stat;
 }
 
+/** Disconencts the PLC.
+ * \param[in] pasynUser Asyn user.
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
 {
   const char* functionName = "disconnect";
@@ -444,10 +517,20 @@ asynStatus adsAsynPortDriver::disconnect(asynUser *pasynUser)
   return asynPortDriver::disconnect(pasynUser);
 }
 
+/** Refreshes the parameters that need refresh after a reconnect or a
+ * connection failure to a ams port.
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::refreshParams()
 {
   return refreshParams(0);
 }
+
+/** Refreshes all parameters for a specific amsport (with asyn lock()).
+ * \param[in] amsPort ams port.
+ * \return asynSuccess or asynError.
+ * Thread safe.
+ */
 
 asynStatus adsAsynPortDriver::refreshParamsLock(uint16_t amsPort)
 {
@@ -457,6 +540,10 @@ asynStatus adsAsynPortDriver::refreshParamsLock(uint16_t amsPort)
   return stat;
 }
 
+/** Refreshes all parameters for a specific amsport.
+ * \param[in] amsPort ams port.
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
 {
   const char* functionName = "refreshParams";
@@ -478,6 +565,11 @@ asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
   return asynSuccess;
 }
 
+/** Invalidates all parameters for a specific amsport (with asyn lock()).
+ * \param[in] amsPort ams port.
+ * \return asynSuccess or asynError.
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::invalidateParamsLock(uint16_t amsPort)
 {
   lock();
@@ -486,6 +578,10 @@ asynStatus adsAsynPortDriver::invalidateParamsLock(uint16_t amsPort)
   return stat;
 }
 
+/** Invalidates all parameters for a specific amsport.
+ * \param[in] amsPort ams port.
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
 {
   const char* functionName = "refreshParams";
@@ -505,6 +601,11 @@ asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
   return asynSuccess;
 }
 
+/** Connects to a PLC (with asyn lock()).
+ * \param[in] pasynUser Asyn user
+ * \return asynSuccess or asynError.
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::connectLock(asynUser *pasynUser)
 {
   lock();
@@ -513,6 +614,10 @@ asynStatus adsAsynPortDriver::connectLock(asynUser *pasynUser)
   return stat;
 }
 
+/** Connects to a PLC.
+ * \param[in] pasynUser Asyn user
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 {
   const char* functionName = "connect";
@@ -533,6 +638,12 @@ asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
   return err ? asynError : asynSuccess;
 }
 
+/** Validates drvInfo string
+ * \param[in] drvInfo String containing information about the parameter.
+ * \return asynSuccess or asynError.
+ * The drvInfo string is what is after the asyn() in the "INP" or "OUT"
+ * field of an record.
+ */
 asynStatus adsAsynPortDriver::validateDrvInfo(const char *drvInfo)
 {
   const char* functionName = "validateDrvInfo";
@@ -562,6 +673,16 @@ asynStatus adsAsynPortDriver::validateDrvInfo(const char *drvInfo)
   return asynError;
 }
 
+/** Overrides asynPortDriver::drvUserCreate.
+ * This function is called for each record that is linked to this asyn port.
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] drvInfo String containing information about the parameter.
+ * \param[out] pptypeName
+ * \param[out] psize size of pptypeName.
+ * \return asynSuccess or asynError.
+ * The drvInfo string is what is after the asyn() in the "INP" or "OUT"
+ * field of an record.
+ */
 asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvInfo,const char **pptypeName,size_t *psize)
 {
   const char* functionName = "drvUserCreate";
@@ -651,6 +772,12 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize); //Assigns pasynUser->reason;
 }
 
+/** Update parameter with info from PLC (varaiable size, type and abs addr).
+ * \param[in/out] paramInfo Parameter information structure.
+ * \return asynSuccess or asynError.
+ * If the PLC variable is an array then a buffer is allocated in the paramInfo to
+ * hold the information.
+ */
 asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo)
 {
   const char* functionName = "updateParamInfoWithPLCInfo";
@@ -740,6 +867,11 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
+/** Get asyn type from record.
+ * \param[in] drvInfo String containing information about the parameter.
+ * \param[in/out] paramInfo Parameter information structure.
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsParamInfo *paramInfo)
 {
   const char* functionName = "getRecordInfoFromDrvInfo";
@@ -847,6 +979,17 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
   return asynError;
 }
 
+/** Get variable information from drvInfo string.
+ * \param[in] drvInfo String containing information about the parameter.
+ * \param[in/out] paramInfo Parameter information structure.
+ * \return asynSuccess or asynError.
+ * Methods checks if input or output ('?' or '=') and parses options:
+ * - "ADSPORT" (Ams port for varaible)\n
+ * - ".ADR.*" (absolute access)\n
+ * - "T_DLY_MS" (maximum delay time ms)\n
+ * - "TS_MS" (sample time ms)\n
+ * - "TIMEBASE" ("PLC" or "EPICS")\n
+ */
 asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsParamInfo *paramInfo)
 {
   const char* functionName = "parsePlcInfofromDrvInfo";
@@ -1012,6 +1155,11 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   return addNewAmsPortToList(paramInfo->amsPort);
 }
 
+/** Add new ams port to ams-port list.
+ * \param[in] amsPort ams-port
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
 {
   const char* functionName = "addNewAmsPortToList";
@@ -1046,11 +1194,22 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
   return asynSuccess;
 }
 
+/** Checks if callback is allowed for a certain parameter.
+ * \param[in] paramInfo Parameter info structure.
+ *
+ * \return true if parameter information and ams-port connection is OK
+ *  otherwise false.
+ */
 bool adsAsynPortDriver::isCallbackAllowed(adsParamInfo *paramInfo)
 {
   return !paramInfo->paramRefreshNeeded;
 }
 
+/** Checks if callback is allowed for a certain ams-port.
+ * \param[in] amsPort amsPort.
+ *
+ * \return true if connection ti ams-port is ok otherwise false.
+ */
 bool adsAsynPortDriver::isCallbackAllowed(uint16_t amsPort)
 {
   const char* functionName = "isCallbackAllowed";
@@ -1063,6 +1222,31 @@ bool adsAsynPortDriver::isCallbackAllowed(uint16_t amsPort)
   return false;
 }
 
+/** Overrides asynPortDriver::readOctet.
+ * This method, together with writeOctet, implements an ASCII command parser.
+ * Mainly used for motor record and stream device access. pasynUser->reason==0
+ * is reserved for this interface (and also pAdsParamArray_[0]).
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Buffer for read data.
+ * \param[in] maxChars Size of value buffer.
+ * \param[out] nActual Actual written chars to buffer.
+ * \param[out] eomReason Read completed or not (Buffer to small
+ * results in more reads needed).
+ *
+ * \return asynSuccess or asynError.
+ *
+ * \note: Example of a few ASCII commands:\n
+ *  1. Symbolic read: "option1/option2/symbolicname?;":\n
+ *      Read a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition?;"\n
+ *  2. Symbolic write: "option1/option2/symbolicname=<value>;":\n
+ *      Write to a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition=10;"\n
+ *  3: Abs adress read: "option1/.ADR.16#<group>,<offset>,<size>,<type>?;"\n
+ *      Read low soflimit position in TwinCAT NC for axis 1:\n
+ *      "ADSPORT=501/.ADR.16#5001,D,8,5?;"\n
+ *  4: Abs adress write: "option1/.ADR.16#<group>,<offset>,<size>,<type>=<value>;"\n
+ *      Set low soflimit position in TwinCAT NC for axis 1 to 100:\n
+ *      "ADSPORT=501/.ADR.16#5001,D,8,5=100;"\n
+ */
 asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t maxChars,size_t *nActual, int *eomReason)
 {
   const char* functionName = "readOctet";
@@ -1114,6 +1298,13 @@ asynStatus adsAsynPortDriver::readOctet(asynUser *pasynUser, char *value, size_t
   return status;
 }
 
+/** Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] outbuf Buffer for read data.
+ * \param[in] outlen Size of value buffer.
+ *
+ * \return 0 for success or error code.
+ */
 int adsAsynPortDriver::octetCMDreadIt(char *outbuf, size_t outlen)
 {
   const char* functionName = "octetCMDreadIt";
@@ -1144,6 +1335,29 @@ int adsAsynPortDriver::octetCMDreadIt(char *outbuf, size_t outlen)
   return 0;
 }
 
+/** Overrides asynPortDriver::writeOctet.
+ * This method, together with readOctet, implements an ASCII command parser.
+ * Mainly used for motor record and stream device access. pasynUser->reason==0
+ * is reserved for this interface (and also pAdsParamArray_[0]).
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Buffer for read data.
+ * \param[in] maxChars Size of value buffer.
+ * \param[out] nActual Actual written chars to buffer.
+ *
+ * \return asynSuccess or asynError.
+ *
+ * \note: Example of a few ASCII commands:\n
+ *  1. Symbolic read: "option1/option2/symbolicname?;":\n
+ *      Read a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition?;"\n
+ *  2. Symbolic write: "option1/option2/symbolicname=<value>;":\n
+ *      Write to a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition=10;"\n
+ *  3: Abs adress read: "option1/.ADR.16#<group>,<offset>,<size>,<type>?;"\n
+ *      Read low soflimit position in TwinCAT NC for axis 1:\n
+ *      "ADSPORT=501/.ADR.16#5001,D,8,5?;"\n
+ *  4: Abs adress write: "option1/.ADR.16#<group>,<offset>,<size>,<type>=<value>;"\n
+ *      Set low soflimit position in TwinCAT NC for axis 1 to 100:\n
+ *      "ADSPORT=501/.ADR.16#5001,D,8,5=100;"\n
+ */
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
 {
   const char* functionName = "writeOctet";
@@ -1178,6 +1392,13 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
   return status;
 }
 
+/** Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] inbuf Buffer for read data.
+ * \param[in] inlen Size of value buffer.
+ *
+ * \return 0 for success or error code.
+ */
 int adsAsynPortDriver::octetCMDwriteIt(const char *inbuf, size_t inlen)
 {
   const char* functionName = "octetCMDwriteIt";
@@ -1214,7 +1435,7 @@ int adsAsynPortDriver::octetCMDwriteIt(const char *inbuf, size_t inlen)
   free(new_buf);
 
   if (errorCode) {
-    OCTET_RETURN_ERROR_OR_DIE(&octetAsciiBuffer_,__LINE__, "%s/%s:%d cmd_buf_printf returned error: 0x%x.",
+    OCTET_RETURN_ERROR_OR_DIE(&octetAsciiBuffer_,__LINE__, "%s/%s:%d octetCmdHandleInputLine() returned error: 0x%x.",
                         __FILE__, __FUNCTION__, __LINE__,errorCode);
   }
   octetCmdBuf_printf(&octetAsciiBuffer_,"%s%s",had_cr ? "\r" : "", had_lf ? "\n" : "");
@@ -1257,6 +1478,14 @@ int adsAsynPortDriver::octetCmdHandleInputLine(const char *input_line, adsOctetO
   return 0;
 }
 
+/** Parse one ascii command.\
+ * Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] myarg_1 Command to parse.
+ * \param[out] buffer Output buffer.
+ *
+ * \return 0 for success or error code.
+ */
 int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutputBufferType *buffer)
 {
   const char* functionName = "octetMotorHandleOneArg";
@@ -1344,6 +1573,17 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
   return 0;
 }
 
+/** Parse one ASCII .ADR. command.\
+ * Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] arg Command to parse.
+ * \param[in] amsport Ams-port.
+ * \param[out] buffer Output buffer.
+ *
+ * \return 0 for success or error code.
+ *
+ * \note:  see octetAdsWriteByGroupOffset for more information.\n
+ */
 int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,adsOctetOutputBufferType *buffer)
 {
   const char* functionName = "octetMotorHandleOneArg";
@@ -1418,6 +1658,15 @@ int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,
   return __LINE__;
 }
 
+/** Read a variable from PLC by symbolic addressing.\
+ * Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] amsport Ams-port.
+ * \param[in] variableAddr Variable name ("Main.fTest")
+ * \param[out] outBuffer Output buffer.
+ *
+ * \return 0 for success or error code.
+ */
 int adsAsynPortDriver::octetAdsReadByName(uint16_t amsPort,const char *variableAddr,adsOctetOutputBufferType* outBuffer)
 {
   const char* functionName = "octetAdsReadByName";
@@ -1434,6 +1683,16 @@ int adsAsynPortDriver::octetAdsReadByName(uint16_t amsPort,const char *variableA
   return octetAdsReadByGroupOffset(amsPort,&infoStruct,outBuffer);
 }
 
+/** Write a variable to PLC by symbolic addressing.\
+ * Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] amsport Ams-port.
+ * \param[in] variableAddr Variable name ("Main.fTest")
+ * \param[in] asciiValueToWrite Value to write in string format.
+ * \param[out] outBuffer Output buffer.
+ *
+ * \return 0 for success or error code.
+ */
 int adsAsynPortDriver::octetAdsWriteByName(uint16_t amsPort,const char *variableAddr,const char *asciiValueToWrite,adsOctetOutputBufferType *outBuffer)
 {
   const char* functionName = "octetAdsWriteByName";
@@ -1450,6 +1709,15 @@ int adsAsynPortDriver::octetAdsWriteByName(uint16_t amsPort,const char *variable
  return octetAdsWriteByGroupOffset(amsPort,infoStruct.iGroup,infoStruct.iOffset,infoStruct.dataType,infoStruct.size,asciiValueToWrite,outBuffer);
 }
 
+/**Read a variable from PLC by absolute addressing.\
+ * Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] amsport Ams-port.
+ * \param[in] info Variable information.
+ * \param[out] outBuffer Output buffer.
+ *
+ * \return 0 for success or error code.
+ */
 int adsAsynPortDriver::octetAdsReadByGroupOffset(uint16_t amsPort,adsSymbolEntry *info, adsOctetOutputBufferType *outBuffer)
 {
   const char* functionName = "octetAdsReadByGroupOffset";
@@ -1485,6 +1753,40 @@ int adsAsynPortDriver::octetAdsReadByGroupOffset(uint16_t amsPort,adsSymbolEntry
   return 0;
 }
 
+/**Write a variable to PLC by absolute addressing.\
+ * Implements part of the asyn-octet ASCII command parser.
+ * (see readOctet() and writeOctet for more info).
+ * \param[in] amsport Ams-port.
+ * \param[in] group Group (address).
+ * \param[in] offset Offset in group (address).
+ * \param[in] dataType Data type to write (address).
+ * \param[in] dataSize Bytes to write.
+ * \param[out] asciiResponseBuffer Output buffer.
+ *
+ * \return 0 for success or error code.
+ *
+ * \note: dataType is defined in the adsLib as:
+ *   Name:         dataType:  dataSize/element (bytes):\n
+ *   ADST_VOID     0          0\n
+ *   ADST_INT8     16         1\n
+ *   ADST_UINT8    17         1\n
+ *   ADST_INT16    2          2\n
+ *   ADST_UINT16   18         2\n
+ *   ADST_INT32    3          4\n
+ *   ADST_UINT32   19         4\n
+ *   ADST_INT64    20         8\n
+ *   ADST_UINT64   21         8\n
+ *   ADST_REAL32   4          4\n
+ *   ADST_REAL64   5          8\n
+ *   ADST_BIGTYPE  65         NAN\n
+ *   ADST_STRING   30         1\n
+ *   ADST_WSTRING  31         1\n
+ *   ADST_REAL80   32         10\n
+ *   ADST_BIT      33         1\n
+ *   \n
+ *   The data will be considered to be an array if dataSize is bigger than the\n
+ *   size of the the type.
+ */
 int adsAsynPortDriver::octetAdsWriteByGroupOffset(uint16_t amsPort,uint32_t group, uint32_t offset,uint16_t dataType,uint32_t dataSize, const char *asciiValueToWrite,adsOctetOutputBufferType *asciiResponseBuffer)
 {
   const char* functionName = "octetAdsWriteByGroupOffset";
@@ -1520,6 +1822,13 @@ int adsAsynPortDriver::octetAdsWriteByGroupOffset(uint16_t amsPort,uint32_t grou
   return 0;
 }
 
+/** Overrides asynPortDriver::writeInt32.
+ * Writes int32 to PLC
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Value to write.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
   const char* functionName = "writeInt32";
@@ -1638,6 +1947,13 @@ asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
   return asynPortDriver::writeInt32(pasynUser, value);
 }
 
+/** Overrides asynPortDriver::writeFloat64.
+ * Writes float64 to PLC
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Value to write.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
   const char* functionName = "writeFloat64";
@@ -1758,6 +2074,17 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
   return asynPortDriver::writeFloat64(pasynUser,value);
 }
 
+/** Read array of a certain data type from PLC (or actually
+ * paramlib,paraminfor->arrayDataBuffer, since all variables are updated
+ * on-change by callbacks).
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] allowedType Allowed ads type to read.
+ * \param[out] epicsDataBuffer Output buffer.
+ * \param[in] nEpicsBufferBytes Output buffer size.
+ * \param[out] nBytesRead Bytes read into buffer.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsGenericArrayRead(asynUser *pasynUser,long allowedType,void *epicsDataBuffer,size_t nEpicsBufferBytes,size_t *nBytesRead)
 {
   const char* functionName = "adsGenericArrayRead";
@@ -1806,6 +2133,14 @@ asynStatus adsAsynPortDriver::adsGenericArrayRead(asynUser *pasynUser,long allow
   return asynSuccess;
 }
 
+/** Write array of a certain data type to PLC.
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] allowedType Allowed ads type to read.
+ * \param[out] data Data to write.
+ * \param[in] nEpicsBufferBytes Bytes to write.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsGenericArrayWrite(asynUser *pasynUser,long allowedType,const void *data,size_t nEpicsBufferBytes)
 {
   const char* functionName = "adsGenericArrayWrite";
@@ -1854,6 +2189,15 @@ asynStatus adsAsynPortDriver::adsGenericArrayWrite(asynUser *pasynUser,long allo
   return asynSuccess;
 }
 
+/** Overrides asynPortDriver::readInt8Array.
+ * Reads int8Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[out] value Output data buffer.
+ * \param[in] nElements Output buffer size.
+ * \param[out] nIn Bytes read into buffer.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser,epicsInt8 *value,size_t nElements,size_t *nIn)
 {
   const char* functionName = "readInt8Array";
@@ -1884,6 +2228,14 @@ asynStatus adsAsynPortDriver::readInt8Array(asynUser *pasynUser,epicsInt8 *value
   return asynSuccess;
 }
 
+/** Overrides asynPortDriver::writeInt8Array.
+ * Writes int8Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Input data buffer.
+ * \param[in] nElements Input data size.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeInt8Array(asynUser *pasynUser, epicsInt8 *value,size_t nElements)
 {
   const char* functionName = "writeInt8Array";
@@ -1903,6 +2255,15 @@ asynStatus adsAsynPortDriver::writeInt8Array(asynUser *pasynUser, epicsInt8 *val
   return adsGenericArrayWrite(pasynUser,allowedType,(const void *)value,nElements*sizeof(epicsInt8));
 }
 
+/** Overrides asynPortDriver::readInt16Array.
+ * Reads int16Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[out] value Output data buffer.
+ * \param[in] nElements Output buffer size.
+ * \param[out] nIn Bytes read into buffer.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::readInt16Array(asynUser *pasynUser,epicsInt16 *value,size_t nElements,size_t *nIn)
 {
   const char* functionName = "readInt16Array";
@@ -1919,6 +2280,14 @@ asynStatus adsAsynPortDriver::readInt16Array(asynUser *pasynUser,epicsInt16 *val
   return asynSuccess;
 }
 
+/** Overrides asynPortDriver::writeInt16Array.
+ * Writes int16Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Input data buffer.
+ * \param[in] nElements Input data size.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeInt16Array(asynUser *pasynUser, epicsInt16 *value,size_t nElements)
 {
   const char* functionName = "writeInt16Array";
@@ -1929,6 +2298,15 @@ asynStatus adsAsynPortDriver::writeInt16Array(asynUser *pasynUser, epicsInt16 *v
   return adsGenericArrayWrite(pasynUser,allowedType,(const void *)value,nElements*sizeof(epicsInt16));
 }
 
+/** Overrides asynPortDriver::readInt32Array.
+ * Reads int32Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[out] value Output data buffer.
+ * \param[in] nElements Output buffer size.
+ * \param[out] nIn Bytes read into buffer.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::readInt32Array(asynUser *pasynUser,epicsInt32 *value,size_t nElements,size_t *nIn)
 {
   const char* functionName = "readInt32Array";
@@ -1945,6 +2323,14 @@ asynStatus adsAsynPortDriver::readInt32Array(asynUser *pasynUser,epicsInt32 *val
   return asynSuccess;
 }
 
+/** Overrides asynPortDriver::writeInt32Array.
+ * Writes int32Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Input data buffer.
+ * \param[in] nElements Input data size.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeInt32Array(asynUser *pasynUser, epicsInt32 *value,size_t nElements)
 {
   const char* functionName = "writeInt32Array";
@@ -1955,6 +2341,15 @@ asynStatus adsAsynPortDriver::writeInt32Array(asynUser *pasynUser, epicsInt32 *v
   return adsGenericArrayWrite(pasynUser,allowedType,(const void *)value,nElements*sizeof(epicsInt32));
 }
 
+/** Overrides asynPortDriver::readFloat32Array.
+ * Reads float32Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[out] value Output data buffer.
+ * \param[in] nElements Output buffer size.
+ * \param[out] nIn Bytes read into buffer.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::readFloat32Array(asynUser *pasynUser,epicsFloat32 *value,size_t nElements,size_t *nIn)
 {
   const char* functionName = "readFloat32Array";
@@ -1971,6 +2366,14 @@ asynStatus adsAsynPortDriver::readFloat32Array(asynUser *pasynUser,epicsFloat32 
   return asynSuccess;
 }
 
+/** Overrides asynPortDriver::writeFloat32Array.
+ * Writes float32Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Input data buffer.
+ * \param[in] nElements Input data size.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeFloat32Array(asynUser *pasynUser,epicsFloat32 *value,size_t nElements)
 {
   const char* functionName = "writeFloat32Array";
@@ -1980,6 +2383,15 @@ asynStatus adsAsynPortDriver::writeFloat32Array(asynUser *pasynUser,epicsFloat32
   return adsGenericArrayWrite(pasynUser,allowedType,(const void *)value,nElements*sizeof(epicsFloat32));
 }
 
+/** Overrides asynPortDriver::readFloat64Array.
+ * Reads float64Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[out] value Output data buffer.
+ * \param[in] nElements Output buffer size.
+ * \param[out] nIn Bytes read into buffer.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser,epicsFloat64 *value,size_t nElements,size_t *nIn)
 {
   const char* functionName = "readFloat64Array";
@@ -1996,6 +2408,14 @@ asynStatus adsAsynPortDriver::readFloat64Array(asynUser *pasynUser,epicsFloat64 
   return asynSuccess;
 }
 
+/** Overrides asynPortDriver::writeFloat64Array.
+ * Writes float64Array
+ * \param[in] pasynUser Pointer to asyn user structure
+ * \param[in] value Input data buffer.
+ * \param[in] nElements Input data size.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::writeFloat64Array(asynUser *pasynUser,epicsFloat64 *value,size_t nElements)
 {
   const char* functionName = "writeFloat64Array";
@@ -2005,6 +2425,10 @@ asynStatus adsAsynPortDriver::writeFloat64Array(asynUser *pasynUser,epicsFloat64
   return adsGenericArrayWrite(pasynUser,allowedType,(const void *)value,nElements*nElements*sizeof(epicsFloat64));
 }
 
+/** Returns pasynUserSelf for use in asynPrint().
+ *
+ * \return pasynUserSelf
+ */
 asynUser *adsAsynPortDriver::getTraceAsynUser()
 {
   const char* functionName = "getTraceAsynUser";
@@ -2013,11 +2437,25 @@ asynUser *adsAsynPortDriver::getTraceAsynUser()
   return pasynUserSelf;
 }
 
+/** Get handle to symbolic plc variable.
+ *
+ * \param[in/out] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo)
 {
   return adsGetSymHandleByName(paramInfo,false);
 }
 
+/** Get handle to symbolic plc variable.
+ *
+ * \param[in/out] paramInfo Parameter information.
+ * \param[in] blockErrorMsg Suppress error messages
+ *            (used while trying to reconnect to avoid alot of error messages).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo,bool blockErrorMsg)
 {
   const char* functionName = "adsGetSymHandleByName";
@@ -2057,6 +2495,12 @@ asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo,bool
   return asynSuccess;
 }
 
+/** Register on-change callback for parameter (plc-variable).
+ *
+ * \param[in/out] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo)
 {
   const char* functionName = "adsAddNotificationCallback";
@@ -2144,10 +2588,25 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
+/** Unregister on-change callback for parameter (plc-variable).
+ *
+ * \param[in/out] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo)
 {
   return adsDelNotificationCallback(paramInfo,false);
 }
+
+/** Unregister on-change callback for parameter (plc-variable).
+ *
+ * \param[in/out] paramInfo Parameter information.
+ * \param[in] blockErrorMsg Suppress error messages
+ *            (used while trying to reconnect to avoid alot of error messages).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo,bool blockErrorMsg)
 {
   const char* functionName = "delNotificationCallback";
@@ -2177,6 +2636,14 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
+/** Get symbolic information for a plc variable.
+ *
+ * \param[in] amsPort Ams-port
+ * \param[in] varName Symbolic name of variable.
+ * \param[out] info Information structure.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *varName, adsSymbolEntry *info)
 {
   const char* functionName = "adsGetSymInfoByName";
@@ -2238,6 +2705,12 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *v
   return asynSuccess;
 }
 
+/** Get symbolic information for a plc variable.
+ *
+ * \param[in/out] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
 {
   const char* functionName = "adsGetSymInfoByName";
@@ -2261,6 +2734,10 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(adsParamInfo *paramInfo)
   return asynSuccess;
 }
 
+/** Connect to ads router (TwinCAT system).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsConnect()
 {
   const char* functionName = "adsConnect";
@@ -2310,6 +2787,10 @@ asynStatus adsAsynPortDriver::adsConnect()
   return asynSuccess;
 }
 
+/** Disconnect ads router (TwinCAT system).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsDisconnect()
 {
   const char* functionName = "adsDisconnect";
@@ -2328,10 +2809,25 @@ asynStatus adsAsynPortDriver::adsDisconnect()
   return asynSuccess;
 }
 
+/** Release handle to symbolic variable (in TwinCAT plc)
+ *
+ * \param[in/out] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo)
 {
   return adsReleaseSymbolicHandle(paramInfo, false);
 }
+
+/** Release handle to symbolic variable (in TwinCAT plc)
+ *
+ * \param[in/out] paramInfo Parameter information.
+ * \param[in] blockErrorMsg Suppress error messages
+ *            (used while trying to reconnect to avoid alot of error messages).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, bool blockErrorMsg)
 {
   const char* functionName = "adsReleaseHandle";
@@ -2359,6 +2855,14 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   return asynSuccess;
 }
 
+/** Write value to variable in TwinCAT.
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[in] binaryBuffer Data to write.
+ * \param[in] bytesToWrite Bytes to write.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsWriteParam(adsParamInfo *paramInfo,const void *binaryBuffer,uint32_t bytesToWrite)
 {
   const char* functionName = "adsWriteParam";
@@ -2433,12 +2937,25 @@ asynStatus adsAsynPortDriver::adsWriteParam(adsParamInfo *paramInfo,const void *
   return asynSuccess;
 }
 
+/** Read value of variable in TwinCAT.
+ *
+ * \param[in] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo)
 {
   long notused=0;
   return adsReadParam(paramInfo,&notused,1);
 }
 
+/** Read value of variable in TwinCAT.
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[out] error Error code.
+ * \param[in] updateAsynPar Update asyn parameter.
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo,long *error,int updateAsynPar)
 {
   const char* functionName = "adsReadParam";
@@ -2522,6 +3039,17 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo,long *error,i
   return stat;
 }
 
+/** Read state of amsport in TwinCAT
+ *
+ * \param[in] amsport Ams-prot.
+ * \param[out] adsState State of ams-port (running, invalid, config..).
+ * \param[in] blockErrorMsg Suppress error messages
+ *            (used while trying to reconnect to avoid alot of error messages).
+ *
+ * Thread safe.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState,bool blockErrorMsg)
 {
   asynStatus stat;
@@ -2532,6 +3060,18 @@ asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsSta
   return stat;
 }
 
+/** Read state of amsport in TwinCAT
+ *
+ * \param[in] amsport Ams-prot.
+ * \param[out] adsState State of ams-port (running, invalid, config..).
+ * \param[in] blockErrorMsg Suppress error messages
+ *            (used while trying to reconnect to avoid alot of error messages).
+ * \param[out] error Error code.
+ *
+ * Thread safe.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsState,bool blockErrorMsg,long *error)
 {
   asynStatus stat;
@@ -2541,12 +3081,28 @@ asynStatus adsAsynPortDriver::adsReadStateLock(uint16_t amsport,uint16_t *adsSta
   return stat;
 }
 
+/** Read state of default amsport in TwinCAT
+ *
+ * \param[out] adsState State of ams-port (running, invalid, config..).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReadState(uint16_t *adsState)
 {
   long error=0;
   return adsReadState(amsportDefault_,adsState,false,&error);
 }
 
+/** Read state of amsport in TwinCAT
+ *
+ * \param[in] amsport Ams-prot.
+ * \param[out] adsState State of ams-port (running, invalid, config..).
+ * \param[in] blockErrorMsg Suppress error messages
+ *            (used while trying to reconnect to avoid alot of error messages).
+ * \param[out] error Error code.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,bool blockErrorMsg,long *error)
 {
 
@@ -2571,11 +3127,21 @@ asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,b
   return asynSuccess;
 }
 
+/** Get parameter table size (max allowed parameter count).
+ *
+ * \return Aysn -parameter table size.
+ */
 int adsAsynPortDriver::getParamTableSize()
 {
   return paramTableSize_;
 }
 
+/** Get parameter info struct for a certain index/reason (pasynUser->reason).
+ *
+ * \param[in] index index/reason (pasynUser->reason).
+ *
+ * \return Parameter info structure.
+ */
 adsParamInfo *adsAsynPortDriver::getAdsParamInfo(int index)
 {
   const char* functionName = "getAdsParamInfo";
@@ -2589,11 +3155,23 @@ adsParamInfo *adsAsynPortDriver::getAdsParamInfo(int index)
   }
 }
 
+/** Get current parameter count.
+ *
+ * \return Current parameter count.
+ */
 int adsAsynPortDriver::getAdsParamCount()
 {
   return adsParamArrayCount_;
 }
 
+/** Update timestamp of parameter.
+ *
+ * \param[in] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ *
+ * Refreshes and sets timestamp depending on time source (PLC or EPICS).
+ */
 asynStatus adsAsynPortDriver::refreshParamTime(adsParamInfo *paramInfo)
 {
   const char* functionName = "refreshParamTime";
@@ -2631,6 +3209,15 @@ asynStatus adsAsynPortDriver::refreshParamTime(adsParamInfo *paramInfo)
   return asynSuccess;
 }
 
+/** Update asyn parameter or callback (for arrays).
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[in] data Data to write to parameter (or callback to EPICS).
+ *
+ * \return asynSuccess or asynError.
+ *
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::adsUpdateParameterLock(adsParamInfo* paramInfo,const void *data)
 {
   lock();
@@ -2639,6 +3226,16 @@ asynStatus adsAsynPortDriver::adsUpdateParameterLock(adsParamInfo* paramInfo,con
   return stat;
 }
 
+/** Update asyn parameter or callback (for arrays).
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[in] data Data to write to parameter (or callback to EPICS).
+ * \param[in] dataSize Size of data to write.
+ *
+ * \return asynSuccess or asynError.
+ *
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::adsUpdateParameterLock(adsParamInfo* paramInfo,const void *data,size_t dataSize)
 {
   lock();
@@ -2647,11 +3244,28 @@ asynStatus adsAsynPortDriver::adsUpdateParameterLock(adsParamInfo* paramInfo,con
   return stat;
 }
 
+/** Update asyn parameter or callback (for arrays).
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[in] data Data to write to parameter (or callback to EPICS).
+ *
+ * \return asynSuccess or asynError.
+ *
+ */
 asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const void *data)
 {
   return adsUpdateParameter(paramInfo,data,paramInfo->lastCallbackSize);
 }
 
+/** Update asyn parameter or callback (for arrays).
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[in] data Data to write to parameter (or callback to EPICS).
+ * \param[in] dataSize Size of data to write.
+ *
+ * \return asynSuccess or asynError.
+ *
+ */
 asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const void *data,size_t dataSize)
 {
   const char* functionName = "adsUpdateParameter";
@@ -2933,6 +3547,10 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
    return asynSuccess;
 }
 
+/** Call callbacks for all parameters.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::fireAllCallbacksLock()
 {
   const char* functionName = "fireAllCallbacksLock";
@@ -2948,6 +3566,12 @@ asynStatus adsAsynPortDriver::fireAllCallbacksLock()
   return asynSuccess;
 }
 
+/** Call callbacks for a parameter.
+ *
+ * \param[in] paramInfo Parameter information.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::fireCallbacks(adsParamInfo* paramInfo)
 {
   const char* functionName = "fireCallbacks";
@@ -3055,6 +3679,14 @@ asynStatus adsAsynPortDriver::fireCallbacks(adsParamInfo* paramInfo)
   return ret;
 }
 
+/** Set parameter alarm state.
+ *
+ * \param[in] paramInfo Parameter information.
+ * \param[in] alarm Alarm type (EPICS def).
+ * \param[in] severity Alarm severity (EPICS def).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity)
 {
   const char* functionName = "setAlarmParam";
@@ -3141,6 +3773,16 @@ asynStatus adsAsynPortDriver::setAlarmParam(adsParamInfo *paramInfo,int alarm,in
   return stat;
 }
 
+/** Set parameter alarm state.
+ *
+ * \param[in] amsPort Ams-port.
+ * \param[in] alarm Alarm type (EPICS def).
+ * \param[in] severity Alarm severity (EPICS def).
+ *
+ * \return asynSuccess or asynError.
+ *
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::setAlarmPortLock(uint16_t amsPort,int alarm,int severity)
 {
   asynStatus stat;
@@ -3150,6 +3792,14 @@ asynStatus adsAsynPortDriver::setAlarmPortLock(uint16_t amsPort,int alarm,int se
   return stat;
 }
 
+/** Set alarm for all parameter on a ams-port.
+ *
+ * \param[in] amsPort Ams-port.
+ * \param[in] alarm Alarm type (EPICS def).
+ * \param[in] severity Alarm severity (EPICS def).
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::setAlarmPort(uint16_t amsPort,int alarm,int severity)
 {
   const char* functionName = "setAlarmPort";
@@ -3168,16 +3818,28 @@ asynStatus adsAsynPortDriver::setAlarmPort(uint16_t amsPort,int alarm,int severi
   return asynSuccess;
 }
 
+/** Take adsLib lock.
+ *
+ */
 void adsAsynPortDriver::adsLock()
 {
   adsMutex.lock();
 }
 
+/** Release adsLib lock.
+ *
+ */
 void adsAsynPortDriver::adsUnlock()
 {
   adsMutex.unlock();
 }
 
+/** Delete ads route
+ *
+ * \param[in] force Force delete.
+ *
+ * \return asynSuccess or asynError.
+ */
 asynStatus adsAsynPortDriver::adsDelRoute(int force)
 {
   const char* functionName = "adsDelRoute";
@@ -3189,6 +3851,14 @@ asynStatus adsAsynPortDriver::adsDelRoute(int force)
   return asynSuccess;
 }
 
+/** Delete ads route
+ *
+ * \param[in] force Force delete.
+ *
+ * \return asynSuccess or asynError.
+ *
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::adsDelRouteLock(int force)
 {
   adsLock();
@@ -3197,6 +3867,12 @@ asynStatus adsAsynPortDriver::adsDelRouteLock(int force)
   return stat;
 }
 
+/** Add ads route
+ *
+ * \return asynSuccess or asynError.
+ *
+ * Thread safe.
+ */
 asynStatus adsAsynPortDriver::adsAddRouteLock()
 {
   const char* functionName = "adsAddRouteLock";
