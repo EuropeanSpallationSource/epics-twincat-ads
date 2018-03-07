@@ -674,7 +674,7 @@ asynStatus adsAsynPortDriver::validateDrvInfo(const char *drvInfo)
 }
 
 /** Overrides asynPortDriver::drvUserCreate.
- * This function is called for each record that is linked to this asyn port.
+ * This function is called by the asyn-framework for each record that is linked to this asyn port.
  * \param[in] pasynUser Pointer to asyn user structure
  * \param[in] drvInfo String containing information about the parameter.
  * \param[out] pptypeName
@@ -725,6 +725,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   memset(paramInfo,0,sizeof(adsParamInfo));
   paramInfo->sampleTimeMS=defaultSampleTimeMS_;
   paramInfo->maxDelayTimeMS=defaultMaxDelayTimeMS_;
+  paramInfo->paramRefreshNeeded=1;
 
   status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
   if(status!=asynSuccess){
@@ -3819,7 +3820,6 @@ asynStatus adsAsynPortDriver::setAlarmPort(uint16_t amsPort,int alarm,int severi
 }
 
 /** Take adsLib lock.
- *
  */
 void adsAsynPortDriver::adsLock()
 {
@@ -3827,7 +3827,6 @@ void adsAsynPortDriver::adsLock()
 }
 
 /** Release adsLib lock.
- *
  */
 void adsAsynPortDriver::adsUnlock()
 {
@@ -3894,9 +3893,6 @@ asynStatus adsAsynPortDriver::adsAddRouteLock()
 /* Configuration routine.  Called directly, or from the iocsh function below */
 
 extern "C" {
-
-  //static initHookFunction myHookFunction;
-
 
   asynUser *pPrintOutAsynUser;
 
