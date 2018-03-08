@@ -168,6 +168,7 @@ private:
                                  void *epicsDataBuffer,
                                  size_t nEpicsBufferBytes,
                                  size_t *nBytesRead);
+  asynStatus adsReadVersion(amsPortInfo *port);
   asynStatus updateParamInfoWithPLCInfo(adsParamInfo *paramInfo);
   asynStatus refreshParamTime(adsParamInfo *paramInfo);
   asynStatus setAlarmPortLock(uint16_t amsPort,int alarm,int severity);

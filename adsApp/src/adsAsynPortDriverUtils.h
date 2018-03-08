@@ -84,6 +84,8 @@ typedef struct amsPortInfo{
   int connectedOld;
   int connected;
   int paramsOK;
+  AdsVersion version;
+  char devName[255];
 }amsPortInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..

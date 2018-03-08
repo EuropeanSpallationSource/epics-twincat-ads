@@ -376,7 +376,15 @@ void adsAsynPortDriver::cyclicThread()
       connectedAds_=oneAmsConnectionOK;
     }
     if(!oneAmsConnectionOKold_ && oneAmsConnectionOK){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: Connection OK!\n",driverName,functionName);
+      for(amsPortInfo *port : amsPortList_){
+        if(port->connected){
+          asynStatus stat=adsReadVersion(port);
+          if(stat!=asynSuccess){
+            continue;
+          }
+          printf("Connection OK to device \"%s\" on Ams-port %u (version %u.%u.%u).\n",port->devName,port->amsPort,port->version.version,port->version.revision,port->version.build);
+        }
+      }
     }
 
     if(!oneAmsConnectionOK && notConnectedCounter_<100){
@@ -2773,7 +2781,6 @@ asynStatus adsAsynPortDriver::adsConnect()
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncGetTimeoutEx failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
-
   adsLock();
   status=AdsSyncSetTimeoutEx(adsPort_,(uint32_t)adsTimeoutMS_);
   adsUnlock();
@@ -2784,7 +2791,33 @@ asynStatus adsAsynPortDriver::adsConnect()
 
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Update ADS sync time out from %u to %u.\n", driverName, functionName,defaultTimeout,(uint32_t)adsTimeoutMS_);
 
-  //setAdsPort(adsPort_); //Global variable in adsCom.h used to get motor record and stream device com to work.
+  return asynSuccess;
+}
+
+/** Read Ams port version information
+ *
+ * \return asynSuccess or asynError.
+ */
+asynStatus adsAsynPortDriver::adsReadVersion(amsPortInfo *port)
+{
+  const char* functionName = "adsDisconnect";
+  asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Ams-port %u\n", driverName, functionName,port->amsPort);
+
+  AmsAddr amsServer;
+  AdsVersion version;
+  char devName[255];
+  amsServer={remoteNetId_,port->amsPort};
+
+  adsLock();
+  long status=AdsSyncReadDeviceInfoReqEx(adsPort_,&amsServer,devName,&version);
+  adsUnlock();
+  if(status) {
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncReadDeviceInfoReqEx failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(status),status);
+    return asynError;
+  }
+
+  port->version=version;
+  strncpy(port->devName,devName,sizeof(port->devName));
   return asynSuccess;
 }
 
