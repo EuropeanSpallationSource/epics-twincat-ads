@@ -86,6 +86,8 @@ typedef struct amsPortInfo{
   int paramsOK;
   AdsVersion version;
   char devName[255];
+  ADSSTATE adsStateOld;
+  ADSSTATE adsState;
 }amsPortInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
@@ -128,7 +130,7 @@ typedef enum{
 const char *adsErrorToString(long error);
 const char *adsTypeToString(long type);
 const char *asynTypeToString(long type);
-const char *asynStateToString(long state);
+const char *adsStateToString(long state);
 const char *epicsStateToString(int state);
 size_t adsTypeSize(long type);
 asynParamType dtypStringToAsynType(char *dtype);

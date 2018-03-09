@@ -358,12 +358,17 @@ void adsAsynPortDriver::cyclicThread()
         long error=0;
         asynStatus stat=adsReadStateLock(port->amsPort,&adsState,true,&error);
         bool portConnected=(stat==asynSuccess);
-
+        if(stat==asynSuccess){
+          port->adsStateOld=port->adsState;
+          port->adsState=(ADSSTATE)adsState;
+        }
+        port->connectedOld=port->connected;
         port->connected=portConnected;
         port->paramsOK=portConnected;
-        asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: ADS state: %s (amsPort %d).\n",driverName,functionName,asynStateToString(adsState),port->amsPort);
+        asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: ADS state: %s (amsPort %d).\n",driverName,functionName,adsStateToString(adsState),port->amsPort);
 
         oneAmsConnectionOK=oneAmsConnectionOK || portConnected;
+
         if(port->connected){
           refreshParamsLock(port->amsPort);
         }
@@ -371,21 +376,23 @@ void adsAsynPortDriver::cyclicThread()
           invalidateParamsLock(port->amsPort);
           setAlarmPortLock(port->amsPort,COMM_ALARM,INVALID_ALARM);
         }
-        port->connectedOld=port->connected;
+        if(!port->connectedOld && port->connected){
+           adsReadVersion(port);
+        }
       }
       connectedAds_=oneAmsConnectionOK;
     }
-    if(!oneAmsConnectionOKold_ && oneAmsConnectionOK){
-      for(amsPortInfo *port : amsPortList_){
-        if(port->connected){
-          asynStatus stat=adsReadVersion(port);
-          if(stat!=asynSuccess){
-            continue;
-          }
-          printf("Connection OK to device \"%s\" on Ams-port %u (version %u.%u.%u).\n",port->devName,port->amsPort,port->version.version,port->version.revision,port->version.build);
-        }
+
+    //Printout state status
+    for(amsPortInfo *port : amsPortList_){
+      if(port->connectedOld!=port->connected){
+        printf("Connection OK to device \"%s\" on Ams-port %u (version %u.%u.%u).\n",port->devName,port->amsPort,port->version.version,port->version.revision,port->version.build);
+      }
+      if(port->adsStateOld!=port->adsState){
+        printf("Ams-port, %u, state change: \"%s\" -> \"%s\".\n",port->amsPort,adsStateToString(port->adsStateOld),adsStateToString(port->adsState));
       }
     }
+
 
     if(!oneAmsConnectionOK && notConnectedCounter_<100){
       notConnectedCounter_++;
@@ -487,7 +494,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Ads hCallbackNotify:       %u\n",paramInfo->hCallbackNotify);
       fprintf(fp,"    Ads hSymbHndle:            %u\n",paramInfo->hSymbolicHandle);
       fprintf(fp,"    Ads hSymbHndleValid:       %s\n",paramInfo->bSymbolicHandleValid ? "true" : "false");
-      fprintf(fp,"    Record name:               %s\n",paramInfo->recordName);
+      fprintf(fp,"    Record name:              refreshParams %s\n",paramInfo->recordName);
       fprintf(fp,"    Record type:               %s\n",paramInfo->recordType);
       fprintf(fp,"    Record dtyp:               %s\n",paramInfo->dtyp);
       fprintf(fp,"\n");
@@ -556,7 +563,7 @@ asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
 {
   const char* functionName = "refreshParams";
   asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s:\n", driverName, functionName);
-  //bool oneParamOK=true;
+
   if(connectedAds_){
     if(adsParamArrayCount_>1){
       for(int i=1; i<adsParamArrayCount_;i++){  //Skip first param since used for motorrecord or stream device
@@ -1189,8 +1196,10 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
 
   try{
     amsPortInfo *newPort=new amsPortInfo();
+    memset(newPort,0,sizeof(amsPortInfo));
     newPort->amsPort=amsPort;
-    newPort->connected=0;
+    newPort->adsState=(ADSSTATE)(ADSSTATE_MAXSTATES+1); //Set unknown state..
+    newPort->adsStateOld=newPort->adsState;
     amsPortList_.push_back(newPort);
   }
   catch(std::exception &e)

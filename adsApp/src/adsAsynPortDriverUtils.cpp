@@ -290,7 +290,7 @@ const char *asynTypeToString(long type)
  *
  * \return Ads ams port state string.
  */
-const char *asynStateToString(long state)
+const char *adsStateToString(long state)
 {
   switch (state) {
      case ADSSTATE_INVALID:
