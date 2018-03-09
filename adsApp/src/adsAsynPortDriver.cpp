@@ -283,11 +283,17 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   pAdsParamArray_[0]=paramInfo;
   adsParamArrayCount_++;
 
+  if(status!=asynSuccess){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: createParam for default access failed.\n", driverName, functionName);
+    return;
+  }
+
   //* Create the thread that computes the waveforms in the background */
   status = (asynStatus)(epicsThreadCreate("adsAsynPortDriverCyclicThread",
                                                      epicsThreadPriorityMedium,
                                                      epicsThreadGetStackSize(epicsThreadStackMedium),
                                                      (EPICSTHREADFUNC)::cyclicThread,this) == NULL);
+
   if(status){
     printf("%s:%s: epicsThreadCreate failure\n", driverName, functionName);
     return;
@@ -358,10 +364,14 @@ void adsAsynPortDriver::cyclicThread()
         long error=0;
         asynStatus stat=adsReadStateLock(port->amsPort,&adsState,true,&error);
         bool portConnected=(stat==asynSuccess);
+        port->adsStateOld=port->adsState;
         if(stat==asynSuccess){
-          port->adsStateOld=port->adsState;
           port->adsState=(ADSSTATE)adsState;
         }
+        else{
+            port->adsState=ADSSTATE_INVALID;
+        }
+
         port->connectedOld=port->connected;
         port->connected=portConnected;
         port->paramsOK=portConnected;
@@ -388,6 +398,13 @@ void adsAsynPortDriver::cyclicThread()
         asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Device \"%s\" %s (Ams-port %u, Ams router version %u.%u.%u).\n",driverName,functionName,port->devName,port->connected ? "connected" : "disconnected",port->amsPort,port->version.version,port->version.revision,port->version.build);
       }
       if(port->adsStateOld!=port->adsState){
+        //If amsrouter is a asyn paramter then update
+        if(port->paramInfo){
+          if(port->paramInfo->localVariable){
+            void * pData=(void *)&port->adsState;
+            adsUpdateParameterLock(port->paramInfo,pData,2);
+          }
+        }
         asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Ams-port, %u, state change: \"%s\" -> \"%s\".\n",driverName,functionName,port->amsPort,adsStateToString(port->adsStateOld),adsStateToString(port->adsState));
       }
     }
@@ -493,7 +510,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Ads hCallbackNotify:       %u\n",paramInfo->hCallbackNotify);
       fprintf(fp,"    Ads hSymbHndle:            %u\n",paramInfo->hSymbolicHandle);
       fprintf(fp,"    Ads hSymbHndleValid:       %s\n",paramInfo->bSymbolicHandleValid ? "true" : "false");
-      fprintf(fp,"    Record name:              refreshParams %s\n",paramInfo->recordName);
+      fprintf(fp,"    Record name:               %s\n",paramInfo->recordName);
       fprintf(fp,"    Record type:               %s\n",paramInfo->recordType);
       fprintf(fp,"    Record dtyp:               %s\n",paramInfo->dtyp);
       fprintf(fp,"\n");
@@ -714,6 +731,11 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
       asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s:pAdsParamArray_[%d]==NULL (drvInfo=%s).", driverName, functionName,index,drvInfo);
       return asynError;
     }
+
+    if(pAdsParamArray_[index]->localVariable){ //Local varaiable (not in PLC) like AMS port state.
+      return asynSuccess;
+    }
+
     if(!connectedAds_){
       //try to connect without error handling
       connect(pasynUser);
@@ -729,7 +751,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   }
 
   //Ensure space left in param table
-  if(adsParamArrayCount_>=paramTableSize_){
+  if(adsParamArrayCount_>=(paramTableSize_-1)){
     asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Parameter table full. Parameter with drvInfo %s will be discarded.", driverName, functionName,drvInfo);
     return asynError;
   }
@@ -778,7 +800,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     connect(pasynUser);
   }
 
-  if(connectedAds_){
+  if(connectedAds_ && !paramInfo->localVariable){  //Do not read info from PLC if local variable (like ams-port state)
     status=updateParamInfoWithPLCInfo(paramInfo);
     if(status!=asynSuccess){
       return asynError;
@@ -799,6 +821,12 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: : %s\n", driverName, functionName,paramInfo->drvInfo);
 
   asynStatus status;
+
+  //Do not read information from PLC if "variable" in driver (like ams router state)
+  if(paramInfo->localVariable){
+    paramInfo->paramRefreshNeeded=false;
+    return asynSuccess;
+  }
 
   // Read symbolic information if needed (to get paramInfo->plcSize)
   if(!paramInfo->plcAbsAdrValid){
@@ -1012,17 +1040,12 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: drvInfo: %s\n", driverName, functionName,drvInfo);
 
   //Check if input or output
+  paramInfo->isIOIntr=false;
   const char* temp=strrchr(drvInfo,'?');
   if(temp){
     if(strlen(temp)==1){
       paramInfo->isIOIntr=true; //All inputs will be created I/O intr
     }
-    else{ //Must be '=' in end
-      paramInfo->isIOIntr=false;
-    }
-  }
-  else{ //Must be '=' in end
-    paramInfo->isIOIntr=false;
   }
 
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: drvInfo %s is %s\n", driverName, functionName,drvInfo,paramInfo->isIOIntr ? "I/O Intr (end with ?)": " not I/O Intr (end with =)");
@@ -1168,9 +1191,45 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     }
   }
 
-  return addNewAmsPortToList(paramInfo->amsPort);
+  //Check if ADS_AMS_STATE_COMMAND option
+  option=ADS_AMS_STATE_COMMAND;
+  paramInfo->localVariable=false;
+  isThere=strstr(drvInfo,option);
+  if(isThere){
+    printf(",ljsahfdsa.djfh.lsdföldkshfnölaksdfnl-k");
+    addNewAmsPortToList(paramInfo->amsPort);//Only add if not already there
+    amsPortInfo* port=getAmsPortObject(paramInfo->amsPort);
+    if(!port){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
+      return asynError;
+    }
+    paramInfo->localVariable=true;
+    paramInfo->plcDataType=ADST_UINT16;
+    paramInfo->plcSize=2;
+    paramInfo->plcDataIsArray=false;
+    port->paramInfo=paramInfo;
+  }
+
+  return addNewAmsPortToList(paramInfo->amsPort);//Only add if not already there
 }
 
+/** Get ams port information object from ams-port list.
+ * \param[in] amsPort ams-port
+ *
+ * \return amsPortInfo object.
+ */
+amsPortInfo* adsAsynPortDriver::getAmsPortObject(uint16_t amsPort)
+{
+  const char* functionName = "getAmsPortObject";
+  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: amsPort:%u\n", driverName, functionName,amsPort);
+
+  for(amsPortInfo *port : amsPortList_){
+    if(port->amsPort==amsPort){
+      return port;
+    }
+  }
+  return 0;
+}
 /** Add new ams port to ams-port list.
  * \param[in] amsPort ams-port
  *

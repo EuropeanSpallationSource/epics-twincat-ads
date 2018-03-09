@@ -176,6 +176,7 @@ private:
   asynStatus setAlarmParam(adsParamInfo *paramInfo,int alarm,int severity);
   asynStatus fireCallbacks(adsParamInfo* paramInfo);
   asynStatus addNewAmsPortToList(uint16_t amsPort);
+  amsPortInfo* getAmsPortObject(uint16_t amsPort);
   void       adsLock();
   void       adsUnlock();
 

@@ -314,3 +314,14 @@ record(waveform,"$(P)GetInt8Array"){
   field(SCAN,"I/O Intr")
   field(FTVL,"CHAR")
 }
+
+###############################################################################
+# Ams port state
+record(ai,"$(P)AmsPort851State"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/.AMSPORTSTATE.?")
+  field(PREC, "0")
+  field(SCAN,"I/O Intr")
+}

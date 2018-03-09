@@ -26,6 +26,7 @@
 #define ADS_OPTION_TIMEBASE_PLC "PLC"
 #define ADS_OPTION_ADSPORT "ADSPORT"
 #define ADS_OCTET_FEATURES_COMMAND ".THIS.sFeatures?"
+#define ADS_AMS_STATE_COMMAND ".AMSPORTSTATE.?"
 
 #ifndef ASYN_TRACE_INFO
   #define ASYN_TRACE_INFO      0x0040
@@ -69,6 +70,7 @@ typedef struct adsParamInfo{
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
   bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
+  bool          localVariable;       //Variable in driver (not in PLC)
   //timing
   ADSTIMESOURCE timeBase;
   uint64_t      plcTimeStampRaw;
@@ -88,6 +90,7 @@ typedef struct amsPortInfo{
   char devName[255];
   ADSSTATE adsStateOld;
   ADSSTATE adsState;
+  adsParamInfo* paramInfo;
 }amsPortInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
