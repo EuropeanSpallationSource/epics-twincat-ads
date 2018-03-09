@@ -385,7 +385,7 @@ void adsAsynPortDriver::cyclicThread()
     //Printout state status
     for(amsPortInfo *port : amsPortList_){
       if(port->connectedOld!=port->connected){
-        asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Connection OK to device \"%s\" on Ams-port %u (version %u.%u.%u).\n",driverName,functionName,port->devName,port->amsPort,port->version.version,port->version.revision,port->version.build);
+        asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Device \"%s\" %s (Ams-port %u, Ams router version %u.%u.%u).\n",driverName,functionName,port->devName,port->connected ? "connected" : "disconnected",port->amsPort,port->version.version,port->version.revision,port->version.build);
       }
       if(port->adsStateOld!=port->adsState){
         asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Ams-port, %u, state change: \"%s\" -> \"%s\".\n",driverName,functionName,port->amsPort,adsStateToString(port->adsStateOld),adsStateToString(port->adsState));
@@ -751,7 +751,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: createParam() failed.",driverName, functionName);
     return asynError;
   }
-  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: Parameter created at: %d for %s. \n", driverName, functionName,index,drvInfo);
+  asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: Parameter created: \"%s\" (index %d).\n", driverName, functionName,drvInfo,index);
 
   paramInfo->paramIndex=index;
 
