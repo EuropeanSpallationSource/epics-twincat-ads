@@ -1207,6 +1207,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     paramInfo->plcDataType=ADST_UINT16;
     paramInfo->plcSize=2;
     paramInfo->plcDataIsArray=false;
+    paramInfo->timeBase=ADS_TIME_BASE_EPICS;
     port->paramInfo=paramInfo;
   }
 
