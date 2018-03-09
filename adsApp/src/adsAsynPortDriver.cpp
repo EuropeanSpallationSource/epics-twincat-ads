@@ -1191,19 +1191,18 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     }
   }
 
-  //Check if ADS_AMS_STATE_COMMAND option
+  //Check if ADS_AMS_STATE_COMMAND option Local varaible/parameter (not in PLC)
   option=ADS_AMS_STATE_COMMAND;
   paramInfo->localVariable=false;
   isThere=strstr(drvInfo,option);
   if(isThere){
-    printf(",ljsahfdsa.djfh.lsdföldkshfnölaksdfnl-k");
     addNewAmsPortToList(paramInfo->amsPort);//Only add if not already there
     amsPortInfo* port=getAmsPortObject(paramInfo->amsPort);
     if(!port){
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    paramInfo->localVariable=true;
+    paramInfo->localVariable=true;  //This information is accessible in driver (not PLC)
     paramInfo->plcDataType=ADST_UINT16;
     paramInfo->plcSize=2;
     paramInfo->plcDataIsArray=false;
