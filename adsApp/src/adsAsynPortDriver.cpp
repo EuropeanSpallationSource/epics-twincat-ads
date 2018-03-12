@@ -83,16 +83,39 @@ int initHook(void)
   return(initHookRegister(getEpicsState));
 }
 
-/** Callback from ads lib.
+/** Callback from ads lib for symbols changed in PLC.
+ * \param[in] pAddr AmsAddr of the system generating the callback.
+ * \param[in] pNotification Data structure containing the updated data and timestamp information.
+ * \param[in] hUser Identification index of the callback parameter.
+ * \return void
+ * This function will be called by the ADS lib if the symbol version in the PLC is changed.
+ */
+static void adsSymbolsChangedCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
+{
+  const char* functionName = "adsSymbolsChangedCallback";
+
+  if(!adsAsynPortObj){
+    printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
+    return;
+  }
+
+  asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
+  asynPrint(asynTraceUser, ASYN_TRACE_INFO , "%s:%s: Symbols changed for Ams-port %u.\n", driverName, functionName,pAddr->port);
+
+  adsAsynPortObj->invalidateParamsLock(pAddr->port);
+  adsAsynPortObj->refreshParamsLock(pAddr->port);
+}
+
+/** Callback from ads lib for updated data.
  * \param[in] pAddr AmsAddr of the system generating the callback.
  * \param[in] pNotification Data structure containing the updated data and timestamp information.
  * \param[in] hUser Identification index of the callback parameter.
  * \return void
  * This function will be called by the ADS lib when a registered parameter is updated (changed in PLC).
  */
-static void adsNotifyCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
+static void adsDataCallback(const AmsAddr* pAddr, const AdsNotificationHeader* pNotification, uint32_t hUser)
 {
-  const char* functionName = "adsNotifyCallback";
+  const char* functionName = "adsDataCallback";
 
   if(!adsAsynPortObj){
     printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
@@ -216,7 +239,6 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   defaultMaxDelayTimeMS_=maxDelayTimeMS;
   adsTimeoutMS_=adsTimeoutMS;
   connectedAds_=0;
-  paramRefreshNeeded_=1;
   defaultTimeSource_=defaultTimeSource;
   routeAdded_=0;
   oneAmsConnectionOKold_=0;
@@ -317,7 +339,7 @@ adsAsynPortDriver::~adsAsynPortDriver()
     if(!pAdsParamArray_[i]){
       continue;
     }
-    adsDelNotificationCallback(pAdsParamArray_[i],true);  //Block error messages
+    adsDelDataCallback(pAdsParamArray_[i],true);  //Block error messages
     adsReleaseSymbolicHandle(pAdsParamArray_[i],true);    //Block error messages
     free(pAdsParamArray_[i]->recordName);
     free(pAdsParamArray_[i]->recordType);
@@ -383,6 +405,7 @@ void adsAsynPortDriver::cyclicThread()
         }
         if(port->connectedOld && !port->connected){
           invalidateParamsLock(port->amsPort);
+          port->refreshNeeded=true;
           setAlarmPortLock(port->amsPort,COMM_ALARM,INVALID_ALARM);
         }
         if(!port->connectedOld && port->connected){
@@ -582,14 +605,25 @@ asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
 
   if(connectedAds_){
     if(adsParamArrayCount_>1){
+      //Renew data notification callbacks
       for(int i=1; i<adsParamArrayCount_;i++){  //Skip first param since used for motorrecord or stream device
         if(!pAdsParamArray_[i]){
           continue;
         }
         adsParamInfo *paramInfo=pAdsParamArray_[i];
-        if((amsPort==0 || paramInfo->amsPort==amsPort) && paramInfo->paramRefreshNeeded){
+        if((amsPort==0 || paramInfo->amsPort==amsPort) && paramInfo->refreshNeeded){
           updateParamInfoWithPLCInfo(paramInfo);
         }
+      }
+    }
+
+    //Renew symbols changed notification callbacks
+    for(amsPortInfo *port : amsPortList_){
+      if(port->amsPort==amsPort && port->refreshNeeded){
+        if(port->bCallbackNotifyValid){
+          adsDelSymbolsChangedCallback(port);
+        }
+        adsAddSymbolsChangedCallback(port);
       }
     }
   }
@@ -615,7 +649,7 @@ asynStatus adsAsynPortDriver::invalidateParamsLock(uint16_t amsPort)
  */
 asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
 {
-  const char* functionName = "refreshParams";
+  const char* functionName = "invalidateParams";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   if(adsParamArrayCount_>1){
@@ -625,7 +659,7 @@ asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
       }
       adsParamInfo *paramInfo=pAdsParamArray_[i];
       if(amsPort==0 || paramInfo->amsPort==amsPort){
-        paramInfo->paramRefreshNeeded=true;
+        paramInfo->refreshNeeded=true;
       }
     }
   }
@@ -762,7 +796,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   memset(paramInfo,0,sizeof(adsParamInfo));
   paramInfo->sampleTimeMS=defaultSampleTimeMS_;
   paramInfo->maxDelayTimeMS=defaultMaxDelayTimeMS_;
-  paramInfo->paramRefreshNeeded=1;
+  paramInfo->refreshNeeded=1;
 
   status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
   if(status!=asynSuccess){
@@ -837,7 +871,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
 
   //Do not read information from PLC if "variable" in driver (like ams router state)
   if(paramInfo->dataSource!=ADS_DATASOURCE_PLC){
-    paramInfo->paramRefreshNeeded=false;
+    paramInfo->refreshNeeded=false;
     return asynSuccess;
   }
 
@@ -898,8 +932,8 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   }
 
   if(paramInfo->isIOIntr){
-    adsDelNotificationCallback(paramInfo,true);   //try to delete
-    status=adsAddNotificationCallback(paramInfo);
+    adsDelDataCallback(paramInfo,true);   //try to delete
+    status=adsAddDataCallback(paramInfo);
     if(status!=asynSuccess){
       return asynError;
     }
@@ -914,12 +948,12 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
     // try read again
     asynStatus stat=adsReadParam(paramInfo,&errorCode,0);
     if(stat!=asynSuccess){
-      paramInfo->paramRefreshNeeded=true;
+      paramInfo->refreshNeeded=true;
       return asynError;
     }
   }
 
-  paramInfo->paramRefreshNeeded=false;
+  paramInfo->refreshNeeded=false;
   return asynSuccess;
 }
 
@@ -1274,6 +1308,7 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
     newPort->amsPort=amsPort;
     newPort->adsState=(ADSSTATE)(ADSSTATE_MAXSTATES+1); //Set unknown state..
     newPort->adsStateOld=newPort->adsState;
+    newPort->refreshNeeded=true;
     amsPortList_.push_back(newPort);
   }
   catch(std::exception &e)
@@ -1294,7 +1329,7 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
  */
 bool adsAsynPortDriver::isCallbackAllowed(adsParamInfo *paramInfo)
 {
-  return !paramInfo->paramRefreshNeeded;
+  return !paramInfo->refreshNeeded;
 }
 
 /** Checks if callback is allowed for a certain ams-port.
@@ -2578,12 +2613,7 @@ asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo,bool
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   AmsAddr amsServer;
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
+  amsServer={remoteNetId_,paramInfo->amsPort};
 
   uint32_t symbolHandle=0;
   adsLock();
@@ -2611,15 +2641,87 @@ asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo,bool
   return asynSuccess;
 }
 
+/** Register on-change callback for symbols version
+ *
+ * \param[in] port Structure containig Ams-port information.
+ *
+ * \return asynSuccess or asynError.
+ */
+asynStatus adsAsynPortDriver::adsAddSymbolsChangedCallback(amsPortInfo *port)
+{
+  const char* functionName = "adsAddSymbolsChangedCallback";
+  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Ams-port %u.\n", driverName, functionName,port->amsPort);
+
+  AmsAddr amsServer;
+  amsServer={remoteNetId_,port->amsPort};
+
+  AdsNotificationAttrib attrib;
+  attrib.cbLength=1;
+  attrib.nTransMode=ADSTRANS_SERVERONCHA;  //Add option
+  attrib.nMaxDelay=(uint32_t)(defaultMaxDelayTimeMS_*10000); // 100ms
+  attrib.nCycleTime=(uint32_t)(defaultSampleTimeMS_*10000);
+
+  uint32_t hNotify=0;
+  adsLock();
+  long addStatus = AdsSyncAddDeviceNotificationReqEx(adsPort_,
+                                                     &amsServer,
+                                                     ADSIGRP_SYM_VERSION,
+                                                     0,
+                                                     &attrib,
+                                                     &adsSymbolsChangedCallback,
+                                                     (uint32_t)port->amsPort,  //Use amsPort as hUser
+                                                     &hNotify);
+  adsUnlock();
+  if (addStatus){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
+    return asynError;
+  }
+
+  //Add was successfull
+  port->hCallbackNotify=hNotify;
+  port->bCallbackNotifyValid=true;
+  port->refreshNeeded=false;
+
+  return asynSuccess;
+}
+
+/** Unregister on-change callback for symbols version
+ *
+ * \param[in] port Structure containig Ams-port information.
+ *
+ * \return asynSuccess or asynError.
+ */
+asynStatus adsAsynPortDriver::adsDelSymbolsChangedCallback(amsPortInfo *port)
+{
+  const char* functionName = "adsDelSymbolsChangedCallback";
+  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
+
+  AmsAddr amsServer;
+  amsServer={remoteNetId_,port->amsPort};
+
+  adsLock();
+  const long delStatus = AdsSyncDelDeviceNotificationReqEx(adsPort_, &amsServer,port->hCallbackNotify);
+  adsUnlock();
+  port->bCallbackNotifyValid=false;
+  port->hCallbackNotify=-1;
+
+  if (delStatus){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
+    return asynError;
+  }
+
+  return asynSuccess;
+}
+
 /** Register on-change callback for parameter (plc-variable).
  *
  * \param[in/out] paramInfo Parameter information.
  *
  * \return asynSuccess or asynError.
  */
-asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo)
+asynStatus adsAsynPortDriver::adsAddDataCallback(adsParamInfo *paramInfo)
 {
-  const char* functionName = "adsAddNotificationCallback";
+  const char* functionName = "adsAddDataCallback";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   uint32_t group=0;
@@ -2628,12 +2730,7 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
   paramInfo->bCallbackNotifyValid=false;
 
   AmsAddr amsServer;
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
+  amsServer={remoteNetId_,paramInfo->amsPort};
 
   if(paramInfo->isAdrCommand){// Abs access (ADR command)
     if(!paramInfo->plcAbsAdrValid){
@@ -2688,7 +2785,7 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
                                                      group,
                                                      offset,
                                                      &attrib,
-                                                     &adsNotifyCallback,
+                                                     &adsDataCallback,
                                                      (uint32_t)paramInfo->paramIndex,
                                                      &hNotify);
   adsUnlock();
@@ -2710,9 +2807,9 @@ asynStatus adsAsynPortDriver::adsAddNotificationCallback(adsParamInfo *paramInfo
  *
  * \return asynSuccess or asynError.
  */
-asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo)
+asynStatus adsAsynPortDriver::adsDelDataCallback(adsParamInfo *paramInfo)
 {
-  return adsDelNotificationCallback(paramInfo,false);
+  return adsDelDataCallback(paramInfo,false);
 }
 
 /** Unregister on-change callback for parameter (plc-variable).
@@ -2723,24 +2820,19 @@ asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo
  *
  * \return asynSuccess or asynError.
  */
-asynStatus adsAsynPortDriver::adsDelNotificationCallback(adsParamInfo *paramInfo,bool blockErrorMsg)
+asynStatus adsAsynPortDriver::adsDelDataCallback(adsParamInfo *paramInfo,bool blockErrorMsg)
 {
-  const char* functionName = "delNotificationCallback";
+  const char* functionName = "adsDelDataCallback";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   paramInfo->bCallbackNotifyValid=false;
-  paramInfo->hCallbackNotify=-1;
 
   AmsAddr amsServer;
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
+  amsServer={remoteNetId_,paramInfo->amsPort};
 
   adsLock();
   const long delStatus = AdsSyncDelDeviceNotificationReqEx(adsPort_, &amsServer,paramInfo->hCallbackNotify);
+  paramInfo->hCallbackNotify=-1;
   adsUnlock();
   if (delStatus){
     if(!blockErrorMsg){
@@ -2978,12 +3070,7 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   paramInfo->hSymbolicHandle=-1;
 
   AmsAddr amsServer;
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
+  amsServer={remoteNetId_,paramInfo->amsPort};
 
   adsLock();
   const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
@@ -3018,12 +3105,7 @@ asynStatus adsAsynPortDriver::adsWriteParam(adsParamInfo *paramInfo,const void *
   uint32_t offset=0;
 
   AmsAddr amsServer;
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
+  amsServer={remoteNetId_,paramInfo->amsPort};
 
   if(paramInfo->isAdrCommand){// Abs access (ADR command)
     if(!paramInfo->plcAbsAdrValid){
@@ -3107,12 +3189,7 @@ asynStatus adsAsynPortDriver::adsReadParam(adsParamInfo *paramInfo,long *error,i
   *error=0;
 
   AmsAddr amsServer;
-  if(paramInfo->amsPort<=0){  //Invalid amsPort try to fallback on default
-    amsServer={remoteNetId_,amsportDefault_};
-  }
-  else{
-    amsServer={remoteNetId_,paramInfo->amsPort};
-  }
+  amsServer={remoteNetId_,paramInfo->amsPort};
 
   if(paramInfo->isAdrCommand){// Abs access (ADR command)
     if(!paramInfo->plcAbsAdrValid){

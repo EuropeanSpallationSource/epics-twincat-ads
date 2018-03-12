@@ -86,6 +86,8 @@ public:
                                        size_t nElements);
   asynStatus adsUpdateParameterLock(adsParamInfo* paramInfo,
                                     const void *data);
+  asynStatus invalidateParamsLock(uint16_t amsPort);
+  asynStatus refreshParamsLock(uint16_t amsPort);
   asynStatus adsDelRouteLock(int force);
   asynStatus adsAddRouteLock();
   asynStatus fireAllCallbacksLock();
@@ -111,9 +113,7 @@ private:
                                      adsParamInfo *paramInfo);
   asynStatus refreshParams();
   asynStatus refreshParams(uint16_t amsPort);
-  asynStatus refreshParamsLock(uint16_t amsPort);
   asynStatus invalidateParams(uint16_t amsPort);
-  asynStatus invalidateParamsLock(uint16_t amsPort);
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
                                  const void *data);
   asynStatus adsUpdateParameter(adsParamInfo* paramInfo,
@@ -123,10 +123,13 @@ private:
                                     size_t dataSize);
 
   // ADS methods
-  asynStatus adsAddNotificationCallback(adsParamInfo *paramInfo);
-  asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo);
-  asynStatus adsDelNotificationCallback(adsParamInfo *paramInfo,
+  asynStatus adsAddDataCallback(adsParamInfo *paramInfo);
+
+  asynStatus adsDelDataCallback(adsParamInfo *paramInfo);
+  asynStatus adsDelDataCallback(adsParamInfo *paramInfo,
                                         bool blockErrorMsg);
+  asynStatus adsAddSymbolsChangedCallback(amsPortInfo *port);
+  asynStatus adsDelSymbolsChangedCallback(amsPortInfo *port);
   asynStatus adsGetSymInfoByName(adsParamInfo *paramInfo);
   asynStatus adsGetSymInfoByName(uint16_t amsPort,
                                  const char * varName,
@@ -223,7 +226,6 @@ private:
   int                            defaultMaxDelayTimeMS_;
   int                            adsTimeoutMS_;
   int                            connectedAds_;
-  int                            paramRefreshNeeded_;
   long                           adsPort_;
   int                            routeAdded_;
   int                            notConnectedCounter_;

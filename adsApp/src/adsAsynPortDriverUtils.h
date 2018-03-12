@@ -75,7 +75,7 @@ typedef struct adsParamInfo{
   size_t        lastCallbackSize;
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
-  bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
+  bool          refreshNeeded;  //Communication broken update handles and callbacks
   ADSDATASOURCE dataSource;          //Variable in PLC or in driver (not in PLC)
   //timing
   ADSTIMESOURCE timeBase;
@@ -97,6 +97,9 @@ typedef struct amsPortInfo{
   ADSSTATE adsStateOld;
   ADSSTATE adsState;
   adsParamInfo* paramInfo;
+  uint32_t      hCallbackNotify;
+  bool          bCallbackNotifyValid;
+  bool          refreshNeeded;  //Communication broken update handles and callbacks
 }amsPortInfo;
 
 //For info from symbolic name Actually this data type should be in the adslib (but missing)..
