@@ -4000,21 +4000,21 @@ extern "C" {
   static void printHelp()
   {
     printf("\n");
-    printf("EPICS integration of TwinCAT PLC:s by ADS communication.\n");
+    printf(" EPICS integration of TwinCAT PLC:s by ADS communication.\n");
     printf("\n");
-    printf("Command usage:\n");
-    printf("adsAsynPortDriverConfigure(<Asyn port name>,\n");
-    printf("                           <IP address of PLC>,\n");
-    printf("                           <AMS address of PLC>,\n");
-    printf("                           <Default AMS port>,\n");
-    printf("                           <Maximum parameter count>,\n");
-    printf("                           <Asyn priority>,\n");
-    printf("                           <Asyn disable auto connect>,\n");
-    printf("                           <Asyn noProcessEOS>,\n");
-    printf("                           <Default sample time> [ms],\n");
-    printf("                           <Default max delay time [ms]>,\n");
-    printf("                           <ADS command timeout [ms]>,\n");
-    printf("                           <Default time source>)\n");
+    printf(" Command usage:\n");
+    printf(" adsAsynPortDriverConfigure(<Asyn port name>,\n");
+    printf("                            <IP address of PLC>,\n");
+    printf("                            <AMS address of PLC>,\n");
+    printf("                            <Default AMS port>,\n");
+    printf("                            <Maximum parameter count>,\n");
+    printf("                            <Asyn priority>,\n");
+    printf("                            <Asyn disable auto connect>,\n");
+    printf("                            <Asyn noProcessEOS>,\n");
+    printf("                            <Default sample time> [ms],\n");
+    printf("                            <Default max delay time [ms]>,\n");
+    printf("                            <ADS command timeout [ms]>,\n");
+    printf("                            <Default time source>)\n");
     printf("\n");
     printf(" Example configuration:\n");
     printf(" 0. Asyn port name                             : \"ADS_1\"\n");
@@ -4034,9 +4034,18 @@ extern "C" {
     printf(" adsAsynPortDriverConfigure(\"ADS_1\",\"192.168.88.44\",\"192.168.88.44.1.1\",851,1000, 0, 0,0,50,100,1000,0)\n");
     printf("\n");
     printf("\n");
-    printf(" NOTE: The ams address of this Linux client must be added to the TwinCAT PLC ams router:\n");
-    printf("       In TwinCAT: Systems->routes->add route, use ip of linux machine plus \".1.1\"=> \"x.x.x.x.1.1\"\n");
+    printf(" NOTE: An ADS route needs to be added to the TwinCAT router of the controller/PLC:\n");
+    printf("       1. \"TwinCAT->System->Routes->Static Routes\": Press \"Add\" button.\n");
+    printf("       2. \"Route Name (Target)\": Enter name of EPICS machine.\n");
+    printf("       3. \"AMSNetId\": Enter IP of EPICS machine. Add \".1.1\" in the end (x.x.x.x.1.1).\n");
+    printf("       4. \"Address Info\": Enter IP of EPICS machine (x.x.x.x).\n");
+    printf("       5. Choose \"IP Address\" checkbox.\n");
+    printf("       6. Choose \"Remote Route\"->\"None\" checkbox.\n");
+    printf("       7. Press \"Add Route\" button.\n");
+    printf("       8. Close \"Add Route Dialog\".\n");
+    printf("       9. Ensure that the route was successfully added in the \"Static Routes\" list.\n");
     printf("\n");
+
     return;
   }
   /*
