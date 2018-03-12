@@ -400,7 +400,7 @@ void adsAsynPortDriver::cyclicThread()
       if(port->adsStateOld!=port->adsState){
         //If amsrouter is a asyn paramter then update
         if(port->paramInfo){
-          if(port->paramInfo->localVariable){
+          if(port->paramInfo->dataSource==ADS_DATASOURCE_AMS_STATE){
             void * pData=(void *)&port->adsState;
             adsUpdateParameterLock(port->paramInfo,pData,2);
           }
@@ -732,8 +732,9 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
       return asynError;
     }
 
-    if(pAdsParamArray_[index]->localVariable){ //Local varaiable (not in PLC) like AMS port state.
-      return asynSuccess;
+    if(pAdsParamArray_[index]->dataSource==ADS_DATASOURCE_AMS_STATE){ //Local variable (not in PLC) like AMS port state.
+
+      return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
     }
 
     if(!connectedAds_){
@@ -747,7 +748,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
         return asynError;
       }
     }
-    return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);;
+    return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
   }
 
   //Ensure space left in param table
@@ -775,6 +776,18 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   }
   asynPrint(pasynUser, ASYN_TRACE_INFO, "%s:%s: Parameter created: \"%s\" (index %d).\n", driverName, functionName,drvInfo,index);
 
+  //Set default value for basic types...
+  switch(paramInfo->asynType){
+    case asynParamInt32:
+      setIntegerParam(index,0);
+      break;
+    case asynParamFloat64:
+      setDoubleParam(index,0);
+      break;
+    default:
+      break;
+  }
+
   paramInfo->paramIndex=index;
 
   int addr=0;
@@ -800,7 +813,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     connect(pasynUser);
   }
 
-  if(connectedAds_ && !paramInfo->localVariable){  //Do not read info from PLC if local variable (like ams-port state)
+  if(connectedAds_ && !(paramInfo->dataSource==ADS_DATASOURCE_AMS_STATE)){  //Do not read info from PLC if local variable (like ams-port state)
     status=updateParamInfoWithPLCInfo(paramInfo);
     if(status!=asynSuccess){
       return asynError;
@@ -809,7 +822,7 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize); //Assigns pasynUser->reason;
 }
 
-/** Update parameter with info from PLC (varaiable size, type and abs addr).
+/** Update parameter with info from PLC (variable size, type and abs addr).
  * \param[in/out] paramInfo Parameter information structure.
  * \return asynSuccess or asynError.
  * If the PLC variable is an array then a buffer is allocated in the paramInfo to
@@ -823,7 +836,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   asynStatus status;
 
   //Do not read information from PLC if "variable" in driver (like ams router state)
-  if(paramInfo->localVariable){
+  if(paramInfo->dataSource!=ADS_DATASOURCE_PLC){
     paramInfo->paramRefreshNeeded=false;
     return asynSuccess;
   }
@@ -846,7 +859,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
       isArray=true;  //Special case
       break;
     case ADST_WSTRING:
-      isArray=true; //Special case?
+      isArray=true;  //Special case?
       break;
     case ADST_BIGTYPE:
       isArray=false;
@@ -1029,10 +1042,12 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
  * \return asynSuccess or asynError.
  * Methods checks if input or output ('?' or '=') and parses options:
  * - "ADSPORT" (Ams port for varaible)\n
- * - ".ADR.*" (absolute access)\n
  * - "T_DLY_MS" (maximum delay time ms)\n
  * - "TS_MS" (sample time ms)\n
  * - "TIMEBASE" ("PLC" or "EPICS")\n
+ * Also supports the following commands:
+ * - ".AMSPORTSTATE." (Read/write AMS-port state)\n
+ * - ".ADR.*" (absolute access)\n
  */
 asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsParamInfo *paramInfo)
 {
@@ -1191,9 +1206,9 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
     }
   }
 
-  //Check if ADS_AMS_STATE_COMMAND option Local varaible/parameter (not in PLC)
+  //Check if ADS_AMS_STATE_COMMAND option Local variable/parameter (not in PLC)
   option=ADS_AMS_STATE_COMMAND;
-  paramInfo->localVariable=false;
+  paramInfo->dataSource=ADS_DATASOURCE_PLC;
   isThere=strstr(drvInfo,option);
   if(isThere){
     addNewAmsPortToList(paramInfo->amsPort);//Only add if not already there
@@ -1202,7 +1217,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    paramInfo->localVariable=true;  //This information is accessible in driver (not PLC)
+    paramInfo->dataSource=ADS_DATASOURCE_AMS_STATE;  //This information is accessible in driver (not PLC)
     paramInfo->plcDataType=ADST_UINT16;
     paramInfo->plcSize=2;
     paramInfo->plcDataIsArray=false;
@@ -1922,6 +1937,18 @@ asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
   paramInfo=pAdsParamArray_[paramIndex];
 
+  //Special case. Check if write ams port state
+  if(paramInfo->dataSource==ADS_DATASOURCE_AMS_STATE){
+    if(adsWriteState(paramInfo->amsPort,(uint16_t)value)!=asynSuccess){
+      return setAlarmParam(paramInfo,WRITE_ALARM,INVALID_ALARM);
+    }
+    // Write OK -> reset werite alarm
+    if(paramInfo->alarmStatus==WRITE_ALARM){
+      return setAlarmParam(paramInfo,NO_ALARM,NO_ALARM);
+    }
+    return asynSuccess;
+  }
+
   uint8_t buffer[8]; //largest datatype is 8bytes
   uint32_t maxBytesToWrite=0;
   // Convert epicsInt32 to plctype if possible..
@@ -2047,6 +2074,18 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
     return asynError;
   }
   paramInfo=pAdsParamArray_[paramIndex];
+
+  //Special case. Check if write ams port state
+  if(paramInfo->dataSource==ADS_DATASOURCE_AMS_STATE){
+    if(adsWriteState(paramInfo->amsPort,(uint16_t)value)!=asynSuccess){
+      return setAlarmParam(paramInfo,WRITE_ALARM,INVALID_ALARM);
+    }
+    // Write OK -> reset werite alarm
+    if(paramInfo->alarmStatus==WRITE_ALARM){
+      return setAlarmParam(paramInfo,NO_ALARM,NO_ALARM);
+    }
+    return asynSuccess;
+  }
 
   uint8_t buffer[8]; //largest datatype is 8bytes
   uint32_t maxBytesToWrite=0;
@@ -3197,7 +3236,7 @@ asynStatus adsAsynPortDriver::adsReadState(uint16_t *adsState)
 
 /** Read state of amsport in TwinCAT
  *
- * \param[in] amsport Ams-prot.
+ * \param[in] amsport Ams-port.
  * \param[out] adsState State of ams-port (running, invalid, config..).
  * \param[in] blockErrorMsg Suppress error messages
  *            (used while trying to reconnect to avoid alot of error messages).
@@ -3223,6 +3262,28 @@ asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,b
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
     }
     //asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
+    return asynError;
+  }
+
+  return asynSuccess;
+}
+
+/** Get parameter table size (max allowed parameter count).
+ * \param[in] amsport Ams-port.
+ * \param[in] adsState State of ams-port (running, invalid, config..).
+ *
+ * \return asynSuccess or asynError.
+ */
+asynStatus adsAsynPortDriver::adsWriteState(uint16_t amsport,uint16_t adsState)
+{
+  const char* functionName = "adsWriteState";
+  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: adsState = %s (%u)\n", driverName, functionName,adsStateToString(adsState),adsState);
+
+  void *pData=NULL;
+  AmsAddr amsServer={remoteNetId_,amsport};
+  const long status = AdsSyncWriteControlReqEx (adsPort_,&amsServer, adsState, 0, 0, pData);
+  if(status){
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
 

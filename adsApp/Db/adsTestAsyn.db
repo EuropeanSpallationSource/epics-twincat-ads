@@ -118,7 +118,6 @@ record(ao,"$(P)SetICycleCounter"){
   field(TSE,  -2)
   field(DTYP, "asynInt32")
   field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter=")
-  field(PREC, "3")
   field(SCAN, "Passive")
 }
 
@@ -128,7 +127,6 @@ record(ao,"$(P)SetICycleCounterRB"){
   field(TSE,  -2)
   field(DTYP, "asynInt32")
   field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter?")
-  field(PREC, "3")
   field(SCAN, "Passive")
 }
 
@@ -137,7 +135,6 @@ record(ai,"$(P)GetICycleCounter"){
   field(TSE,  -2)
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter?")
-  field(PREC, "3")
   field(SCAN, "I/O Intr")
 }
 
@@ -146,7 +143,6 @@ record(ai,"$(P)GetICycleCounterSCAN"){
   field(TSE,  -2)
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter?")
-  field(PREC, "3")
   field(SCAN, "1 second")
 }
 
@@ -316,12 +312,19 @@ record(waveform,"$(P)GetInt8Array"){
 }
 
 ###############################################################################
-# Ams port state
-record(ai,"$(P)AmsPort851State"){
+# Ams port state: Read and write
+
+record(ai,"$(P)GetAmsPort851State"){
   field(PINI, "1")
-  field(TSE, -2)
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/.AMSPORTSTATE.?")
-  field(PREC, "0")
   field(SCAN,"I/O Intr")
 }
+
+record(ao,"$(P)SetAmsPort851State"){
+  info(asyn:READBACK,"1")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/.AMSPORTSTATE.?")
+  field(SCAN, "Passive")
+}
+

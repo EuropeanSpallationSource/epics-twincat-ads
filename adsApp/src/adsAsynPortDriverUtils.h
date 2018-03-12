@@ -26,7 +26,7 @@
 #define ADS_OPTION_TIMEBASE_PLC "PLC"
 #define ADS_OPTION_ADSPORT "ADSPORT"
 #define ADS_OCTET_FEATURES_COMMAND ".THIS.sFeatures?"
-#define ADS_AMS_STATE_COMMAND ".AMSPORTSTATE.?"
+#define ADS_AMS_STATE_COMMAND ".AMSPORTSTATE."
 
 #ifndef ASYN_TRACE_INFO
   #define ASYN_TRACE_INFO      0x0040
@@ -37,6 +37,12 @@ typedef enum{
   ADS_TIME_BASE_EPICS=1,
   ADS_TIME_BASE_MAX
 } ADSTIMESOURCE;
+
+typedef enum{
+  ADS_DATASOURCE_PLC=0,       //Data in PLC (Normal/default)
+  ADS_DATASOURCE_AMS_STATE=1, //Special case parameter linked to ads status (not plc "data")
+  ADS_DATASOURCE_MAX=2,
+} ADSDATASOURCE;
 
 typedef struct adsParamInfo{
   char          *recordName;
@@ -70,7 +76,7 @@ typedef struct adsParamInfo{
   size_t        arrayDataBufferSize;
   void*         arrayDataBuffer;
   bool          paramRefreshNeeded;  //Communication broken update handles and callbacks
-  bool          localVariable;       //Variable in driver (not in PLC)
+  ADSDATASOURCE dataSource;          //Variable in PLC or in driver (not in PLC)
   //timing
   ADSTIMESOURCE timeBase;
   uint64_t      plcTimeStampRaw;

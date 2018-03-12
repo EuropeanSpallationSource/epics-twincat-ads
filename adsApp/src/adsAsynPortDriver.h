@@ -158,6 +158,9 @@ private:
                           uint16_t *adsState,
                           bool blockErrorMsg,
                           long *error);
+  asynStatus adsWriteState(uint16_t amsport,
+                          uint16_t adsState);
+
   asynStatus adsDelRoute(int force);
   asynStatus adsGenericArrayWrite(asynUser *pasynUser,
                                   long allowedType,

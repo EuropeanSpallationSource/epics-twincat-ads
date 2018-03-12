@@ -1348,7 +1348,7 @@ $(pv_value)</tooltip>
           <name>Text Input_1</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)ASYN:AmsPort851State</pv_name>
+          <pv_name>$(P)ASYN:GetAmsPort851State</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />
@@ -1367,9 +1367,9 @@ $(pv_value)</tooltip>
           <transparent>false</transparent>
           <visible>true</visible>
           <widget_type>Text Input</widget_type>
-          <width>120</width>
+          <width>49</width>
           <wuid>-b703144:161e0cabb89:-63b8</wuid>
-          <x>12</x>
+          <x>306</x>
           <y>24</y>
         </widget>
         <widget typeId="org.csstudio.opibuilder.widgets.Label" version="1.0.0">
@@ -1409,7 +1409,7 @@ $(pv_value)</tooltip>
           <width>80</width>
           <wrap_words>false</wrap_words>
           <wuid>-b703144:161e0cabb89:-63b6</wuid>
-          <x>12</x>
+          <x>306</x>
           <y>5</y>
         </widget>
         <widget typeId="org.csstudio.opibuilder.widgets.TextInput" version="2.0.0">
@@ -1516,7 +1516,7 @@ $(pv_value)</tooltip>
               <exp bool_exp="pv0&lt;0">
                 <value>NOT DEFINED</value>
               </exp>
-              <pv trig="true">$(P)ASYN:AmsPort851State</pv>
+              <pv trig="true">$(P)ASYN:GetAmsPort851State</pv>
             </rule>
           </rules>
           <scale_options>
@@ -1534,10 +1534,233 @@ $(pv_value)</tooltip>
           <transparent>false</transparent>
           <visible>true</visible>
           <widget_type>Text Input</widget_type>
-          <width>313</width>
+          <width>169</width>
           <wuid>-b703144:161e0cabb89:-63a0</wuid>
-          <x>150</x>
+          <x>372</x>
           <y>24</y>
+        </widget>
+        <widget typeId="org.csstudio.opibuilder.widgets.TextInput" version="2.0.0">
+          <actions hook="false" hook_all="false" />
+          <alarm_pulsing>false</alarm_pulsing>
+          <auto_size>false</auto_size>
+          <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>
+          <background_color>
+            <color red="255" green="255" blue="255" />
+          </background_color>
+          <border_alarm_sensitive>false</border_alarm_sensitive>
+          <border_color>
+            <color red="0" green="128" blue="255" />
+          </border_color>
+          <border_style>3</border_style>
+          <border_width>1</border_width>
+          <confirm_message></confirm_message>
+          <enabled>true</enabled>
+          <font>
+            <opifont.name fontName="Cantarell" height="11" style="0" pixels="false">Default</opifont.name>
+          </font>
+          <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>
+          <foreground_color>
+            <color red="0" green="0" blue="0" />
+          </foreground_color>
+          <format_type>0</format_type>
+          <height>25</height>
+          <horizontal_alignment>0</horizontal_alignment>
+          <limits_from_pv>false</limits_from_pv>
+          <maximum>1.7976931348623157E308</maximum>
+          <minimum>-1.7976931348623157E308</minimum>
+          <multiline_input>false</multiline_input>
+          <name>Text Input</name>
+          <precision>0</precision>
+          <precision_from_pv>true</precision_from_pv>
+          <pv_name>$(P)ASYN:SetAmsPort851State</pv_name>
+          <pv_value />
+          <rotation_angle>0.0</rotation_angle>
+          <rules />
+          <scale_options>
+            <width_scalable>true</width_scalable>
+            <height_scalable>true</height_scalable>
+            <keep_wh_ratio>false</keep_wh_ratio>
+          </scale_options>
+          <scripts />
+          <selector_type>0</selector_type>
+          <show_units>true</show_units>
+          <style>0</style>
+          <text></text>
+          <tooltip>$(pv_name)
+$(pv_value)</tooltip>
+          <transparent>false</transparent>
+          <visible>true</visible>
+          <widget_type>Text Input</widget_type>
+          <width>61</width>
+          <wuid>-b703144:161e0cabb89:-5cee</wuid>
+          <x>210</x>
+          <y>24</y>
+        </widget>
+        <widget typeId="org.csstudio.opibuilder.widgets.Label" version="1.0.0">
+          <actions hook="false" hook_all="false" />
+          <auto_size>false</auto_size>
+          <background_color>
+            <color red="255" green="255" blue="255" />
+          </background_color>
+          <border_color>
+            <color red="0" green="128" blue="255" />
+          </border_color>
+          <border_style>0</border_style>
+          <border_width>1</border_width>
+          <enabled>true</enabled>
+          <font>
+            <opifont.name fontName="Cantarell" height="11" style="0" pixels="false">Default</opifont.name>
+          </font>
+          <foreground_color>
+            <color red="0" green="0" blue="0" />
+          </foreground_color>
+          <height>20</height>
+          <horizontal_alignment>0</horizontal_alignment>
+          <name>Label_2</name>
+          <rules />
+          <scale_options>
+            <width_scalable>true</width_scalable>
+            <height_scalable>true</height_scalable>
+            <keep_wh_ratio>false</keep_wh_ratio>
+          </scale_options>
+          <scripts />
+          <text>AO:</text>
+          <tooltip></tooltip>
+          <transparent>true</transparent>
+          <vertical_alignment>1</vertical_alignment>
+          <visible>true</visible>
+          <widget_type>Label</widget_type>
+          <width>80</width>
+          <wrap_words>false</wrap_words>
+          <wuid>-b703144:161e0cabb89:-5ced</wuid>
+          <x>210</x>
+          <y>5</y>
+        </widget>
+        <widget typeId="org.csstudio.opibuilder.widgets.ActionButton" version="2.0.0">
+          <actions hook="false" hook_all="false">
+            <action type="WRITE_PV">
+              <pv_name>$(pv_name)</pv_name>
+              <value>5</value>
+              <timeout>10</timeout>
+              <confirm_message></confirm_message>
+              <description></description>
+            </action>
+          </actions>
+          <alarm_pulsing>false</alarm_pulsing>
+          <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>
+          <background_color>
+            <color red="240" green="240" blue="240" />
+          </background_color>
+          <border_alarm_sensitive>false</border_alarm_sensitive>
+          <border_color>
+            <color red="0" green="128" blue="255" />
+          </border_color>
+          <border_style>0</border_style>
+          <border_width>1</border_width>
+          <enabled>true</enabled>
+          <font>
+            <opifont.name fontName="Cantarell" height="11" style="0" pixels="false">Default</opifont.name>
+          </font>
+          <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>
+          <foreground_color>
+            <color red="0" green="0" blue="0" />
+          </foreground_color>
+          <height>40</height>
+          <image></image>
+          <name>RUN</name>
+          <push_action_index>0</push_action_index>
+          <pv_name>$(P)ASYN:SetAmsPort851State</pv_name>
+          <pv_value />
+          <rules>
+            <rule name="Rule" prop_id="background_color" out_exp="false">
+              <exp bool_exp="pv0==5">
+                <value>
+                  <color red="0" green="128" blue="0" />
+                </value>
+              </exp>
+              <pv trig="true">$(pv_name)</pv>
+            </rule>
+          </rules>
+          <scale_options>
+            <width_scalable>true</width_scalable>
+            <height_scalable>true</height_scalable>
+            <keep_wh_ratio>false</keep_wh_ratio>
+          </scale_options>
+          <scripts />
+          <style>0</style>
+          <text>RUN</text>
+          <toggle_button>false</toggle_button>
+          <tooltip>$(pv_name)
+$(pv_value)</tooltip>
+          <visible>true</visible>
+          <widget_type>Action Button</widget_type>
+          <width>80</width>
+          <wuid>-b703144:161e0cabb89:-50fb</wuid>
+          <x>12</x>
+          <y>17</y>
+        </widget>
+        <widget typeId="org.csstudio.opibuilder.widgets.ActionButton" version="2.0.0">
+          <actions hook="false" hook_all="false">
+            <action type="WRITE_PV">
+              <pv_name>$(pv_name)</pv_name>
+              <value>6</value>
+              <timeout>10</timeout>
+              <confirm_message></confirm_message>
+              <description></description>
+            </action>
+          </actions>
+          <alarm_pulsing>false</alarm_pulsing>
+          <backcolor_alarm_sensitive>false</backcolor_alarm_sensitive>
+          <background_color>
+            <color red="240" green="240" blue="240" />
+          </background_color>
+          <border_alarm_sensitive>false</border_alarm_sensitive>
+          <border_color>
+            <color red="0" green="128" blue="255" />
+          </border_color>
+          <border_style>0</border_style>
+          <border_width>1</border_width>
+          <enabled>true</enabled>
+          <font>
+            <opifont.name fontName="Cantarell" height="11" style="0" pixels="false">Default</opifont.name>
+          </font>
+          <forecolor_alarm_sensitive>false</forecolor_alarm_sensitive>
+          <foreground_color>
+            <color red="0" green="0" blue="0" />
+          </foreground_color>
+          <height>40</height>
+          <image></image>
+          <name>RUN</name>
+          <push_action_index>0</push_action_index>
+          <pv_name>$(P)ASYN:SetAmsPort851State</pv_name>
+          <pv_value />
+          <rules>
+            <rule name="Rule" prop_id="background_color" out_exp="false">
+              <exp bool_exp="pv0==6">
+                <value>
+                  <color name="Major" red="255" green="0" blue="0" />
+                </value>
+              </exp>
+              <pv trig="true">$(pv_name)</pv>
+            </rule>
+          </rules>
+          <scale_options>
+            <width_scalable>true</width_scalable>
+            <height_scalable>true</height_scalable>
+            <keep_wh_ratio>false</keep_wh_ratio>
+          </scale_options>
+          <scripts />
+          <style>0</style>
+          <text>STOP</text>
+          <toggle_button>false</toggle_button>
+          <tooltip>$(pv_name)
+$(pv_value)</tooltip>
+          <visible>true</visible>
+          <widget_type>Action Button</widget_type>
+          <width>80</width>
+          <wuid>-b703144:161e0cabb89:-50f1</wuid>
+          <x>108</x>
+          <y>17</y>
         </widget>
       </widget>
     </widget>
