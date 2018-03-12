@@ -1,14 +1,14 @@
 # Test db file for ads communication. 
 # Macros and templates have been avoided in order to focus on showing the functionality.
 
-record(ao,"$(P)SetITest"){
+record(ao,"$(P)SetICycleCounter"){
 	field(DTYP,"stream")
-	field(OUT,"@adsTest.proto setITest() $(PORT)")
+	field(OUT,"@adsTest.proto setICycleCounter() $(PORT)")
 }
 
-record(ai,"$(P)GetITest"){
+record(ai,"$(P)GetICycleCounter"){
 	field(DTYP,"stream")
-	field(INP,"@adsTest.proto getITest() $(PORT)")
+	field(INP,"@adsTest.proto getICycleCounter() $(PORT)")
 	field(SCAN,"1 second")
 }
 

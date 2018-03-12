@@ -233,7 +233,7 @@
         <macros>
           <include_parent_macros>true</include_parent_macros>
         </macros>
-        <name>Main.iTest (asyn):</name>
+        <name>Main.iCycleCounter (asyn):</name>
         <rules />
         <scale_options>
           <width_scalable>true</width_scalable>
@@ -283,7 +283,7 @@
           <name>Text Input</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)ASYN:SetITest</pv_name>
+          <pv_name>$(P)ASYN:SetICycleCounter</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />
@@ -340,7 +340,7 @@ $(pv_value)</tooltip>
           <name>Text Input_2</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)ASYN:SetITestRB</pv_name>
+          <pv_name>$(P)ASYN:SetICycleCounterRB</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />
@@ -397,7 +397,7 @@ $(pv_value)</tooltip>
           <name>Text Input_1</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)ASYN:GetITest</pv_name>
+          <pv_name>$(P)ASYN:GetICycleCounter</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />
@@ -454,7 +454,7 @@ $(pv_value)</tooltip>
           <name>Text Input_1</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)ASYN:GetITestSCAN</pv_name>
+          <pv_name>$(P)ASYN:GetICycleCounterSCAN</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />
@@ -1011,7 +1011,7 @@ $(pv_value)</tooltip>
         <macros>
           <include_parent_macros>true</include_parent_macros>
         </macros>
-        <name>Main.iTest (Stream Device, asyn octet):</name>
+        <name>Main.iCycleCounter (Stream Device, asyn octet):</name>
         <rules />
         <scale_options>
           <width_scalable>true</width_scalable>
@@ -1061,7 +1061,7 @@ $(pv_value)</tooltip>
           <name>Text Input</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)OCTET:SetITest</pv_name>
+          <pv_name>$(P)OCTET:SetICycleCounter</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />
@@ -1118,7 +1118,7 @@ $(pv_value)</tooltip>
           <name>Text Input_1</name>
           <precision>0</precision>
           <precision_from_pv>true</precision_from_pv>
-          <pv_name>$(P)OCTET:GetITest</pv_name>
+          <pv_name>$(P)OCTET:GetICycleCounter</pv_name>
           <pv_value />
           <rotation_angle>0.0</rotation_angle>
           <rules />

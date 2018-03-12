@@ -107,45 +107,45 @@ record(bi,"$(P)GetBEnableUpdateSine"){
 }
 
 ###############################################################################
-# iTest:  Four different types:
+# iCycleCounter:  Four different types:
 #             1. ao passive
 #             2. ao with readback (default sample and max delay time)
 #             3. ai I/O intr (default sample and max delay time)
 #             4  ai scan 1 second
 
-record(ao,"$(P)SetITest"){
+record(ao,"$(P)SetICycleCounter"){
   field(PINI, "1")
   field(TSE,  -2)
   field(DTYP, "asynInt32")
-  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest=")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter=")
   field(PREC, "3")
   field(SCAN, "Passive")
 }
 
-record(ao,"$(P)SetITestRB"){
+record(ao,"$(P)SetICycleCounterRB"){
   info(asyn:READBACK,"1")
   field(PINI, "1")
   field(TSE,  -2)
   field(DTYP, "asynInt32")
-  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest?")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter?")
   field(PREC, "3")
   field(SCAN, "Passive")
 }
 
-record(ai,"$(P)GetITest"){
+record(ai,"$(P)GetICycleCounter"){
   field(PINI, "1")
   field(TSE,  -2)
   field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest?")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter?")
   field(PREC, "3")
   field(SCAN, "I/O Intr")
 }
 
-record(ai,"$(P)GetITestSCAN"){
+record(ai,"$(P)GetICycleCounterSCAN"){
   field(PINI, "1")
   field(TSE,  -2)
   field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iTest?")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=851/Main.iCycleCounter?")
   field(PREC, "3")
   field(SCAN, "1 second")
 }
