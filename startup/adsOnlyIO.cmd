@@ -18,13 +18,12 @@ require ads,anderssandstrom
 # 5. Parameter table size (max parameters)  : 1000 example
 # 6. priority                               : 0
 # 7. disable auto connnect                  : 0 (autoconnect enabled)
-# 8. noProcessEOS                           : 0
-# 9. default sample time ms                 : 500
-# 10. max delay time ms (buffer time in plc): 1000
-# 11. ADS command timeout in ms             : 1000  
-# 12. default time source (PLC=0,EPICS=1).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
+# 8. default sample time ms                 : 500
+# 9. max delay time ms (buffer time in plc) : 1000
+# 10. ADS command timeout in ms             : 1000  
+# 11. default time source (PLC=0,EPICS=1).  : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
 
-adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000, 0, 0,0,50,100,1000,0)
+adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000,0,0,50,100,1000,0)
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")

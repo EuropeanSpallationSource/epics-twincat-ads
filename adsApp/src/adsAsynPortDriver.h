@@ -22,7 +22,6 @@ public:
                     int paramTableSize,
                     unsigned int priority,
                     int autoConnect,
-                    int noProcessEos,
                     int defaultSampleTimeMS,
                     int maxDelayTimeMS,
                     int adsTimeoutMS,

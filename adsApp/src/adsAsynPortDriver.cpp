@@ -184,7 +184,6 @@ void cyclicThread(void *drvPvt)
  * \param[in] paramTableSize Maximum parameter/varaiable count.
  * \param[in] priority Asyn prio.
  * \param[in] autoConnect Enable auto connect.
- * \param[in] noProcessEos Asyn noProcessEos.
  * \param[in] defaultSampleTimeMS Default sample of varaible (PLC ams router
  *            checks if variable changed, if changed then add to send buffer).
  * \param[in] maxDelayTimeMS Maximum delay before  variable that has changed is
@@ -207,7 +206,6 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      int paramTableSize,
                                      unsigned int priority,
                                      int autoConnect,
-                                     int noProcessEos,
                                      int defaultSampleTimeMS,
                                      int maxDelayTimeMS,
                                      int adsTimeoutMS,
@@ -234,7 +232,6 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   amsportDefault_=amsport;
   priority_=priority;
   autoConnect_=autoConnect;
-  noProcessEos_=noProcessEos;
   defaultSampleTimeMS_=defaultSampleTimeMS;
   defaultMaxDelayTimeMS_=maxDelayTimeMS;
   adsTimeoutMS_=adsTimeoutMS;
@@ -503,7 +500,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       adsParamInfo *paramInfo=pAdsParamArray_[i];
       fprintf(fp,"  Parameter %d:\n",i);
       if(i==0){
-        fprintf(fp,"    Parameter 0 is reserved for Motor Record and Stream Device access (pasynUser->reason==0)!\n");
+        fprintf(fp,"    Parameter 0 (pasynUser->reason==0) is reserved for Asyn octet interface (Motor Record and Stream Device access).\n");
         fprintf(fp,"\n");
         continue;
       }
@@ -519,6 +516,9 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Param epics time:          %us:%uns\n",paramInfo->epicsTimestamp.secPastEpoch,paramInfo->epicsTimestamp.nsec);
       fprintf(fp,"    Param array buffer alloc:  %s\n",paramInfo->arrayDataBuffer ? "true" : "false");
       fprintf(fp,"    Param array buffer size:   %lu\n",paramInfo->arrayDataBufferSize);
+      fprintf(fp,"    Param alarm:               %d\n",paramInfo->alarmStatus);
+      fprintf(fp,"    Param severity:            %d\n",paramInfo->alarmSeverity);
+      fprintf(fp,"    Param data source:         %s\n",paramInfo->dataSource==ADS_DATASOURCE_PLC ? "PLC" : "DRIVER");
       fprintf(fp,"    Plc ams port:              %d\n",paramInfo->amsPort);
       fprintf(fp,"    Plc adr str:               %s\n",paramInfo->plcAdrStr);
       fprintf(fp,"    Plc adr str is ADR cmd:    %s\n",paramInfo->isAdrCommand ? "true" : "false");
@@ -531,6 +531,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
       fprintf(fp,"    Plc data is array:         %s\n",paramInfo->plcDataIsArray ? "true" : "false");
       fprintf(fp,"    Plc data type warning:     %s\n",paramInfo->plcDataTypeWarn ? "true" : "false");
       fprintf(fp,"    Ads hCallbackNotify:       %u\n",paramInfo->hCallbackNotify);
+      fprintf(fp,"    Ads CallbackNotify valid:  %s\n",paramInfo->bCallbackNotifyValid ? "true" : "false");
       fprintf(fp,"    Ads hSymbHndle:            %u\n",paramInfo->hSymbolicHandle);
       fprintf(fp,"    Ads hSymbHndleValid:       %s\n",paramInfo->bSymbolicHandleValid ? "true" : "false");
       fprintf(fp,"    Record name:               %s\n",paramInfo->recordName);
@@ -4148,7 +4149,6 @@ extern "C" {
     printf("                            <Maximum parameter count>,\n");
     printf("                            <Asyn priority>,\n");
     printf("                            <Asyn disable auto connect>,\n");
-    printf("                            <Asyn noProcessEOS>,\n");
     printf("                            <Default sample time> [ms],\n");
     printf("                            <Default max delay time [ms]>,\n");
     printf("                            <ADS command timeout [ms]>,\n");
@@ -4162,14 +4162,13 @@ extern "C" {
     printf(" 4. Parameter table size (max parameters)      : 1000 example\n");
     printf(" 5. priority                                   : 0\n");
     printf(" 6. disable auto connect                       : 0 (autoconnect enabled)\n");
-    printf(" 7. noProcessEOS                               : 0\n");
-    printf(" 8. default sample time ms                     : 500 (check if variable changed each 500ms)\n");
-    printf(" 9. max delay time ms (buffer time in plc)     : 1000 (if changed, send data atleast each 1000ms or faster if send buffer is full)\n");
-    printf(" 10. ADS command timeout in ms                 : 1000 (timeout for adsLib commands)\n");
-    printf(" 11. default time source (PLC=0,EPICS=1).      : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn (field(TSE, -2))\n");
+    printf(" 7. default sample time ms                     : 500 (check if variable changed each 500ms)\n");
+    printf(" 8. max delay time ms (buffer time in plc)     : 1000 (if changed, send data atleast each 1000ms or faster if send buffer is full)\n");
+    printf(" 9. ADS command timeout in ms                 : 1000 (timeout for adsLib commands)\n");
+    printf(" 10. default time source (PLC=0,EPICS=1).      : 0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn (field(TSE, -2))\n");
     printf("\n");
     printf(" Resulting adsAsynPortDriverConfigure() command: \n");
-    printf(" adsAsynPortDriverConfigure(\"ADS_1\",\"192.168.88.44\",\"192.168.88.44.1.1\",851,1000, 0, 0,0,50,100,1000,0)\n");
+    printf(" adsAsynPortDriverConfigure(\"ADS_1\",\"192.168.88.44\",\"192.168.88.44.1.1\",851,1000,0,0,50,100,1000,0)\n");
     printf("\n");
     printf("\n");
     printf(" NOTE: An ADS route needs to be added to the TwinCAT router of the controller/PLC:\n");
@@ -4197,7 +4196,6 @@ extern "C" {
                              unsigned int asynParamTableSize,
                              unsigned int priority,
                              int noAutoConnect,
-                             int noProcessEos,
                              int defaultSampleTimeMS,
                              int maxDelayTimeMS,
                              int adsTimeoutMS,
@@ -4249,7 +4247,6 @@ extern "C" {
                                          asynParamTableSize,
                                          priority,
                                          noAutoConnect==0,
-                                         noProcessEos,
                                          defaultSampleTimeMS,
                                          maxDelayTimeMS,
                                          adsTimeoutMS,
@@ -4278,25 +4275,24 @@ extern "C" {
   static const iocshArg adsAsynPortDriverConfigureArg4 = { "asyn param table size",iocshArgInt};
   static const iocshArg adsAsynPortDriverConfigureArg5 = { "priority",iocshArgInt};
   static const iocshArg adsAsynPortDriverConfigureArg6 = { "disable auto-connect",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg7 = { "noProcessEos",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg8 = { "default sample time ms",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg9 = { "max delay time ms",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg10 = { "ADS communication timeout ms",iocshArgInt};
-  static const iocshArg adsAsynPortDriverConfigureArg11 = { "default time source (EPCIS=0,PLC=1)",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg7 = { "default sample time ms",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg8 = { "max delay time ms",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg9 = { "ADS communication timeout ms",iocshArgInt};
+  static const iocshArg adsAsynPortDriverConfigureArg10 = { "default time source (EPCIS=0,PLC=1)",iocshArgInt};
   static const iocshArg *adsAsynPortDriverConfigureArgs[] = {
     &adsAsynPortDriverConfigureArg0, &adsAsynPortDriverConfigureArg1,
     &adsAsynPortDriverConfigureArg2, &adsAsynPortDriverConfigureArg3,
     &adsAsynPortDriverConfigureArg4, &adsAsynPortDriverConfigureArg5,
     &adsAsynPortDriverConfigureArg6, &adsAsynPortDriverConfigureArg7,
     &adsAsynPortDriverConfigureArg8,&adsAsynPortDriverConfigureArg9,
-    &adsAsynPortDriverConfigureArg10,&adsAsynPortDriverConfigureArg11};
+    &adsAsynPortDriverConfigureArg10};
 
   static const iocshFuncDef adsAsynPortDriverConfigureFuncDef =
-    {"adsAsynPortDriverConfigure",12,adsAsynPortDriverConfigureArgs};
+    {"adsAsynPortDriverConfigure",11,adsAsynPortDriverConfigureArgs};
 
   static void adsAsynPortDriverConfigureCallFunc(const iocshArgBuf *args)
   {
-    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival,args[8].ival,args[9].ival,args[10].ival,args[11].ival);
+    adsAsynPortDriverConfigure(args[0].sval,args[1].sval,args[2].sval,args[3].ival, args[4].ival, args[5].ival,args[6].ival,args[7].ival,args[8].ival,args[9].ival,args[10].ival);
   }
 
   /*
