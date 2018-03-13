@@ -479,7 +479,6 @@ void adsAsynPortDriver::report(FILE *fp, int details)
     fprintf(fp, "  Default Ams-port :           %d\n",amsportDefault_);
     fprintf(fp, "  Auto-connect:                %s\n",autoConnect_ ? "true" : "false");
     fprintf(fp, "  Priority:                    %d\n",priority_); //Used?
-    fprintf(fp, "  ProcessEos:                  %s\n",noProcessEos_ ? "false" : "true"); //Inverted
     fprintf(fp, "  Param. table size:           %d\n",paramTableSize_);
     fprintf(fp, "  Param. count:                %d\n",adsParamArrayCount_);
     fprintf(fp, "  ADS command timeout [ms]:    %d\n",adsTimeoutMS_);
