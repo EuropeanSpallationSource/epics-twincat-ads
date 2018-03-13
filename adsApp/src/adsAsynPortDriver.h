@@ -218,7 +218,6 @@ private:
   char                           *ipaddr_;
   char                           *amsaddr_;
   int                            autoConnect_;
-  int                            noProcessEos_;
   int                            adsParamArrayCount_;
   int                            paramTableSize_;
   int                            defaultSampleTimeMS_;
