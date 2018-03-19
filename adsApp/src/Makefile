@@ -12,9 +12,9 @@ USR_LDFLAGS  += -lpthread
 #=============================
 # Build the IOC application
 
-LIBRARY_IOC = adsSupport
+LIBRARY_IOC = ads
 
-DBD += adsSupport.dbd
+DBD += ads.dbd
 
 # Add source files
 ADSSUPPORTSOURCES = \
@@ -29,12 +29,12 @@ ADSSUPPORTSOURCES = \
   Frame.cpp
 
 
-adsSupport_SRCS += adsAsynPortDriver.cpp
-adsSupport_SRCS += adsAsynPortDriverUtils.cpp
-adsSupport_SRCS += ${ADSSUPPORTSOURCES}
+ads_SRCS += adsAsynPortDriver.cpp
+ads_SRCS += adsAsynPortDriverUtils.cpp
+ads_SRCS += ${ADSSUPPORTSOURCES}
 
-adsSupport_LIBS += asyn
-adsSupport_LIBS += $(EPICS_BASE_IOC_LIBS)
+ads_LIBS += asyn
+ads_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 
 #===========================
