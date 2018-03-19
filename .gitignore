@@ -5,6 +5,8 @@
 adsApp/Db/O.*
 adsApp/src/O.*
 adsApp/src/Debug
+adsExApp/Db/O.*
+adsExApp/src/O.*
 bin/
 builddir/
 configure/O.*
