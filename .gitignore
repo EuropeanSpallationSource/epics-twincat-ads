@@ -14,7 +14,8 @@ configure/RELEASE_LIBS.local
 configure/RELEASE_PATHS.local
 db/
 dbd/
-iocBoot/iocads/
+iocBoot/
+lib/
 TwinCAT/demo_project/MCAG_Base_Project/_Boot*
 TwinCAT/demo_project/MCAG_Base_Project/_Configure*
 TwinCAT/demo_project/MCAG_Base_Project/MCAG_PLC_Project/_CompileInfo*

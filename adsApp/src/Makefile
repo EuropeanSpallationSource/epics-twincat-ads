@@ -13,11 +13,9 @@ USR_LDFLAGS  += -lpthread
 # Build the IOC application
 
 LIBRARY_IOC = adsSupport
-DBD += adsController.dbd
 
-adsSupport_LIBS += asyn
+DBD += adsSupport.dbd
 
-# ads_registerRecordDeviceDriver.cpp derives from ads.dbd
 # Add source files
 ADSSUPPORTSOURCES = \
   AdsDef.cpp \
@@ -28,18 +26,15 @@ ADSSUPPORTSOURCES = \
   Log.cpp \
   NotificationDispatcher.cpp \
   Sockets.cpp \
-  Frame.cpp \
+  Frame.cpp
 
 
-ads_SupportSRCS += ads_registerRecordDeviceDriver.cpp
-ads_SupportSRCS += adsCom.cpp 
-ads_SupportSRCS += drvAsynAdsPort.cpp
-ads_SupportSRCS += cmd.c
-ads_SupportSRCS += cmd_EAT.c
-ads_SupportSRCS += ads_registerRecordDeviceDriver.cpp
-ads_SupportSRCS += adsAsynPortDriver.cpp
-ads_SupportSRCS += adsAsynPortDriverUtils.cpp
-ads_SupportSRCS += ${ADSSUPPORTSOURCES}
+adsSupport_SRCS += adsAsynPortDriver.cpp
+adsSupport_SRCS += adsAsynPortDriverUtils.cpp
+adsSupport_SRCS += ${ADSSUPPORTSOURCES}
+
+adsSupport_LIBS += asyn
+adsSupport_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 
 #===========================
