@@ -20,13 +20,13 @@ getAxisStatus{
 	in "%s";
 }
 
-getITest{
-        out "Main.iTest?";
+getICycleCounter{
+        out "Main.iCycleCounter?";
 	in "%d";
 }
 
-setITest{
-        out "Main.iTest=%d";
+setICycleCounter{
+        out "Main.iCycleCounter=%d";
 	in "OK";
 }
 

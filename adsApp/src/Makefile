@@ -7,13 +7,13 @@ include $(TOP)/configure/CONFIG
 
 USR_CXXFLAGS += -std=c++11
 USR_CPPFLAGS += -I ../../../ADS/AdsLib/
+USR_LDFLAGS  += -lpthread
 
 #=============================
 # Build the IOC application
 
 LIBRARY_IOC = adsSupport
-# ads.dbd will be created and installed
-DBD += adsSupport.dbd
+DBD += adsController.dbd
 
 adsSupport_LIBS += asyn
 
@@ -36,8 +36,11 @@ ads_SupportSRCS += adsCom.cpp
 ads_SupportSRCS += drvAsynAdsPort.cpp
 ads_SupportSRCS += cmd.c
 ads_SupportSRCS += cmd_EAT.c
+ads_SupportSRCS += ads_registerRecordDeviceDriver.cpp
+ads_SupportSRCS += adsAsynPortDriver.cpp
+ads_SupportSRCS += adsAsynPortDriverUtils.cpp
+ads_SupportSRCS += ${ADSSUPPORTSOURCES}
 
-ads_SRCS += ${ADSSUPPORTSOURCES}
 
 #===========================
 
