@@ -1,6 +1,0 @@
-file "adsGeneral.template"
-{
-pattern
-{P,      PORT}
-{ADSTEST:,  ADS_1}
-}

@@ -31,18 +31,13 @@ ADSSOURCES = \
 
 
 SOURCES = \
-  adsApp/src/adsCom.cpp \
-  adsApp/src/drvAsynAdsPort.cpp \
-  adsApp/src/cmd.c \
-  adsApp/src/cmd_EAT.c \
+  adsApp/src/adsAsynPortDriver.cpp \
+  adsApp/src/adsAsynPortDriverUtils.cpp\
   ${ADSSOURCES}
 
 
 TEMPLATES = \
-  adsApp/Db/adsGeneral.template \
-  adsApp/Db/DUT_AxisStatus_v0_01.template\
-  adsApp/Db/FB_DriveVirtual_v1_01.template\
-  adsApp/Db/adsTest.db\
-
+  adsApp/Db/adsTestOctet.db\
+  adsApp/Db/adsTestAsyn.db\
 
 
