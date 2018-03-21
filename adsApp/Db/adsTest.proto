@@ -20,6 +20,11 @@ getAxisStatus{
 	in "%s";
 }
 
+getStackedCmd{
+	out "Main.iCycleCounter?;Main.fAmplitude?";
+	in "%#s";
+}
+
 getICycleCounter{
         out "Main.iCycleCounter?";
 	in "%d";
