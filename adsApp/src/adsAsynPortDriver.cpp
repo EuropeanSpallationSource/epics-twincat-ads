@@ -1614,7 +1614,7 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
     int nvals=sscanf(myarg_1,"%" SCNu16,&amsPort);
     if(nvals!=1){
       err_code=ADS_COM_ERROR_OCTET_ADSPORT_OPTION_FAIL;
-      OCTET_RETURN_ERROR(buffer,err_code,"%s\n","ADS_COM_ERROR_OCTET_ADSPORT_OPTION_FAIL");
+      OCTET_RETURN_ERROR(buffer,err_code,"%s","ADS_COM_ERROR_OCTET_ADSPORT_OPTION_FAIL");
     }
     myarg_1=strchr(myarg_1, '/');
     myarg_1++;
@@ -1655,7 +1655,7 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
     adr++; //Jump over '='
     err_code = octetAdsWriteByName(amsPort,variableName,adr,buffer);
     if (err_code) {
-      OCTET_RETURN_ERROR(buffer,err_code,"%s\n",adsErrorToString(err_code));
+      OCTET_RETURN_ERROR(buffer,err_code,"%s",adsErrorToString(err_code));
     }
     octetCmdBuf_printf(buffer,"OK");
     return 0;
@@ -1670,7 +1670,7 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
     variableName[adr-myarg_1]=0;
     err_code = octetAdsReadByName(amsPort,variableName,buffer);
     if (err_code) {
-      OCTET_RETURN_ERROR(buffer,err_code,"%s\n",adsErrorToString(err_code));
+      OCTET_RETURN_ERROR(buffer,err_code,"%s",adsErrorToString(err_code));
     }
     return 0;
   }
@@ -1729,7 +1729,7 @@ int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,
 
     int error=octetAdsWriteByGroupOffset(amsport,(uint32_t)group_no,(uint32_t) offset_in_group,(uint16_t)type_in_PLC,(uint32_t)len_in_PLC,myarg_1,buffer);
     if (error){
-      OCTET_RETURN_ERROR(buffer,error,"%s\n",adsErrorToString(error));
+      OCTET_RETURN_ERROR(buffer,error,"%s",adsErrorToString(error));
     }
     octetCmdBuf_printf(buffer,"OK");
     return 0;
@@ -1748,7 +1748,7 @@ int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,
 
     int error=octetAdsReadByGroupOffset(amsport,&info,buffer);
     if (error){
-      OCTET_RETURN_ERROR(buffer,error,"%s\n",adsErrorToString(error));
+      OCTET_RETURN_ERROR(buffer,error,"%s",adsErrorToString(error));
     }
     return 0;
   }
