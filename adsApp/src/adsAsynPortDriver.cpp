@@ -418,7 +418,7 @@ void adsAsynPortDriver::cyclicThread()
         asynPrint(pasynUserSelf, ASYN_TRACE_INFO,"%s:%s: Device \"%s\" %s (Ams-port %u, Ams router version %u.%u.%u).\n",driverName,functionName,port->devName,port->connected ? "connected" : "disconnected",port->amsPort,port->version.version,port->version.revision,port->version.build);
       }
       if(port->adsStateOld!=port->adsState){
-        //If amsrouter is a asyn paramter then update
+        //If Ams-router is a asyn paramter then update
         if(port->paramInfo){
           if(port->paramInfo->dataSource==ADS_DATASOURCE_AMS_STATE){
             void * pData=(void *)&port->adsState;
@@ -478,7 +478,7 @@ void adsAsynPortDriver::report(FILE *fp, int details)
     fprintf(fp, "  Ams-address:                 %s\n",amsaddr_);
     fprintf(fp, "  Default Ams-port :           %d\n",amsportDefault_);
     fprintf(fp, "  Auto-connect:                %s\n",autoConnect_ ? "true" : "false");
-    fprintf(fp, "  Priority:                    %d\n",priority_); //Used?
+    fprintf(fp, "  Priority:                    %d\n",priority_);
     fprintf(fp, "  Param. table size:           %d\n",paramTableSize_);
     fprintf(fp, "  Param. count:                %d\n",adsParamArrayCount_);
     fprintf(fp, "  ADS command timeout [ms]:    %d\n",adsTimeoutMS_);
@@ -883,17 +883,17 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
     }
   }
 
-  //check if array
+  // Check if array
   bool isArray=false;
   switch (paramInfo->plcDataType) {
     case ADST_VOID:
       isArray=false;
       break;
     case ADST_STRING:
-      isArray=true;  //Special case
+      isArray=true;  // Special case
       break;
     case ADST_WSTRING:
-      isArray=true;  //Special case?
+      isArray=true;  // Special case?
       break;
     case ADST_BIGTYPE:
       isArray=false;
@@ -940,12 +940,11 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
 
   }
 
-  //Make first read
+  // Make first read
   long errorCode=0;
   status = adsReadParam(paramInfo,&errorCode,0);
   if(status!=asynSuccess){
-    //asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: adsReadParam failed with errorcode %s (%ld).\n.", driverName, functionName,adsErrorToString(errorCode),errorCode);
-    // try read again
+    // Try read again
     asynStatus stat=adsReadParam(paramInfo,&errorCode,0);
     if(stat!=asynSuccess){
       paramInfo->refreshNeeded=true;
@@ -994,7 +993,7 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
           char currdrvInfo[ADS_MAX_FIELD_CHAR_LENGTH];
           int nvals=sscanf(paramInfo->inp,"@asyn(%[^,],%d,%d)%s",port,&adr,&timeout,currdrvInfo);
           if(nvals==4){
-            //Ensure correct port and drvinfo
+            // Ensure correct port and drvinfo
             if(strcmp(port,portName)==0 && strcmp(drvInfo,currdrvInfo)==0){
               recordFound=true;  // Correct port and drvinfo!\n");
             }
@@ -1013,7 +1012,7 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
           char currdrvInfo[ADS_MAX_FIELD_CHAR_LENGTH];
           int nvals=sscanf(paramInfo->out,"@asyn(%[^,],%d,%d)%s",port,&adr,&timeout,currdrvInfo);
           if(nvals==4){
-            //Ensure correct port and drvinfo
+            // Ensure correct port and drvinfo
             if(strcmp(port,portName)==0 && strcmp(drvInfo,currdrvInfo)==0){
               recordFound=true;  // Correct port and drvinfo!\n");
             }
@@ -1298,7 +1297,6 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
   }
 
   if(!newAmsPort){
-    //asynPrint(pasynUserSelf, ASYN_TRACE_INFO, "%s:%s: Amsport %d already in list.\n", driverName, functionName,amsPort);
     return asynSuccess;
   }
 
@@ -1448,12 +1446,6 @@ int adsAsynPortDriver::octetCMDreadIt(char *outbuf, size_t outlen)
     return ret;
   }
 
-  /*if (PRINT_STDOUT_BIT1() && stdout) {
-    fprintf(stdout,"%s/%s:%d OUT=\"", __FILE__, __FUNCTION__, __LINE__);
-    cmd_dump_to_std(outbuf, strlen(outbuf));
-    fprintf(stdout,"\"\n");
-  }*/
-
   if(ret>=(int)outlen+1){
     ret=outlen;
   }
@@ -1494,7 +1486,7 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
   asynStatus status = asynError;
 
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
-            "%s write.\n", /*ecmcController_p->*/portName);
+            "%s write.\n",portName);
   asynPrintIO(pasynUser, ASYN_TRACEIO_DRIVER, value, maxChars,
               "%s write %lu\n",
               portName,
@@ -1505,11 +1497,18 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
     return asynSuccess;
   }
   //lock();
-  if (!(octetCMDwriteIt(value, maxChars))) {
-    thisWrite = maxChars;
-    *nActual = thisWrite;
-    status = asynSuccess;
+  int errorCode=octetCMDwriteIt(value, maxChars);
+  if (errorCode){
+    /*Return asyn error if communication is down (all client errors) otherwise asynSucces
+     * but error message in buffer*/
+    if (errorCode>=ADSERR_CLIENT_ERROR){
+      return asynError;
+    }
   }
+  status = asynSuccess;
+  thisWrite = maxChars;
+  *nActual = thisWrite;
+
   //unlock();
   asynPrint(pasynUser, ASYN_TRACE_FLOW,
             "%s wrote %lu return %s.\n",
@@ -1537,12 +1536,6 @@ int adsAsynPortDriver::octetCMDwriteIt(const char *inbuf, size_t inlen)
   char *new_buf = (char *)inbuf;
   if (!inbuf || !inlen) return -1;
 
-/*  if (PRINT_STDOUT_BIT1() && stdout) {
-    fprintf(stdout,"%s/%s:%d IN=\"", __FILE__, __FUNCTION__, __LINE__);
-    cmd_dump_to_std(inbuf, inlen);
-    fprintf(stdout,"\"\n");
-  }*/
-
   new_buf = (char *)malloc(inlen + 1);
   memcpy(new_buf, inbuf, inlen);
   new_buf[inlen] = 0;
@@ -1561,12 +1554,9 @@ int adsAsynPortDriver::octetCMDwriteIt(const char *inbuf, size_t inlen)
   errorCode = octetCmdHandleInputLine(new_buf,&octetAsciiBuffer_);
   free(new_buf);
 
-  if (errorCode) {
-    OCTET_RETURN_ERROR_OR_DIE(&octetAsciiBuffer_,__LINE__, "%s/%s:%d octetCmdHandleInputLine() returned error: 0x%x.",
-                        __FILE__, __FUNCTION__, __LINE__,errorCode);
-  }
   octetCmdBuf_printf(&octetAsciiBuffer_,"%s%s",had_cr ? "\r" : "", had_lf ? "\n" : "");
-  return 0;
+
+  return errorCode;
 }
 
 int adsAsynPortDriver::octetCmdHandleInputLine(const char *input_line, adsOctetOutputBufferType *buffer)
@@ -1580,11 +1570,11 @@ int adsAsynPortDriver::octetCmdHandleInputLine(const char *input_line, adsOctetO
                               (const char*** )&my_argv,
                               (char*** )&my_sepv);
 
+  int errorCodeLatch =0;
   for (int i = 1; i <= argc; i++) {
-    int errorCode=octetMotorHandleOneArg(my_argv[i],buffer);
-    if(errorCode){
-      OCTET_RETURN_ERROR_OR_DIE(buffer,errorCode, "%s/%s:%d motorHandleOneArg returned errorcode: 0x%x\n",
-                                __FILE__, __FUNCTION__, __LINE__,errorCode);
+    int errorCode = octetMotorHandleOneArg(my_argv[i],buffer);  //Continue with next cmd even if error
+    if(errorCode && !errorCodeLatch){ //latch first error code for stacked commands
+      errorCodeLatch=errorCode;
     }
     octetCmdBuf_printf(buffer,"%s", my_sepv[i]);
   }
@@ -1597,12 +1587,7 @@ int adsAsynPortDriver::octetCmdHandleInputLine(const char *input_line, adsOctetO
   free(my_argv);
   free(my_sepv);
 
-/*  if (PRINT_STDOUT_BIT2()) {
-    fprintf(stdout, "%s/%s:%d (%u)\n",
-            __FILE__, __FUNCTION__, __LINE__,
-            counter++);
-  }*/
-  return 0;
+  return errorCodeLatch;  //First encountered error code
 }
 
 /** Parse one ascii command.\
@@ -1619,19 +1604,17 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Command: %s\n", driverName, functionName,myarg_1);
 
   //const char *myarg = myarg_1;
-  int err_code;
+  int err_code=0;
 
   uint16_t amsPort=amsportDefault_; //should actually be called amsport ( 851 for first plc as default) ...
 
   /* ADSPORT= */
   if (!strncmp(myarg_1, ADS_OPTION_ADSPORT, strlen(ADS_OPTION_ADSPORT))) {
-    myarg_1 += strlen(ADS_OPTION_ADSPORT)+1; //+1 beacuse equal sign
+    myarg_1 += strlen(ADS_OPTION_ADSPORT)+1; //+1 Because equal sign
     int nvals=sscanf(myarg_1,"%" SCNu16,&amsPort);
     if(nvals!=1){
-      OCTET_RETURN_ERROR_OR_DIE(buffer,__LINE__,"%s/%s:%d myarg_1=%s err_code=%d: ADS port parse error",
-                      __FILE__, __FUNCTION__, __LINE__,
-                      myarg_1,
-                      __LINE__);
+      err_code=ADS_COM_ERROR_OCTET_ADSPORT_OPTION_FAIL;
+      OCTET_RETURN_ERROR(buffer,err_code,"%s\n","ADS_COM_ERROR_OCTET_ADSPORT_OPTION_FAIL");
     }
     myarg_1=strchr(myarg_1, '/');
     myarg_1++;
@@ -1654,14 +1637,10 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
     myarg_1 = adr;
 
     err_code = octetMotorHandleADRCmd(myarg_1,amsPort,buffer);
-    if (err_code == -1) return 0;
-    if (err_code == 0) {
+    if (err_code == -1 || err_code == 0) {
       return 0;
     }
-    OCTET_RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
-                  __FILE__, __FUNCTION__, __LINE__,
-                  myarg_1,
-                  err_code);
+    OCTET_RETURN_ERROR(buffer,err_code,"%s\n",adsErrorToString(err_code));
   }
 
   char variableName[255];
@@ -1676,10 +1655,7 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
     adr++; //Jump over '='
     err_code = octetAdsWriteByName(amsPort,variableName,adr,buffer);
     if (err_code) {
-      OCTET_RETURN_ERROR_OR_DIE(buffer,err_code,"%s/%s:%d myarg_1=%s err_code=%d",
-                          __FILE__, __FUNCTION__, __LINE__,
-                          myarg_1,
-                          err_code);
+      OCTET_RETURN_ERROR(buffer,err_code,"%s\n",adsErrorToString(err_code));
     }
     octetCmdBuf_printf(buffer,"OK");
     return 0;
@@ -1693,10 +1669,13 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
     strncpy(variableName,myarg_1,adr-myarg_1);
     variableName[adr-myarg_1]=0;
     err_code = octetAdsReadByName(amsPort,variableName,buffer);
-    return err_code;
+    if (err_code) {
+      OCTET_RETURN_ERROR(buffer,err_code,"%s\n",adsErrorToString(err_code));
+    }
+    return 0;
   }
   /*  if we come here, it is a bad command */
-  octetCmdBuf_printf(buffer,"Error bad command");
+  octetCmdBuf_printf(buffer,"Error: Bad command");
   return 0;
 }
 
@@ -1713,7 +1692,7 @@ int adsAsynPortDriver::octetMotorHandleOneArg(const char *myarg_1,adsOctetOutput
  */
 int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,adsOctetOutputBufferType *buffer)
 {
-  const char* functionName = "octetMotorHandleOneArg";
+  const char* functionName = "octetMotorHandleADRCmd";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Command: %s, amsPort: %d\n",driverName,functionName,arg,(int)amsport);
 
   const char *myarg_1 = NULL;
@@ -1750,11 +1729,7 @@ int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,
 
     int error=octetAdsWriteByGroupOffset(amsport,(uint32_t)group_no,(uint32_t) offset_in_group,(uint16_t)type_in_PLC,(uint32_t)len_in_PLC,myarg_1,buffer);
     if (error){
-      OCTET_RETURN_ERROR_OR_DIE(buffer,error,"%s/%s:%d myarg_1=%s err_code=%d",
-                __FILE__, __FUNCTION__, __LINE__,
-                myarg_1,
-                error);
-        return error;
+      OCTET_RETURN_ERROR(buffer,error,"%s\n",adsErrorToString(error));
     }
     octetCmdBuf_printf(buffer,"OK");
     return 0;
@@ -1773,12 +1748,7 @@ int adsAsynPortDriver::octetMotorHandleADRCmd(const char *arg, uint16_t amsport,
 
     int error=octetAdsReadByGroupOffset(amsport,&info,buffer);
     if (error){
-      OCTET_RETURN_ERROR_OR_DIE(buffer,error,"%s/%s:%d myarg_1=%s err_code=%d",
-                __FILE__, __FUNCTION__, __LINE__,
-                myarg_1,
-                error);
-
-        return error;
+      OCTET_RETURN_ERROR(buffer,error,"%s\n",adsErrorToString(error));
     }
     return 0;
   }
@@ -1802,9 +1772,10 @@ int adsAsynPortDriver::octetAdsReadByName(uint16_t amsPort,const char *variableA
   adsSymbolEntry infoStruct;
   memset(&infoStruct,0,sizeof(infoStruct));
 
-  asynStatus stat=adsGetSymInfoByName(amsPort,variableAddr,&infoStruct);
+  long errorCode=0;
+  asynStatus stat=adsGetSymInfoByName(amsPort,variableAddr,&infoStruct,&errorCode);
   if (stat!=asynSuccess) {
-    return stat;
+    return errorCode;
   }
 
   return octetAdsReadByGroupOffset(amsPort,&infoStruct,outBuffer);
@@ -1828,9 +1799,10 @@ int adsAsynPortDriver::octetAdsWriteByName(uint16_t amsPort,const char *variable
   adsSymbolEntry infoStruct;
   memset(&infoStruct,0,sizeof(infoStruct));
 
-  asynStatus stat=adsGetSymInfoByName(amsPort,variableAddr,&infoStruct);
+  long errorCode=0;
+  asynStatus stat=adsGetSymInfoByName(amsPort,variableAddr,&infoStruct,&errorCode);
   if (stat!=asynSuccess) {
-    return stat;
+    return errorCode;
   }
 
  return octetAdsWriteByGroupOffset(amsPort,infoStruct.iGroup,infoStruct.iOffset,infoStruct.dataType,infoStruct.size,asciiValueToWrite,outBuffer);
@@ -2629,7 +2601,7 @@ asynStatus adsAsynPortDriver::adsGetSymHandleByName(adsParamInfo *paramInfo,bool
   adsUnlock();
   if (handleStatus) {
     if(!blockErrorMsg){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (%ld)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(handleStatus),handleStatus);
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Create handle for %s failed with: %s (0x%lx)\n", driverName, functionName,paramInfo->plcAdrStr,adsErrorToString(handleStatus),handleStatus);
     }
     return asynError;
   }
@@ -2673,7 +2645,7 @@ asynStatus adsAsynPortDriver::adsAddSymbolsChangedCallback(amsPortInfo *port)
                                                      &hNotify);
   adsUnlock();
   if (addStatus){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
     return asynError;
   }
 
@@ -2706,7 +2678,7 @@ asynStatus adsAsynPortDriver::adsDelSymbolsChangedCallback(amsPortInfo *port)
   port->hCallbackNotify=-1;
 
   if (delStatus){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
     return asynError;
   }
 
@@ -2790,7 +2762,7 @@ asynStatus adsAsynPortDriver::adsAddDataCallback(adsParamInfo *paramInfo)
                                                      &hNotify);
   adsUnlock();
   if (addStatus){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Add device notification failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(addStatus),addStatus);
     return asynError;
   }
 
@@ -2836,7 +2808,7 @@ asynStatus adsAsynPortDriver::adsDelDataCallback(adsParamInfo *paramInfo,bool bl
   adsUnlock();
   if (delStatus){
     if(!blockErrorMsg){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Delete device notification failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(delStatus),delStatus);
     }
     return asynError;
   }
@@ -2853,6 +2825,21 @@ asynStatus adsAsynPortDriver::adsDelDataCallback(adsParamInfo *paramInfo,bool bl
  * \return asynSuccess or asynError.
  */
 asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *varName, adsSymbolEntry *info)
+{
+  long errorCode=0;
+  return adsGetSymInfoByName(amsPort,varName,info,&errorCode);
+}
+
+/** Get symbolic information for a plc variable.
+ *
+ * \param[in] amsPort Ams-port
+ * \param[in] varName Symbolic name of variable.
+ * \param[out] info Information structure.
+ * \param[out] errorCode Ads error code.
+ *
+ * \return asynSuccess or asynError.
+ */
+asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *varName, adsSymbolEntry *info,long *errorCode)
 {
   const char* functionName = "adsGetSymInfoByName";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Variable name: %s, amsPort: %d.\n", driverName, functionName,varName,(int)amsPort);
@@ -2877,9 +2864,10 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *v
                                                  varName,
                                                  &bytesRead);
   adsUnlock();
+  *errorCode=infoStatus;
 
   if (infoStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (%ld)\n", driverName, functionName,varName,adsErrorToString(infoStatus),infoStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (0x%lx)\n", driverName, functionName,varName,adsErrorToString(infoStatus),infoStatus);
     return asynError;
   }
 
@@ -2977,14 +2965,14 @@ asynStatus adsAsynPortDriver::adsConnect()
   long status=AdsSyncGetTimeoutEx(adsPort_,&defaultTimeout);
   adsUnlock();
   if(status) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncGetTimeoutEx failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(status),status);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncGetTimeoutEx failed with: %s (0x%lx).\n", driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
   adsLock();
   status=AdsSyncSetTimeoutEx(adsPort_,(uint32_t)adsTimeoutMS_);
   adsUnlock();
   if(status) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncSetTimeoutEx failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(status),status);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncSetTimeoutEx failed with: %s (0x%lx).\n", driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
 
@@ -3011,7 +2999,7 @@ asynStatus adsAsynPortDriver::adsReadVersion(amsPortInfo *port)
   long status=AdsSyncReadDeviceInfoReqEx(adsPort_,&amsServer,devName,&version);
   adsUnlock();
   if(status) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncReadDeviceInfoReqEx failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(status),status);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: AdsSyncReadDeviceInfoReqEx failed with: %s (0x%lx).\n", driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
 
@@ -3033,7 +3021,7 @@ asynStatus adsAsynPortDriver::adsDisconnect()
   const long closeStatus = AdsPortCloseEx(adsPort_);
   adsUnlock();
   if (closeStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Close ADS port failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(closeStatus),closeStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Close ADS port failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(closeStatus),closeStatus);
     return asynError;
   }
 
@@ -3076,7 +3064,7 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
   adsUnlock();
   if (releaseStatus && !blockErrorMsg) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %s (%ld)\n", driverName, functionName,paramInfo->hSymbolicHandle,adsErrorToString(releaseStatus),releaseStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %s (0x%lx)\n", driverName, functionName,paramInfo->hSymbolicHandle,adsErrorToString(releaseStatus),releaseStatus);
     return asynError;
   }
 
@@ -3148,14 +3136,14 @@ asynStatus adsAsynPortDriver::adsWriteParam(adsParamInfo *paramInfo,const void *
                                       binaryBuffer);
   adsUnlock();
   if (writeStatus) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write failed with: %s (%ld)\n", driverName, functionName,adsErrorToString(writeStatus),writeStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(writeStatus),writeStatus);
     return asynError;
   }
 
   gettimeofday(&end, NULL);
   secs_used=(end.tv_sec - start.tv_sec); //avoid overflow by subtracting first
   micros_used= ((secs_used*1000000) + end.tv_usec) - (start.tv_usec);
-  asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER , "%s:%s: ADS write: micros used: %ld\n", driverName, functionName,micros_used);
+  asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER , "%s:%s: ADS write: micros used: 0x%lx\n", driverName, functionName,micros_used);
 
   return asynSuccess;
 }
@@ -3336,9 +3324,8 @@ asynStatus adsAsynPortDriver::adsReadState(uint16_t amsport,uint16_t *adsState,b
   adsUnlock();
   if (status) {
     if(!blockErrorMsg){
-      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (0x%lx)\n",driverName, functionName,adsErrorToString(status),status);
     }
-    //asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS read state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
 
@@ -3360,7 +3347,7 @@ asynStatus adsAsynPortDriver::adsWriteState(uint16_t amsport,uint16_t adsState)
   AmsAddr amsServer={remoteNetId_,amsport};
   const long status = AdsSyncWriteControlReqEx (adsPort_,&amsServer, adsState, 0, 0, pData);
   if(status){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write state failed with: %s (%ld)\n",driverName, functionName,adsErrorToString(status),status);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ADS write state failed with: %s (0x%lx)\n",driverName, functionName,adsErrorToString(status),status);
     return asynError;
   }
 
@@ -4121,7 +4108,7 @@ asynStatus adsAsynPortDriver::adsAddRouteLock()
   const long addRouteStatus =AdsAddRoute(remoteNetId_, ipaddr_);
   adsUnlock();
   if(addRouteStatus){
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Adding ADS route failed with: %s (%ld).\n", driverName, functionName,adsErrorToString(addRouteStatus),addRouteStatus);
+    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Adding ADS route failed with: %s (0x%lx).\n", driverName, functionName,adsErrorToString(addRouteStatus),addRouteStatus);
     return asynError;
   }
   routeAdded_=1;

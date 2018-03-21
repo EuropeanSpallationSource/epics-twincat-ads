@@ -16,6 +16,11 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
+//Error codes
+#define ADS_COM_ERROR_INVALID_DATA_TYPE 1004
+#define ADS_COM_ERROR_ADS_READ_BUFFER_INDEX_EXCEEDED_SIZE 1005
+#define ADS_COM_ERROR_BUFFER_TO_EPICS_FULL 1006
+#define ADS_COM_ERROR_OCTET_ADSPORT_OPTION_FAIL 1007
 
 #define ADS_MAX_FIELD_CHAR_LENGTH 128
 #define ADS_ADR_COMMAND_PREFIX ".ADR."
@@ -156,11 +161,10 @@ int windowsToEpicsTimeStamp(uint64_t plcTime, epicsTimeStamp *ts);
 #define DUT_AXIS_STATUS "DUT_AxisStatus_v0_01"
 #define ADS_CMD_BUFFER_SIZE 65536
 
-#define OCTET_RETURN_ERROR_OR_DIE(buffer,errcode,fmt, ...)   \
+#define OCTET_RETURN_ERROR(buffer,errcode,fmt, ...)   \
   do {                                            \
     octetCmdBuf_printf(buffer,"Error: ");             \
     octetCmdBuf_printf(buffer,fmt, ##__VA_ARGS__);    \
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, fmt, ##__VA_ARGS__);   \
     return errcode;                               \
   }                                               \
   while(0)

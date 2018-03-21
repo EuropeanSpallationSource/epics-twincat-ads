@@ -133,6 +133,10 @@ private:
   asynStatus adsGetSymInfoByName(uint16_t amsPort,
                                  const char * varName,
                                  adsSymbolEntry * info);
+  asynStatus adsGetSymInfoByName(uint16_t amsPort,
+                                 const char *varName,
+                                 adsSymbolEntry *info,
+                                 long *errorCode);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo,
                                    bool blockErrorMsg);
