@@ -13,11 +13,6 @@
 #include <initHooks.h>
 #include "epicsTime.h"
 
-
-#define ADS_COM_ERROR_INVALID_DATA_TYPE 1004
-#define ADS_COM_ERROR_ADS_READ_BUFFER_INDEX_EXCEEDED_SIZE 1005
-#define ADS_COM_ERROR_BUFFER_TO_EPICS_FULL 1006
-
 typedef struct {
     char bEnable;
     char bReset;

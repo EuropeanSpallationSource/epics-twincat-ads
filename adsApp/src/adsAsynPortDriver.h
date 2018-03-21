@@ -133,6 +133,10 @@ private:
   asynStatus adsGetSymInfoByName(uint16_t amsPort,
                                  const char * varName,
                                  adsSymbolEntry * info);
+  asynStatus adsGetSymInfoByName(uint16_t amsPort,
+                                 const char *varName,
+                                 adsSymbolEntry *info,
+                                 long *errorCode);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo);
   asynStatus adsGetSymHandleByName(adsParamInfo *paramInfo,
                                    bool blockErrorMsg);
@@ -218,7 +222,6 @@ private:
   char                           *ipaddr_;
   char                           *amsaddr_;
   int                            autoConnect_;
-  int                            noProcessEos_;
   int                            adsParamArrayCount_;
   int                            paramTableSize_;
   int                            defaultSampleTimeMS_;
