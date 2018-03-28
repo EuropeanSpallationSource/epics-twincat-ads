@@ -37,7 +37,7 @@ SOURCES = \
 
 
 TEMPLATES = \
-  adsApp/Db/adsTestOctet.db\
-  adsApp/Db/adsTestAsyn.db\
+  adsExApp/Db/adsTestOctet.db\
+  adsExApp/Db/adsTestAsyn.db\
 
 
