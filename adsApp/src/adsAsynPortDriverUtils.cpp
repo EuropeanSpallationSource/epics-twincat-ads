@@ -10,6 +10,7 @@
 
 #include "adsAsynPortDriverUtils.h"
 #include <string.h>
+#include <stdlib.h>
 #include <initHooks.h>
 #include "epicsTime.h"
 

@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
@@ -150,8 +151,10 @@ static void adsDataCallback(const AmsAddr* pAddr, const AdsNotificationHeader* p
 
   asynPrint(asynTraceUser, ASYN_TRACEIO_DRIVER,"Callback for parameter %s (%d).\n",paramInfo->drvInfo,paramInfo->paramIndex);
   asynPrint(asynTraceUser, ASYN_TRACEIO_DRIVER,"hUser 0x%x, data size[b]: %d.\n", hUser,pNotification->cbSampleSize);
-  asynPrint(asynTraceUser, ASYN_TRACEIO_DRIVER,"time stamp [100ns]: %ld, since last plc [ms]: %4.2lf, since last ioc [ms]: %4.2lf.\n",
-            pNotification->nTimeStamp,((double)(pNotification->nTimeStamp-oldTimeStamp))/10000.0,(((double)(micros_used))/1000.0));
+  asynPrint(asynTraceUser, ASYN_TRACEIO_DRIVER,"time stamp [100ns]: %" PRIuMAX ", since last plc [ms]: %4.2lf, since last ioc [ms]: %4.2lf.\n",
+            (uintmax_t)pNotification->nTimeStamp,
+            ((double)(pNotification->nTimeStamp-oldTimeStamp))/10000.0,
+            (((double)(micros_used))/1000.0));
   oldTimeStamp=pNotification->nTimeStamp;
 
   //Ensure hUser is equal to parameter index
@@ -3402,7 +3405,8 @@ int adsAsynPortDriver::getAdsParamCount()
 asynStatus adsAsynPortDriver::refreshParamTime(adsParamInfo *paramInfo)
 {
   const char* functionName = "refreshParamTime";
-  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: plcTime %lu.\n", driverName, functionName,paramInfo->plcTimeStampRaw);
+  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: plcTime %" PRIuMAX ".\n", driverName, functionName,
+            (uintmax_t)paramInfo->plcTimeStampRaw);
 
   //Convert plc timeStamp (windows format) to epicsTimeStamp
   if(windowsToEpicsTimeStamp(paramInfo->plcTimeStampRaw,&paramInfo->plcTimeStamp)){
@@ -4211,12 +4215,12 @@ extern "C" {
       defaultSampleTimeMS=100;
     }
 
-    if (!maxDelayTimeMS<0) {
+    if (maxDelayTimeMS <= 0) {
       printf("adsAsynPortDriverConfigure bad maxDelayTimeMS: %dms. Standard value of 500ms will be used.\n",maxDelayTimeMS);
       maxDelayTimeMS=500;
     }
 
-    if (!adsTimeoutMS<0) {
+    if (adsTimeoutMS <= 0) {
       printf("adsAsynPortDriverConfigure bad adsTimeoutMS: %dms. Standard value of 2000ms will be used.\n",adsTimeoutMS);
       adsTimeoutMS=2000;
     }
