@@ -39,5 +39,6 @@ SOURCES = \
 TEMPLATES = \
   adsExApp/Db/adsTestOctet.db\
   adsExApp/Db/adsTestAsyn.db\
+  adsExApp/Db/target.db\
 
 

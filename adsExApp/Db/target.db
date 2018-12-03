@@ -1,0 +1,38 @@
+#record(ai,"$(P)GetMotorTemp"){
+#  field(PINI, "1")
+#  field(TSE, -2)
+#  field(DTYP, "asynInt32")
+#  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Global_IO.iiAnalogueIn_1?")
+#  field(PREC, "3")
+#  field(SCAN,"I/O Intr")
+#}
+
+record(bo,"$(P)SetMotorEnable"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bEnable=")
+  field(SCAN,"Passive")
+  field(ZNAM,"Zero")
+  field(ONAM,"One")
+}
+
+record(bi,"$(P)GetMotorEnable"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bEnable?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Zero")
+  field(ONAM,"One")
+}
+
+record(bi,"$(P)GetMotorEnabled"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bEnabled?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Zero")
+  field(ONAM,"One")
+}
