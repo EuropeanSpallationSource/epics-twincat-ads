@@ -6,7 +6,7 @@ include $(TOP)/configure/CONFIG
 #=============================
 
 USR_CXXFLAGS += -std=c++11
-USR_CPPFLAGS += -I ../../../ADS/AdsLib/
+USR_CPPFLAGS += -I ../../../BeckhoffADS/AdsLib/
 USR_LDFLAGS  += -lpthread
 
 #=============================

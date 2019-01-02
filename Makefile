@@ -3,16 +3,16 @@
 # Otherwise use Makefile
 
 ADSSOURCES = \
-  ADS/AdsLib/AdsDef.cpp \
-  ADS/AdsLib/AdsLib.cpp \
-  ADS/AdsLib/AmsConnection.cpp \
-  ADS/AdsLib/AmsPort.cpp \
-  ADS/AdsLib/AmsRouter.cpp \
-  ADS/AdsLib/Log.cpp \
-  ADS/AdsLib/NotificationDispatcher.cpp \
-  ADS/AdsLib/Sockets.cpp \
-  ADS/AdsLib/Frame.cpp \
-  ADS/AdsLib/AdsLib.h
+  BeckhoffADS/AdsLib/AdsDef.cpp \
+  BeckhoffADS/AdsLib/AdsLib.cpp \
+  BeckhoffADS/AdsLib/AmsConnection.cpp \
+  BeckhoffADS/AdsLib/AmsPort.cpp \
+  BeckhoffADS/AdsLib/AmsRouter.cpp \
+  BeckhoffADS/AdsLib/Log.cpp \
+  BeckhoffADS/AdsLib/NotificationDispatcher.cpp \
+  BeckhoffADS/AdsLib/Sockets.cpp \
+  BeckhoffADS/AdsLib/Frame.cpp \
+  BeckhoffADS/AdsLib/AdsLib.h
 
 # download ADS if needed
 build: ${ADSSOURCES} checkws
