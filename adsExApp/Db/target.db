@@ -190,3 +190,24 @@ record(ai,"$(P)Rotation-ChoosenSector"){
   field(SCAN, "I/O Intr")
   field(DESC, "Rotation: Choosen Sector ID")
 }
+
+record(ai,"$(P)Rotation-Cntrl-Cmd"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fbModePhase.fCtrlOutput?")
+  field(PREC, "3")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Phase PID Controller output")
+}
+
+record(ai,"$(P)Rotation-Vel-Stable-Count"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fbModePhase.iRangeOkCounter?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Velocity Stable Counter")
+}
+
