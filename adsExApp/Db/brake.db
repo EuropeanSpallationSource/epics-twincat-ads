@@ -1,0 +1,67 @@
+
+record(bi,"$(P)Rotation-Brk-FreeWheelOn-Stat"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bBrakeFreeWheelOn?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Operation Mode")
+  field(ONAM,"Param Mode")
+  field(DESC,"Rotation: Brake Freewheel On ")
+}
+
+record(bi,"$(P)Rotation-Brk-LockedOn-Stat"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bBrakeLockedOn?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Operation Mode")
+  field(ONAM,"Param Mode")
+  field(DESC,"Rotation: Brake Locked On ")
+}
+
+record(ai,"$(P)Rotation-Brk-TorqueRaw-Cmd-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.iBrakeSpRaw?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Brake Torque Raw SP")
+}
+
+record(ao,"$(P)Rotation-Brk-Torque-Cmd"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fBrakeSpNm?")
+  field(PREC, "3")
+  field(SCAN,"Passive")
+  field(DESC, "Rotation: Brake Torque SP Nm")
+}
+
+record(bo,"$(P)Rotation-Brk-FreeWheelOn-Cmd"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bFreeWheelOnOnCmd?")
+  field(SCAN,"Passive")
+  field(ZNAM,"Brake")
+  field(ONAM,"Freewheel")
+  field(DESC, "Rotation: Brake Free Wheel Cmd")
+}
+
+record(bo,"$(P)Rotation-Brk-LockedOn-Cmd"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.bBrakeLockOnCmd?")
+  field(SCAN,"Passive")
+  field(ZNAM,"Unlock")
+  field(ONAM,"Lock")
+  field(DESC, "Rotation: Brake Lock On Cmd")
+}

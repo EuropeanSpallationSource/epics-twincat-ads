@@ -40,5 +40,8 @@ TEMPLATES = \
   adsExApp/Db/adsTestOctet.db\
   adsExApp/Db/adsTestAsyn.db\
   adsExApp/Db/target.db\
+  adsExApp/Db/indraDriveStatus.db\
+  adsExApp/Db/indraDriveCommand.db\
+  adsExApp/Db/brake.db\
 
 

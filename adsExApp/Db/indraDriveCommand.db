@@ -1,0 +1,446 @@
+# Records for monitoring of the Indra drive CMD structure (cmd can be find futher down)
+record(ai,"$(P)Rotation-Drv-Cmd-OpMode-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.eOperationMode?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Op Mode Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Ena-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bEnableAxis?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Disbale")
+  field(ONAM, "Enable")
+  field(DESC, "Rot: Drive Enable RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Halt-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bHaltAxis?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Halt Cmd")
+  field(ONAM, "Halt Cmd")
+  field(DESC, "Rot: Drive Halt Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Pos-Chg-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCommandPositionChange?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "CurrTargPos")
+  field(ONAM, "DirectNewPos")
+  field(DESC, "Rot: Drive Cmd Position Change RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Pos-ValType-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bPositionCommandValue?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Absolute")
+  field(ONAM, "Relative")
+  field(DESC, "Rot: Drive Position Cmd Type RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Exe-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCommandValueAccept?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Toggle ZERO")
+  field(ONAM, "Toggle ONE")
+  field(DESC, "Rot: Drive New Cmd Execute Toggle-RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-ErrRst-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_ErrorReset?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Reset")
+  field(DESC, "Rot: Drive Error Reset Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-SetAbsPos-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_SetAbsolutePosition?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Reset")
+  field(DESC, "Rot: Drive Set Absolute Position Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-ExeHome-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_DriveControlledHoming?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Execute Homing")
+  field(DESC, "Rot: Drive Execute Homing Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-DisableLim-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_DisableLimits?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Enable")
+  field(ONAM, "Dsiable")
+  field(DESC, "Rot: Drive Disable Checking of Limits RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Enter-ParamMode-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_ActivateParameterMode?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Enter Parame Mode Cmd")
+  field(DESC, "Rot: Drive Enter Param Mode Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Exit-ParamMode-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_ExitParameterMode?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Exit Param Mode Cmd")
+  field(DESC, "Rot: Drive Exit Param Mode Cmd RB")
+}
+
+record(bi,"$(P)Rotation-Drv-Cmd-Run-Virt-Master-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_RunVirtualMater?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Run Virtual Master")
+  field(DESC, "Rot: Drive Run Virtual Master Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-Pos-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandPosition?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Position Setpoint Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-Vel-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandVelocity?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Velocity Setpoint Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-Acc-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandAcceleration?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Acceleration Setpoint Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-Dec-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandDeceleration?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Deceleration Setpoint Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-Override-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fFeedrateOverride?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Override Feedrate Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-Torque-Lim-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fTorqueLimit?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Torque Limit Cmd RB")
+}
+
+record(ai,"$(P)Rotation-Drv-Cmd-VelPos-RB"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fVelocityCommandValue?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Velo SP for Pos Cmd RB")
+}
+
+
+# Records for the Indra drive CMD structure
+record(ao,"$(P)Rotation-Drv-Cmd-OpMode"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.eOperationMode?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Op Mode Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Ena"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bEnableAxis?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Disbale")
+  field(ONAM, "Enable")
+  field(DESC, "Rot: Drive Enable ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Halt"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bHaltAxis?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Halt Cmd")
+  field(ONAM, "Halt Cmd")
+  field(DESC, "Rot: Drive Halt Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Pos-Chg"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCommandPositionChange?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "CurrTargPos")
+  field(ONAM, "DirectNewPos")
+  field(DESC, "Rot: Drive Cmd Position Change ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Pos-ValType"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bPositionCommandValue?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Absolute")
+  field(ONAM, "Relative")
+  field(DESC, "Rot: Drive Position Cmd Type ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Exe"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCommandValueAccept?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Toggle ZERO")
+  field(ONAM, "Toggle ONE")
+  field(DESC, "Rot: Drive New Cmd Execute Toggle")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-ErrRst"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_ErrorReset?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Reset")
+  field(DESC, "Rot: Drive Error Reset Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-SetAbsPos"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_SetAbsolutePosition?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Reset")
+  field(DESC, "Rot: Drive Set Absolute Position Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-ExeHome"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_DriveControlledHoming?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Execute Homing")
+  field(DESC, "Rot: Drive Execute Homing Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-DisableLim"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_DisableLimits?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "Enable")
+  field(ONAM, "Dsiable")
+  field(DESC, "Rot: Drive Disable Checking of Limits ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Enter-ParamMode"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_ActivateParameterMode?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Enter Parame Mode Cmd")
+  field(DESC, "Rot: Drive Enter Param Mode Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Exit-ParamMode"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_ExitParameterMode?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Exit Param Mode Cmd")
+  field(DESC, "Rot: Drive Exit Param Mode Cmd ")
+}
+
+record(bo,"$(P)Rotation-Drv-Cmd-Run-Virt-Master"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.bCmd_RunVirtualMater?")
+  field(SCAN, "I/O Intr")
+  field(ZNAM, "No Cmd")
+  field(ONAM, "Run Virtual Master")
+  field(DESC, "Rot: Drive Run Virtual Master Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-Pos"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandPosition?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Position Setpoint Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-Vel"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandVelocity?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Velocity Setpoint Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-Acc"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandAcceleration?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Acceleration Setpoint Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-Dec"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fCommandDeceleration?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Deceleration Setpoint Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-Override"){
+  info(asyn:READBACK,"1")
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fFeedrateOverride?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Override Feedrate Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-Torque-Lim"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fTorqueLimit?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Torque Limit Cmd ")
+}
+
+record(ao,"$(P)Rotation-Drv-Cmd-VelPos"){
+  info(asyn:READBACK,"1")    
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stCommands.fVelocityCommandValue?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rot: Drive Velo SP for Pos Cmd ")
+}

@@ -1,0 +1,230 @@
+
+record(bi,"$(P)Rotation-Drv-Stat-InParamMode"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bDriveInParameterMode?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Operation Mode")
+  field(ONAM,"Param Mode")
+  field(DESC,"Rotation: Drive Mode")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-DCbusOK"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bDCBusPresent?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"No DC bus")
+  field(ONAM,"DC bus OK")
+  field(DESC,"Rotation: DC Bus Present")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Ena"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisEnabled?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Disabled")
+  field(ONAM,"Enabled")
+  field(DESC,"Rotation: Drive Enabled")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Enc-Homed"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisHomedStatus?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Not Homed")
+  field(ONAM,"Homed")
+  field(DESC,"Rotation: Drive Homed")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Standstill"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisStandStillStatus?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Moving")
+  field(ONAM,"Standstill")
+  field(DESC,"Rotation: Drive at Standstill")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-InTargetPos"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisInTargetPosition?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Not At Target")
+  field(ONAM,"At Target")
+  field(DESC,"Rotation: Drive at Target")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-ConstVelo"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisConstantVelocityStatus?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Not at Constant Velo")
+  field(ONAM,"At Constant Velo")
+  field(DESC,"Rotation: Drive in Constant Velocity")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Acc"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisAccelerationStatus?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Not Accelerating")
+  field(ONAM,"Accelerating")
+  field(DESC,"Rotation: Drive in Acceleration")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Dec"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisDecelerationStatus?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Not Accelerating")
+  field(ONAM,"Accelerating")
+  field(DESC,"Rotation: Drive in Deceleration")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Jog"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bAxisJogStatus?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Not in Jog-mode")
+  field(ONAM,"In Jog-mode")
+  field(DESC,"Rotation: Drive in Jog-mode")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Cmd-Chg"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bCommandChange?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"New Command Toggle ZERO")
+  field(ONAM,"New Command Toggle one")
+  field(DESC,"Rotation: Drive New Command Toggle")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Cmd-Proc"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bCommandValueProcessing?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Ignores new Command")
+  field(ONAM,"New command OK")
+  field(DESC,"Rotation: Drive New Commnd Ready")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Lim"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bLimitsDisabled?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"Limits Enabled")
+  field(ONAM,"Limits Disabled")
+  field(DESC,"Rotation: Drive Limits Disabled")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Diag"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bDiagMessage?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"No Diag Message")
+  field(ONAM,"Diag Message")
+  field(DESC,"Rotation: Drive Diag Message Present")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Wrn"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bWarning?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"No Warning")
+  field(ONAM,"Warning")
+  field(DESC,"Rotation: Drive Warning")
+  field(ZSV,  "NO_ALARM")
+  field(OSV,  "MINOR")
+}
+
+record(bi,"$(P)Rotation-Drv-Stat-Err"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.bError?")
+  field(SCAN,"I/O Intr")
+  field(ZNAM,"No Error")
+  field(ONAM,"Error")
+  field(DESC,"Rotation: Drive Error")
+  field(ZSV,  "NO_ALARM")
+  field(OSV,  "MAJOR")
+}
+
+record(ai,"$(P)Rotation-Drv-Stat-OpModeNo"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.eActualOperationModeNo?")
+  field(PREC, "0")
+  field(SCAN,"I/O Intr")
+  field(DESC,"Rotation: Drive Operation Mode Stat")
+}
+
+record(ai,"$(P)Rotation-Drv-Stat-ActPos"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fActualPosition?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+  field(DESC,"Rotation: Drive Actual Position")
+}
+
+record(ai,"$(P)Rotation-Drv-Stat-ActVel"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fActualVelocity?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+  field(DESC,"Rotation: Drive Actual Velocity")
+}
+
+record(ai,"$(P)Rotation-Drv-Stat-ActTorque"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fActualTorque?")
+  field(PREC, "3")
+  field(SCAN,"I/O Intr")
+  field(DESC,"Rotation: Drive Actual Torque")
+}
+
+record(ai,"$(P)Rotation-Drv-Stat-Diag-Code"){
+  field(PINI, "1")
+  field(TSE, -2)
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.nDiagMessage?")
+  field(PREC, "0")
+  field(SCAN,"I/O Intr")
+  field(DESC,"Rotation: Drive Diagnostic Message")
+}
