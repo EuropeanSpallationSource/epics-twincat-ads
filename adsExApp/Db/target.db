@@ -155,8 +155,8 @@ record(ao,"$(P)Rotation-MaxMotorTemp-Cmd"){
 record(ai,"$(P)Rotation-LatchedPos"){
   field(PINI, "1")
   field(TSE,  "-2")
-  field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.dLatchedPosition?")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fbModePhase.fLatchedPosition?")
   field(PREC, "0")
   field(SCAN, "I/O Intr")
   field(DESC, "Rotation: Last Latched Position")
@@ -211,3 +211,34 @@ record(ai,"$(P)Rotation-Vel-Stable-Count"){
   field(DESC, "Rotation: Velocity Stable Counter")
 }
 
+record(bi,"$(P)Rotation-Vel-Stable"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fbModePhase.bVeloStable?")  
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Velocity Stable")
+  field(ZNAM, "Unstable")
+  field(ONAM, "Stable")
+
+}
+
+record(ai,"$(P)Rotation-Vel-Cmd"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fSetVelToDriveRaw?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Vel Set to Drive")
+}
+
+record(ai,"$(P)Rotation-ActVel-LastSector"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fbModePhase.fLastSectorVelocity?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Act Vel for Last Sector")
+}
