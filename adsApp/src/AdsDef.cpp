@@ -1,1 +1,1 @@
-../../ADS/AdsLib/AdsDef.cpp
+../../BeckhoffADS/AdsLib/AdsDef.cpp
