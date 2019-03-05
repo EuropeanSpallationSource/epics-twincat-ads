@@ -8,26 +8,26 @@ include ${EPICS_ENV_PATH}/module.Makefile
 USR_DEPENDENCIES = asyn,4.31.0
 
 
-# from ADS/Makefile:
+# from BeckhoffADS/Makefile:
 USR_CXXFLAGS += -std=c++11
 #ADS uses pedantic and compiles OK; EPICS does not
 #USR_CXXFLAGS += -pedantic
 USR_CXXFLAGS += -Wall
-USR_CPPFLAGS += -I ../../ADS/AdsLib/
+USR_CPPFLAGS += -I ../../BeckhoffADS/AdsLib/
 
 # Temporally removed to speed up 
 EXCLUDE_ARCHS += eldk
 
 ADSSOURCES = \
-  ADS/AdsLib/AdsDef.cpp \
-  ADS/AdsLib/AdsLib.cpp \
-  ADS/AdsLib/AmsConnection.cpp \
-  ADS/AdsLib/AmsPort.cpp \
-  ADS/AdsLib/AmsRouter.cpp \
-  ADS/AdsLib/Log.cpp \
-  ADS/AdsLib/NotificationDispatcher.cpp \
-  ADS/AdsLib/Sockets.cpp \
-  ADS/AdsLib/Frame.cpp \
+  BeckhoffADS/AdsLib/AdsDef.cpp \
+  BeckhoffADS/AdsLib/AdsLib.cpp \
+  BeckhoffADS/AdsLib/AmsConnection.cpp \
+  BeckhoffADS/AdsLib/AmsPort.cpp \
+  BeckhoffADS/AdsLib/AmsRouter.cpp \
+  BeckhoffADS/AdsLib/Log.cpp \
+  BeckhoffADS/AdsLib/NotificationDispatcher.cpp \
+  BeckhoffADS/AdsLib/Sockets.cpp \
+  BeckhoffADS/AdsLib/Frame.cpp \
 
 
 SOURCES = \
