@@ -193,30 +193,30 @@ record(ai,"$(P)Rotation-Drv-Stat-ActPos"){
   field(PINI, "1")
   field(TSE, -2)
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fActualPosition?")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.fActualPosition?")
   field(PREC, "3")
   field(SCAN,"I/O Intr")
-  field(DESC,"Rotation: Drive Actual Position")
+  field(DESC,"Rotation: Drive Actual Position [deg]")
 }
 
 record(ai,"$(P)Rotation-Drv-Stat-ActVel"){
   field(PINI, "1")
   field(TSE, -2)
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fActualVelocity?")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.fActualVelocity?")
   field(PREC, "3")
   field(SCAN,"I/O Intr")
-  field(DESC,"Rotation: Drive Actual Velocity")
+  field(DESC,"Rotation: Drive Actual Velocity [dRPM]")
 }
 
 record(ai,"$(P)Rotation-Drv-Stat-ActTorque"){
   field(PINI, "1")
   field(TSE, -2)
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.fActualTorque?")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatus.fActualTorque?")
   field(PREC, "3")
   field(SCAN,"I/O Intr")
-  field(DESC,"Rotation: Drive Actual Torque")
+  field(DESC,"Rotation: Drive Actual Torque [%]")
 }
 
 record(ai,"$(P)Rotation-Drv-Stat-Diag-Code"){
