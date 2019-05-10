@@ -259,7 +259,6 @@ record(bi,"$(P)Error"){
   field(DESC, "Error")
 }
 
-
 record(ai,"$(P)Rotation-ActTemp_1Hz"){
   field(PINI, "1")
   field(TSE,  "-2")

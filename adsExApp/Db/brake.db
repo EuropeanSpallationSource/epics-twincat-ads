@@ -65,3 +65,45 @@ record(bo,"$(P)Rotation-Brk-LockedOn-Cmd"){
   field(ONAM,"Lock")
   field(DESC, "Rotation: Brake Lock On Cmd")
 }
+
+record(ai,"$(P)Rotation-Brk-Temp1-Act"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatEpics.fBrakeActTemp1?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Brake Temp 1")
+}
+
+record(ai,"$(P)Rotation-Brk-Temp2-Act"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatEpics.fBrakeActTemp2?")
+  field(PREC, "0")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Rotation: Brake Temp 2")
+}
+
+record(bi,"$(P)Rotation-Brk-Temp1-Alm"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatEpics.bBrake1TempAlarm?")
+  field(ZNAM,"No Alarm")
+  field(ONAM,"Alarm")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Brake: Temp to high (sensor 1)")
+}
+
+record(bi,"$(P)Rotation-Brk-Temp2-Alm"){
+  field(PINI, "1")
+  field(TSE,  "-2")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatEpics.bBrake2TempAlarm?")
+  field(ZNAM,"No Alarm")
+  field(ONAM,"Alarm")
+  field(SCAN, "I/O Intr")
+  field(DESC, "Brake: Temp to high (sensor 2)")
+}
