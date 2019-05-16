@@ -35,7 +35,7 @@ record(ai,"$(P)Rotation-ActPos"){
   field(PINI, "1")
   field(TSE,  "-2")
   field(DTYP, "asynFloat64")
-  field(INP,  "@asyn($(PORT),0,1)ADSPORT=852/Main.stStatEpics.fActPos?")
+  field(INP,  "@asyn($(PORT),0,1)TIMEBASE=PLC/T_DLY_MS=500/TS_MS=10/ADSPORT=852/Main.stStatEpics.fActPos?")
   field(PREC, "3")
   field(SCAN, "I/O Intr")
   field(DESC, "Rotation: Motor Position [deg]")
