@@ -907,7 +907,7 @@ int octetBinary2ascii(bool returnVarName,
         bytesProcessed=info->size;
         break;
       case ADST_BIGTYPE:
-        if(strcmp(info->symDataType,DUT_AXIS_STATUS)==0){
+        if(strstr(info->symDataType,DUT_AXIS_STATUS)!=NULL){
           //RETURN_VAR_NAME_IF_NEEDED;
             octetCmdBuf_printf(asciiBuffer,"%s=",info->variableName); //Always output variable name for stAxisStatus
           adsOctetSTAXISSTATUSSTRUCT * stAxisData;
