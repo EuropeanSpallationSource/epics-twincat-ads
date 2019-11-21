@@ -4286,6 +4286,24 @@ extern "C" {
   }
 
   /*
+   * adsSetLocalAddress("ams_net_id")
+   */
+  static const iocshArg adsSetLocalAddressArg0 = {"local_ams_id", iocshArgString};
+  static const iocshArg *adsSetLocalAddressArgs[] = {&adsSetLocalAddressArg0};
+  static const iocshFuncDef adsSetLocalAddressFuncDef = {"adsSetLocalAddress",1,adsSetLocalAddressArgs};
+
+  static void adsSetLocalAddressCallFunc(const iocshArgBuf *args)
+  {
+    const char* functionName = "adsSetLocalAddress";
+    if (!args[0].sval || strlen(args[0].sval) < 11) {
+        printf("%s:%s: local_ams_id parameter required (of the form A.B.C.D.E.F)\n", driverName, functionName);
+        return;
+    }
+    printf("%s:%s: Setting local AMS Net ID to: %s\n", driverName, functionName, args[0].sval);
+    AdsSetLocalAddress(std::string(args[0].sval));
+  }
+
+  /*
    * This routine is called before multitasking has started, so there's
    * no race condition in the test/set of firstTime.
    */
@@ -4293,6 +4311,7 @@ extern "C" {
   static void adsAsynPortDriverRegister(void)
   {
     iocshRegister(&adsAsynPortDriverConfigureFuncDef,adsAsynPortDriverConfigureCallFunc);
+    iocshRegister(&adsSetLocalAddressFuncDef,adsSetLocalAddressCallFunc);
   }
 
   epicsExportRegistrar(adsAsynPortDriverRegister);
