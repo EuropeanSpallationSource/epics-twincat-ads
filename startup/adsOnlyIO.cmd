@@ -1,4 +1,5 @@
-require ads,anderssandstrom
+require ads,develop
+require stream, 2.8.10
 
 ##############################################################################
 # Demo file to link an EPICS IOC with some I/O in a TwinCAT plc 
@@ -22,8 +23,9 @@ require ads,anderssandstrom
 # 9. max delay time ms (buffer time in plc) :  1000
 # 10. ADS command timeout in ms             :  1000  
 # 11. default time source (PLC=0,EPICS=1)   :  0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
-
 adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000,0,0,50,100,1000,0)
+
+epicsEnvSet(STREAM_PROTOCOL_PATH, ${ads_DB}
 
 asynOctetSetOutputEos("ADS_1", -1, "\n")
 asynOctetSetInputEos("ADS_1", -1, "\n")
