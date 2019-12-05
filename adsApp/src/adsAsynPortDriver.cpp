@@ -1,7 +1,7 @@
 /*
 * adsAsynPortDriver.cpp
 *
-* Class derived of asynPortDriver for ADS communication with TwinCAT plc:s.
+* Class derived of asynPortDriver for ADS communication with TwinCAT plcs.
 * AdsLib written by Beckhoff is used for communication: https://github.com/Beckhoff/ADS
 *
 * Author: Anders Sandström
@@ -879,7 +879,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   }
 
   // Read symbolic information if needed (to get paramInfo->plcSize)
-  if(!paramInfo->plcAbsAdrValid){
+  if(!paramInfo->isAdrCommand){
     status=adsGetSymInfoByName(paramInfo);
     if(status!=asynSuccess){
       return asynError;
@@ -1077,7 +1077,7 @@ asynStatus adsAsynPortDriver::getRecordInfoFromDrvInfo(const char *drvInfo,adsPa
  * \param[in/out] paramInfo Parameter information structure.
  * \return asynSuccess or asynError.
  * Methods checks if input or output ('?' or '=') and parses options:
- * - "ADSPORT" (Ams port for varaible)\n
+ * - "ADSPORT" (Ams port for variable)\n
  * - "T_DLY_MS" (maximum delay time ms)\n
  * - "TS_MS" (sample time ms)\n
  * - "TIMEBASE" ("PLC" or "EPICS")\n
@@ -1952,7 +1952,7 @@ asynStatus adsAsynPortDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
     if(adsWriteState(paramInfo->amsPort,(uint16_t)value)!=asynSuccess){
       return setAlarmParam(paramInfo,WRITE_ALARM,INVALID_ALARM);
     }
-    // Write OK -> reset werite alarm
+    // Write OK -> reset write alarm
     if(paramInfo->alarmStatus==WRITE_ALARM){
       return setAlarmParam(paramInfo,NO_ALARM,NO_ALARM);
     }
@@ -2652,7 +2652,7 @@ asynStatus adsAsynPortDriver::adsAddSymbolsChangedCallback(amsPortInfo *port)
     return asynError;
   }
 
-  //Add was successfull
+  //Add was successful
   port->hCallbackNotify=hNotify;
   port->bCallbackNotifyValid=true;
   port->refreshNeeded=false;
@@ -3058,7 +3058,6 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   paramInfo->bSymbolicHandleValid=false;
-  paramInfo->hSymbolicHandle=-1;
 
   AmsAddr amsServer;
   amsServer={remoteNetId_,paramInfo->amsPort};
@@ -3066,6 +3065,7 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   adsLock();
   const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
   adsUnlock();
+  paramInfo->hSymbolicHandle=-1;
   if (releaseStatus && !blockErrorMsg) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %s (0x%lx)\n", driverName, functionName,paramInfo->hSymbolicHandle,adsErrorToString(releaseStatus),releaseStatus);
     return asynError;
