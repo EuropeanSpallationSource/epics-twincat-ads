@@ -12,6 +12,7 @@
 #include "adsAsynPortDriver.h"
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -48,6 +49,8 @@ static initHookState currentEpicsState=initHookAtIocBuild;
 static void getEpicsState(initHookState state)
 {
   const char* functionName = "getEpicsState";
+  static struct timeval start;
+  struct timeval now, diff;
 
   if(!adsAsynPortObj){
     printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
@@ -58,6 +61,14 @@ static void getEpicsState(initHookState state)
 
   switch(state) {
       break;
+    case initHookAfterInitDevSup:
+        gettimeofday(&start, NULL);
+        break;
+    case initHookAfterInitDatabase:
+        gettimeofday(&now, NULL);
+        timersub(&now, &start, &diff);
+        printf("Database initialization took %d.%05d seconds.\n", diff.tv_sec, diff.tv_usec);
+        break;
     case initHookAfterScanInit:
       allowCallbackEpicsState=1;
 
@@ -67,6 +78,7 @@ static void getEpicsState(initHookState state)
         return;
       }
       adsAsynPortObj->fireAllCallbacksLock();
+      adsAsynPortObj->bulkOK = 1;
       break;
     default:
       break;
@@ -103,8 +115,10 @@ static void adsSymbolsChangedCallback(const AmsAddr* pAddr, const AdsNotificatio
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
   asynPrint(asynTraceUser, ASYN_TRACE_INFO , "%s:%s: Symbols changed for Ams-port %u.\n", driverName, functionName,pAddr->port);
 
+  adsAsynPortObj->bulkOK = 0;
   adsAsynPortObj->invalidateParamsLock(pAddr->port);
   adsAsynPortObj->refreshParamsLock(pAddr->port);
+  adsAsynPortObj->bulkOK = 1;
 }
 
 /** Callback from ads lib for updated data.
@@ -177,6 +191,16 @@ void cyclicThread(void *drvPvt)
 {
   adsAsynPortDriver *pPvt = (adsAsynPortDriver *)drvPvt;
   pPvt->cyclicThread();
+}
+
+/** Start bulk read thread.
+ * \param[in] drvPvt adsAsynPortDriver object
+ * \return void
+ */
+void bulkReadThread(void *drvPvt)
+{
+  adsAsynPortDriver *pPvt = (adsAsynPortDriver *)drvPvt;
+  pPvt->bulkReadThread();
 }
 
 /** Constructor for the adsAsynPortDriver class.
@@ -320,6 +344,25 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
     printf("%s:%s: epicsThreadCreate failure\n", driverName, functionName);
     return;
   }
+
+  for (int i = 0; i < MAXBULK; i++)
+      bulk[i].cnt = 0;            // Entry is currently unused!!
+  bulkTScnt = 0;
+  bulk_delay_us = 1000000;        // 1 Hz
+  bulkdatasize = 4 * 1024 * 1024; // This is excessive!
+  bulkdata = (uint8_t *) malloc(bulkdatasize);
+  bulkOK = 0;
+
+  //* Create the thread that does the bulk reads */
+  status = (asynStatus)(epicsThreadCreate("adsAsynPortDriverBulkReadThread",
+                                                     epicsThreadPriorityMedium,
+                                                     epicsThreadGetStackSize(epicsThreadStackMedium),
+                                                     (EPICSTHREADFUNC)::bulkReadThread,this) == NULL);
+
+  if(status){
+    printf("%s:%s: epicsThreadCreate failure\n", driverName, functionName);
+    return;
+  }
   //try connect
   connect(pasynUserSelf);
 }
@@ -455,6 +498,91 @@ void adsAsynPortDriver::cyclicThread()
     }
     oneAmsConnectionOKold_=oneAmsConnectionOK;
   }
+}
+
+void adsAsynPortDriver::bulkReadThread()
+{
+    const char* functionName = "bulkReadThread";
+    struct timeval start, now;
+    uint32_t bytesRead;
+    long status;
+    uint32_t cnt, readSize;
+    asynUser *asynTraceUser=getTraceAsynUser();
+
+    gettimeofday(&now, NULL);
+    while (1) {
+        start = now;
+        for (int i = 0; bulk[i].cnt; i++) {
+            adsLock();
+            if (!bulkOK || !bulk[i].cnt) {
+                adsUnlock();
+                break;
+            }
+            bytesRead = 0;
+            cnt = bulk[i].cnt;
+            readSize = bulk[i].readSize;
+            AmsAddr amsServer={remoteNetId_,bulk[i].amsPort};
+            status = AdsSyncReadWriteReqEx2(adsPort_, &amsServer,
+                                            ADSIGRP_SUMUP_READ, cnt,
+                                            readSize, bulkdata,
+                                            sizeof(bulk[i].sum[0]) * cnt, &bulk[i].sum,
+                                            &bytesRead);
+            adsUnlock();
+            if (status) {
+                printf("Sum read %d failed: status %ld\n", i, status);
+                continue;
+            }
+            
+            uint32_t *stat = (uint32_t *)bulkdata;
+            uint8_t  *srd  = bulkdata + cnt * sizeof(uint32_t);
+            uint64_t nTimeStamp = 0;
+            /* The first *two* bulk parameters might be the timestamp! */
+            if (!stat[0] && !stat[1] && bulk[i].sum[0].iGroup == ADSIGRP_SYM_VALBYHND) {
+                nTimeStamp = ((uint32_t *)srd)[0];
+                nTimeStamp = (nTimeStamp << 32) | ((uint32_t *)srd)[1];
+            } else {
+                /*
+                 * Sigh.  now has the time since 1970-01-01 00:00:00 UTC, but
+                 * we want 100ns increments since 1601-01-01!! So we grab the constant
+                 * from adsAsynPortDriverUtils.cpp and convert.
+                 */
+#define SEC_TO_UNIX_EPOCH 11644473600LL
+                nTimeStamp = now.tv_sec + SEC_TO_UNIX_EPOCH;
+                nTimeStamp = (nTimeStamp * 1000000 + now.tv_usec) * 10;
+            }
+            if (!stat[0])
+                srd += sizeof(uint32_t);
+            if (!stat[1])
+                srd += sizeof(uint32_t);
+            stat += 2;
+            for (int j = 2; j < cnt; j++) {
+                adsParamInfo *paramInfo=getAdsParamInfo(bulk[i].paramID[j]);
+                if (!paramInfo){
+                    asynPrint(asynTraceUser, ASYN_TRACE_ERROR,
+                              "%s:%s: getAdsParamInfo() for hUser %u failed\n",
+                              driverName, functionName, bulk[i].paramID[j]);
+                    continue;
+                }
+                if (*stat++) {
+                    asynPrint(asynTraceUser, ASYN_TRACE_ERROR,
+                              "%s:%s: bulk read for %s (%d) failed\n",
+                              driverName, functionName, paramInfo->drvInfo, j);
+                    continue;
+                }
+                paramInfo->plcTimeStampRaw=nTimeStamp;
+                paramInfo->lastCallbackSize=paramInfo->plcSize;
+                adsUpdateParameterLock(paramInfo, srd);
+                srd += paramInfo->lastCallbackSize;
+            }
+        }
+        gettimeofday(&now, NULL);
+        int us_elapsed = (now.tv_sec - start.tv_sec) * 1000000 + 
+                         (now.tv_usec - start.tv_usec);
+        if (us_elapsed < bulk_delay_us) {
+            usleep(bulk_delay_us - us_elapsed);
+            gettimeofday(&now, NULL);
+        }
+    }
 }
 
 /** Report of configured parameters.
@@ -666,6 +794,16 @@ asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
       }
     }
   }
+  for (int i = 0; i < bulkTScnt; i++) {
+      if (amsPort == 0 || bulkTS[i].amsPort == amsPort)
+          bulkTS[i].refreshNeeded = 1;
+  }
+  for (int i = 0; i < MAXBULK; i++) {
+      if (bulk[i].cnt == 0)                        // Quit if unused!
+          break;
+      if (amsPort == 0 || bulk[i].amsPort == amsPort)
+          bulk[i].readSize = 4 * sizeof(uint32_t); // Initialize to just the timestamp!
+  }
   return asynSuccess;
 }
 
@@ -754,6 +892,8 @@ asynStatus adsAsynPortDriver::validateDrvInfo(const char *drvInfo)
 asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvInfo,const char **pptypeName,size_t *psize)
 {
   const char* functionName = "drvUserCreate";
+  static int vcnt = 0;
+
   asynPrint(pasynUser, ASYN_TRACE_FLOW, "%s:%s: drvInfo: %s\n", driverName, functionName,drvInfo);
 
   if(validateDrvInfo(drvInfo)!=asynSuccess){
@@ -788,6 +928,11 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     return asynPortDriver::drvUserCreate(pasynUser,drvInfo,pptypeName,psize);
   }
 
+  if (!vcnt++)
+      printf("Linking EPICS PVs to PLC variables...\n");
+  if (vcnt % 1000 == 0)
+      printf("%d...\n", vcnt);
+
   //Ensure space left in param table
   if(adsParamArrayCount_>=(paramTableSize_-1)){
     asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s:%s: Parameter table full. Parameter with drvInfo %s will be discarded.", driverName, functionName,drvInfo);
@@ -800,6 +945,8 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
   paramInfo->sampleTimeMS=defaultSampleTimeMS_;
   paramInfo->maxDelayTimeMS=defaultMaxDelayTimeMS_;
   paramInfo->refreshNeeded=1;
+  paramInfo->bulkIndex = -1;
+  paramInfo->bulkOffset = -1;
 
   status=getRecordInfoFromDrvInfo(drvInfo, paramInfo);
   if(status!=asynSuccess){
@@ -935,12 +1082,19 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   }
 
   if(paramInfo->isIOIntr){
-    adsDelDataCallback(paramInfo,true);   //try to delete
-    status=adsAddDataCallback(paramInfo);
-    if(status!=asynSuccess){
-      return asynError;
-    }
-
+      /* If we specify a sample rate or it's big, just subscribe to it! */
+      if (paramInfo->hasSampleRate || paramInfo->plcSize > 1024*1024) {
+          adsDelDataCallback(paramInfo,true);   //try to delete
+          status=adsAddDataCallback(paramInfo);
+          if(status!=asynSuccess){
+              return asynError;
+          }
+      } else { /* Otherwise, put it in a bulk read! */
+          status=adsAddToBulkRead(paramInfo);
+          if(status!=asynSuccess){
+              return asynError;
+          }
+      }
   }
 
   // Make first read
@@ -957,6 +1111,102 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
 
   paramInfo->refreshNeeded=false;
   return asynSuccess;
+}
+
+asynStatus adsAsynPortDriver::adsAddToBulkRead(adsParamInfo* paramInfo)
+{
+    adsLock(); // Prevent reads while we change this!
+    if (paramInfo->bulkIndex < 0) { /* Not assigned yet, find one! */
+        int i;
+        for (i = 0; i < MAXBULK; i++) {
+            /* Look for an unused entry or a non-full entry for this port. */
+            if (bulk[i].cnt == 0 || (bulk[i].cnt != BULKSIZ &&
+                                     bulk[i].amsPort == paramInfo->amsPort))
+                break;
+        }
+        if (i == MAXBULK) {
+            adsUnlock();
+            return asynError; // No room at the inn.
+        }
+        if (!bulk[i].cnt) { // First variable in this bulk request!
+            bulk[i].amsPort = paramInfo->amsPort;
+            int j = adsFindBulkTimeStamp(paramInfo->amsPort);
+            if (bulkTS[j].refreshNeeded) { /* No TS variables!! */
+                bulk[i].sum[0].iGroup  = 0x4020; // %M
+                bulk[i].sum[0].iOffset = 0;
+                bulk[i].sum[0].iSize   = sizeof(uint32_t);
+                bulk[i].sum[1].iGroup  = 0x4020; // %M
+                bulk[i].sum[1].iOffset = 0;
+                bulk[i].sum[1].iSize   = sizeof(uint32_t);
+            } else {
+                bulk[i].sum[0].iGroup  = ADSIGRP_SYM_VALBYHND;
+                bulk[i].sum[0].iOffset = bulkTS[j].iHandleH;
+                bulk[i].sum[0].iSize   = sizeof(uint32_t);
+                bulk[i].sum[1].iGroup  = ADSIGRP_SYM_VALBYHND;
+                bulk[i].sum[1].iOffset = bulkTS[j].iHandleL;
+                bulk[i].sum[1].iSize   = sizeof(uint32_t);
+            }
+            bulk[i].cnt = 2;
+            bulk[i].readSize = 4 * sizeof(uint32_t);
+        }
+        paramInfo->bulkIndex  = i;
+        paramInfo->bulkOffset = bulk[i].cnt;
+        bulk[i].paramID[bulk[i].cnt++] = paramInfo->paramIndex;
+    }
+    /* Update the information for a previously allocated element.  Possibly *just*
+       allocated, but that's still previously! */
+    uint32_t group, offset;
+    if (paramInfo->isAdrCommand) {
+        group = paramInfo->plcAbsAdrGroup;
+        offset = paramInfo->plcAbsAdrOffset;
+    } else {
+        group = ADSIGRP_SYM_VALBYHND;
+        offset = paramInfo->hSymbolicHandle;
+    }
+    bulk[paramInfo->bulkIndex].sum[paramInfo->bulkOffset].iGroup  = group;
+    bulk[paramInfo->bulkIndex].sum[paramInfo->bulkOffset].iOffset = offset;
+    bulk[paramInfo->bulkIndex].sum[paramInfo->bulkOffset].iSize   = paramInfo->plcSize;
+    bulk[paramInfo->bulkIndex].readSize += paramInfo->plcSize + sizeof(uint32_t);
+    adsUnlock();
+    return asynSuccess;
+}
+
+// Assume locked!!
+int adsAsynPortDriver::adsFindBulkTimeStamp(uint16_t amsPort)
+{
+    int i;
+    for (i = 0; i < bulkTScnt; i++) {
+        if (amsPort == bulkTS[i].amsPort)
+            break;
+    }
+    if (i == bulkTScnt) {
+        bulkTScnt++;
+        bulkTS[i].amsPort = amsPort;
+        bulkTS[i].refreshNeeded = 1;
+    }
+#define TSLO "MAIN.fbSystemTime.timeLoDW"
+#define TSHI "MAIN.fbSystemTime.timeHiDW"
+    if (bulkTS[i].refreshNeeded) {
+        long statL, statH;
+        AmsAddr amsServer = {remoteNetId_, amsPort};
+        statH = AdsSyncReadWriteReqEx2(adsPort_,
+                                       &amsServer,
+                                       ADSIGRP_SYM_HNDBYNAME,
+                                       0,
+                                       sizeof(uint32_t), &bulkTS[i].iHandleH,
+                                       strlen(TSHI), TSHI, 
+                                       nullptr);
+        statL = AdsSyncReadWriteReqEx2(adsPort_,
+                                       &amsServer,
+                                       ADSIGRP_SYM_HNDBYNAME,
+                                       0,
+                                       sizeof(uint32_t), &bulkTS[i].iHandleL,
+                                       strlen(TSLO), TSLO, 
+                                       nullptr);
+        if (!statH && !statL)
+            bulkTS[i].refreshNeeded = 0;
+    }
+    return i;
 }
 
 /** Get asyn type from record.
@@ -1174,6 +1424,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   //Check if ADS_OPTION_T_SAMPLE_RATE_MS option
   option=ADS_OPTION_T_SAMPLE_RATE_MS;
   paramInfo->sampleTimeMS=defaultSampleTimeMS_;
+  paramInfo->hasSampleRate = false;
   isThere=strstr(drvInfo,option);
   if(isThere){
     if(strlen(isThere)<(strlen(option)+strlen("=0/"))){
@@ -1188,6 +1439,7 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
+    paramInfo->hasSampleRate = true;
   }
 
   //Check if ADS_OPTION_TIMEBASE option

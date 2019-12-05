@@ -98,6 +98,7 @@ public:
   bool isCallbackAllowed(uint16_t amsPort);
 
   void cyclicThread();
+  void bulkReadThread();
 protected:
 
 private:
@@ -188,6 +189,8 @@ private:
   amsPortInfo* getAmsPortObject(uint16_t amsPort);
   void       adsLock();
   void       adsUnlock();
+  asynStatus adsAddToBulkRead(adsParamInfo* paramInfo);
+  int        adsFindBulkTimeStamp(uint16_t amsPort);
 
   //Octet interface methods (ascii command parser through readoctet() and writeoctet())
   int        octetCMDreadIt(char *outbuf,
@@ -244,6 +247,35 @@ private:
   adsOctetOutputBufferType       octetAsciiBuffer_;
   uint8_t                        octetBinaryBuffer_[ADS_CMD_BUFFER_SIZE];
   int                            octetReturnVarName_;
+
+  //bulk read
+#define MAXTSENTRY 10
+  struct tsentry {
+      uint16_t amsPort;
+      uint32_t iHandleH;
+      uint32_t iHandleL;
+      int refreshNeeded;
+  } bulkTS[MAXTSENTRY];
+  int bulkTScnt;
+#define MAXBULK 2000
+#define BULKSIZ 500
+  struct {
+      int cnt;               // Number of variables in this read
+      uint16_t amsPort;      // The port this goes to!
+      struct {
+          uint32_t iGroup;
+          uint32_t iOffset;
+          uint32_t iSize;
+      } sum[BULKSIZ];        // The actual request!
+      int paramID[BULKSIZ];  // The asyn parameter handles
+      int readSize;          // The total size of the read expected (including status).
+      int refreshNeeded;
+  } bulk[MAXBULK];
+  int bulk_delay_us;         // Rate to process bulk reads.
+  uint8_t *bulkdata;         // A read buffer of maximum size.
+  int bulkdatasize;          // Size of the read buffer.
+ public:
+  int bulkOK;                // OK to process bulk reads!
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */
