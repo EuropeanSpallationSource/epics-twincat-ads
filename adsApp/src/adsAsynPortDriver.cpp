@@ -2090,7 +2090,7 @@ asynStatus adsAsynPortDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 val
     if(adsWriteState(paramInfo->amsPort,(uint16_t)value)!=asynSuccess){
       return setAlarmParam(paramInfo,WRITE_ALARM,INVALID_ALARM);
     }
-    // Write OK -> reset werite alarm
+    // Write OK -> reset write alarm
     if(paramInfo->alarmStatus==WRITE_ALARM){
       return setAlarmParam(paramInfo,NO_ALARM,NO_ALARM);
     }
@@ -2769,7 +2769,7 @@ asynStatus adsAsynPortDriver::adsAddDataCallback(adsParamInfo *paramInfo)
     return asynError;
   }
 
-  //Add was successfull
+  //Add was successful
   paramInfo->hCallbackNotify=hNotify;
   paramInfo->bCallbackNotifyValid=true;
 
