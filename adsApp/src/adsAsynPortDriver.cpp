@@ -1,3 +1,4 @@
+//#define MCB_DEBUG
 /*
 * adsAsynPortDriver.cpp
 *
@@ -5,10 +6,13 @@
 * AdsLib written by Beckhoff is used for communication: https://github.com/Beckhoff/ADS
 *
 * Author: Anders Sandström
+* Edited to add bulk reads: Michael Browne
 *
 * Created January 25, 2018
+* Edited  December 6, 2019
 */
 
+#define USE_TYPED_RSET    // Shut up about rset already!
 #include "adsAsynPortDriver.h"
 
 #include <stdlib.h>
@@ -52,6 +56,9 @@ static void getEpicsState(initHookState state)
   static struct timeval start;
   struct timeval now, diff;
 
+#ifdef MCB_DEBUG
+  printf("getEpicsState(%d)\n", state);
+#endif
   if(!adsAsynPortObj){
     printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
     return;
@@ -67,7 +74,7 @@ static void getEpicsState(initHookState state)
     case initHookAfterInitDatabase:
         gettimeofday(&now, NULL);
         timersub(&now, &start, &diff);
-        printf("Database initialization took %d.%05d seconds.\n", diff.tv_sec, diff.tv_usec);
+        printf("Database initialization took %ld.%05ld seconds.\n", diff.tv_sec, diff.tv_usec);
         break;
     case initHookAfterScanInit:
       allowCallbackEpicsState=1;
@@ -79,6 +86,7 @@ static void getEpicsState(initHookState state)
       }
       adsAsynPortObj->fireAllCallbacksLock();
       adsAsynPortObj->bulkOK = 1;
+      printf("Begin polling PLC!\n");
       break;
     default:
       break;
@@ -115,10 +123,8 @@ static void adsSymbolsChangedCallback(const AmsAddr* pAddr, const AdsNotificatio
   asynUser *asynTraceUser=adsAsynPortObj->getTraceAsynUser();
   asynPrint(asynTraceUser, ASYN_TRACE_INFO , "%s:%s: Symbols changed for Ams-port %u.\n", driverName, functionName,pAddr->port);
 
-  adsAsynPortObj->bulkOK = 0;
   adsAsynPortObj->invalidateParamsLock(pAddr->port);
   adsAsynPortObj->refreshParamsLock(pAddr->port);
-  adsAsynPortObj->bulkOK = 1;
 }
 
 /** Callback from ads lib for updated data.
@@ -239,7 +245,6 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      ADSTIMESOURCE defaultTimeSource)
                      :asynPortDriver(portName,
                                      1, /* maxAddr */
-                                     paramTableSize,
                                      asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask, /* Interface mask */
                                      asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask,  /* Interrupt mask */
                                      ASYN_CANBLOCK, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
@@ -348,16 +353,23 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   for (int i = 0; i < MAXBULK; i++)
       bulk[i].cnt = 0;            // Entry is currently unused!!
   bulkTScnt = 0;
-  bulk_delay_us = 1000000;        // 1 Hz
+  if (defaultSampleTimeMS_ < 1000) {
+      printf("Default Sample Time of %d ms is too small, defaulting to 1Hz.\n",
+             defaultSampleTimeMS_);
+      bulk_delay_us = 1000000;        // 1 Hz
+  } else {
+      printf("Default bulk read time: %d ms\n", defaultSampleTimeMS_);
+      bulk_delay_us = defaultSampleTimeMS_ * 1000;
+  }
   bulkdatasize = 4 * 1024 * 1024; // This is excessive!
   bulkdata = (uint8_t *) malloc(bulkdatasize);
   bulkOK = 0;
 
   //* Create the thread that does the bulk reads */
   status = (asynStatus)(epicsThreadCreate("adsAsynPortDriverBulkReadThread",
-                                                     epicsThreadPriorityMedium,
-                                                     epicsThreadGetStackSize(epicsThreadStackMedium),
-                                                     (EPICSTHREADFUNC)::bulkReadThread,this) == NULL);
+                                          epicsThreadPriorityMedium,
+                                          epicsThreadGetStackSize(epicsThreadStackMedium),
+                                          (EPICSTHREADFUNC)::bulkReadThread,this) == NULL);
 
   if(status){
     printf("%s:%s: epicsThreadCreate failure\n", driverName, functionName);
@@ -431,7 +443,7 @@ void adsAsynPortDriver::cyclicThread()
         bool portConnected=(stat==asynSuccess);
         port->adsStateOld=port->adsState;
         if(stat==asynSuccess){
-          port->adsState=(ADSSTATE)adsState;
+            port->adsState=(ADSSTATE)adsState;
         }
         else{
             port->adsState=ADSSTATE_INVALID;
@@ -443,7 +455,7 @@ void adsAsynPortDriver::cyclicThread()
 
         oneAmsConnectionOK=oneAmsConnectionOK || portConnected;
 
-        if(port->connected){
+        if(port->connected && port->refreshNeeded){
           refreshParamsLock(port->amsPort);
         }
         if(port->connectedOld && !port->connected){
@@ -512,12 +524,18 @@ void adsAsynPortDriver::bulkReadThread()
     gettimeofday(&now, NULL);
     while (1) {
         start = now;
+        adsLock();
         for (int i = 0; bulk[i].cnt; i++) {
-            adsLock();
             if (!bulkOK || !bulk[i].cnt) {
-                adsUnlock();
                 break;
             }
+#ifdef MCB_DEBUG
+            static int first = 1;
+            if (first) {
+                printf("Starting to poll!\n");
+                first = 0;
+            }
+#endif
             bytesRead = 0;
             cnt = bulk[i].cnt;
             readSize = bulk[i].readSize;
@@ -527,7 +545,6 @@ void adsAsynPortDriver::bulkReadThread()
                                             readSize, bulkdata,
                                             sizeof(bulk[i].sum[0]) * cnt, &bulk[i].sum,
                                             &bytesRead);
-            adsUnlock();
             if (status) {
                 printf("Sum read %d failed: status %ld\n", i, status);
                 continue;
@@ -555,7 +572,7 @@ void adsAsynPortDriver::bulkReadThread()
             if (!stat[1])
                 srd += sizeof(uint32_t);
             stat += 2;
-            for (int j = 2; j < cnt; j++) {
+            for (uint32_t j = 2; j < cnt; j++) {
                 adsParamInfo *paramInfo=getAdsParamInfo(bulk[i].paramID[j]);
                 if (!paramInfo){
                     asynPrint(asynTraceUser, ASYN_TRACE_ERROR,
@@ -571,13 +588,17 @@ void adsAsynPortDriver::bulkReadThread()
                 }
                 paramInfo->plcTimeStampRaw=nTimeStamp;
                 paramInfo->lastCallbackSize=paramInfo->plcSize;
-                adsUpdateParameterLock(paramInfo, srd);
+                adsUpdateParameter(paramInfo, srd);
                 srd += paramInfo->lastCallbackSize;
             }
         }
+        adsUnlock();
         gettimeofday(&now, NULL);
         int us_elapsed = (now.tv_sec - start.tv_sec) * 1000000 + 
                          (now.tv_usec - start.tv_usec);
+#ifdef MCB_DEBUG
+        printf("ELAPSED: %g\n", us_elapsed / 1000000.0);
+#endif
         if (us_elapsed < bulk_delay_us) {
             usleep(bulk_delay_us - us_elapsed);
             gettimeofday(&now, NULL);
@@ -758,6 +779,8 @@ asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
       }
     }
   }
+  bulkOK = 1;
+  printf("refreshParams done\n");
   return asynSuccess;
 }
 
@@ -783,6 +806,8 @@ asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
   const char* functionName = "invalidateParams";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
+  bulkOK = 0;
+  printf("invalidateParams\n");
   if(adsParamArrayCount_>1){
     for(int i=1; i<adsParamArrayCount_;i++){  //Skip first param since used for motorrecord or stream device
       if(!pAdsParamArray_[i]){
@@ -1561,7 +1586,7 @@ asynStatus adsAsynPortDriver::addNewAmsPortToList(uint16_t amsPort)
     newPort->amsPort=amsPort;
     newPort->adsState=(ADSSTATE)(ADSSTATE_MAXSTATES+1); //Set unknown state..
     newPort->adsStateOld=newPort->adsState;
-    newPort->refreshNeeded=true;
+    newPort->refreshNeeded=false;     // This is actually all initialized!!
     amsPortList_.push_back(newPort);
   }
   catch(std::exception &e)
