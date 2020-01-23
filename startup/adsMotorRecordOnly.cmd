@@ -1,6 +1,6 @@
-require ads,develop
+require ads,2.0.2
 require stream, 2.8.10
-require EthercatMC 3.0.0
+require EthercatMC 3.0.2
 
 ##############################################################################
 # Demo file to run one motor record axis (or actually axis record). 
@@ -27,7 +27,9 @@ require EthercatMC 3.0.0
 # 9. max delay time ms (buffer time in plc)  :  1000
 # 10. ADS command timeout in ms              :  5000  
 # 11. default time source (PLC=0,EPICS=1)    :  0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
-adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000,0,0,50,100,5000,0)
+
+epicsEnvSet(ADS_DEFAULT_PORT, 851)
+adsAsynPortDriverConfigure("ADS_1","192.168.88.63","192.168.88.63.1.1",${ADS_DEFAULT_PORT},1000,0,0,50,100,1000,0)
 
 epicsEnvSet(STREAM_PROTOCOL_PATH, ${ads_DB})
 asynOctetSetOutputEos("ADS_1", -1, "\n")
@@ -56,12 +58,13 @@ epicsEnvSet("MOTOR_NAME",    "M1")
 epicsEnvSet("R",             "M1-")
 epicsEnvSet("DESC",          "Motor 1")
 epicsEnvSet("AXIS_NO",       "1")
-epicsEnvSet("DLLM",          "$(SM_DLLM=0)")
-epicsEnvSet("DHLM",          "$(SM_DHLM=0)")
-epicsEnvSet("HOMEPROC",      "$(SM_HOMEPROC=3)")
+epicsEnvSet("DLLM",          "0")
+epicsEnvSet("DHLM",          "0")
+epicsEnvSet("HOMEPROC",      "3")
 
 EthercatMCCreateAxis(${MOTOR_PORT}, "${AXIS_NO}", "6", "stepSize=${MRES}")
 dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME), R=$(R), MOTOR_PORT=$(MOTOR_PORT), ASYN_PORT=$(ASYN_PORT), AXIS_NO=$(AXIS_NO), DESC=$(DESC), PREC=$(PREC), VELO=$(VELO), JVEL=$(JVEL), JAR=$(JAR), ACCL=$(ACCL), MRES=$(MRES), DLLM=$(DLLM), DHLM=$(DHLM), HOMEPROC=$(HOMEPROC)")
+dbLoadRecords("EthercatMChome.template", "PREFIX=${PREFIX}, MOTOR_NAME=${MOTOR_NAME}, MOTOR_PORT=${MOTOR_PORT}, AXIS_NO=${AXIS_NO},HOMEPROC=${HOMEPROC}, HOMEPOS=0, HVELTO=3, HVELFRM=2, HOMEACC=0.1, HOMEDEC=0.01")
 
 ############# Axis 2: (Needs to be added in twincat project)
 #epicsEnvSet("MOTOR_NAME",    "M2")
@@ -70,6 +73,7 @@ dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME)
 #epicsEnvSet("AXIS_NO",       "2")
 #EthercatMCCreateAxis(${MOTOR_PORT}, "${AXIS_NO}", "6", "adsPort=851")
 #dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME), R=$(R), MOTOR_PORT=$(MOTOR_PORT), ASYN_PORT=$(ASYN_PORT), AXIS_NO=$(AXIS_NO), DESC=$(DESC), PREC=$(PREC), VELO=$(VELO), JVEL=$(JVEL), JAR=$(JAR), ACCL=$(ACCL), MRES=$(MRES), DLLM=$(DLLM), DHLM=$(DHLM), HOMEPROC=$(HOMEPROC)")
+#dbLoadRecords("EthercatMChome.template", "PREFIX=${PREFIX}, MOTOR_NAME=${MOTOR_NAME}, MOTOR_PORT=${MOTOR_PORT}, AXIS_NO=${AXIS_NO},HOMEPROC=${HOMEPROC}, HOMEPOS=0, HVELTO=3, HVELFRM=2, HOMEACC=0.1, HOMEDEC=0.01")
 
 ##############################################################################
 ############# Motor/Axis record error message:
@@ -84,3 +88,4 @@ dbLoadRecords("EthercatMC.template", "PREFIX=$(PREFIX), MOTOR_NAME=$(MOTOR_NAME)
 #var streamDebug 1
 #asynReport(2,"ADS_1")
 #asynSetTraceMask("ADS_1", -1, 0xFF)
+iocInit
