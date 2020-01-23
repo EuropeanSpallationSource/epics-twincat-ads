@@ -1,4 +1,4 @@
-require ads,develop
+require ads,2.0.1
 require stream, 2.8.10
 
 ##############################################################################
@@ -23,7 +23,9 @@ require stream, 2.8.10
 # 9. max delay time ms (buffer time in plc) :  100
 # 10. ADS command timeout in ms             :  5000 
 # 11. default time source (PLC=0,EPICS=1)   :  0 (PLC) NOTE: record TSE field need to be set to -2 for timestamp in asyn ("field(TSE, -2)")
-adsAsynPortDriverConfigure("ADS_1","192.168.88.44","192.168.88.44.1.1",851,1000,0,0,50,100,1000,0)
+
+epicsEnvSet(ADS_DEFAULT_PORT, 851)
+adsAsynPortDriverConfigure("ADS_1","192.168.88.63","192.168.88.63.1.1",${ADS_DEFAULT_PORT},1000,0,0,50,100,1000,0)
 
 epicsEnvSet(STREAM_PROTOCOL_PATH, ${ads_DB})
 
@@ -37,10 +39,11 @@ dbLoadRecords("../adsExApp/Db/adsTestOctet.db","P=ADS_IOC:OCTET:,PORT=ADS_1")
 
 ##############################################################################
 ############# Load records (asyn direct I/O intr):
-dbLoadRecords("../adsExApp/Db/adsTestAsyn.db","P=ADS_IOC:ASYN:,PORT=ADS_1")
+dbLoadRecords("../adsExApp/Db/adsTestAsyn.db","P=ADS_IOC:ASYN:,PORT=ADS_1,ADSPORT=${ADS_DEFAULT_PORT}")
 
 ##############################################################################
 ############# Usefull commands
 #var streamDebug 1
 #asynReport(2,"ADS_1")
 #asynSetTraceMask("ADS_1", -1, 0xFF)
+iocInit
