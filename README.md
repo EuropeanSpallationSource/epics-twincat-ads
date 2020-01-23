@@ -1,14 +1,15 @@
 # EPICS Module to communicate with TwinCAT controllers over ADS protocol.
 
-Developped for use with EEE (ESS EPICS Environment) but can also be compiled for "normal" EPICS
+Developped for use with E3 (ESS EPICS Environment) but can also be compiled for "normal" EPICS
 
 git clone --recursive https://github.com/EuropeanSpallationSource/epics-twincat-ads
 
-TwinCAT plc source example  can be found in TwinCAT/demo_project/
+TwinCAT plc source example can be found in the TwinCATexample directory.
 
 Start EPICS ioc with (E3):
 iocsh.bash adsOnlyIO.cmd
 iocsh.bash adsMotorRecord.cmd
+iocsh.bash adsMotorRecordOnly.cmd
 
 Contact: anders.sandstrom@esss.se
 
