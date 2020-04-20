@@ -56,9 +56,6 @@ static void getEpicsState(initHookState state)
   static struct timeval start;
   struct timeval now, diff;
 
-#ifdef MCB_DEBUG
-  printf("getEpicsState(%d)\n", state);
-#endif
   if(!adsAsynPortObj){
     printf("%s:%s: ERROR: adsAsynPortObj==NULL\n", driverName, functionName);
     return;
@@ -270,6 +267,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   connectedAds_=0;
   defaultTimeSource_=defaultTimeSource;
   routeAdded_=0;
+  notConnectedCounter_ = 0;
   oneAmsConnectionOKold_=0;
   adsUnlock();
 
@@ -440,7 +438,7 @@ void adsAsynPortDriver::cyclicThread()
       for(amsPortInfo *port : amsPortList_){
         long error=0;
         asynStatus stat=adsReadStateLock(port->amsPort,&adsState,true,&error);
-        bool portConnected=(stat==asynSuccess);
+        bool portConnected=(stat==asynSuccess && adsState == ADSSTATE_RUN);
         port->adsStateOld=port->adsState;
         if(stat==asynSuccess){
             port->adsState=(ADSSTATE)adsState;
@@ -464,10 +462,9 @@ void adsAsynPortDriver::cyclicThread()
           setAlarmPortLock(port->amsPort,COMM_ALARM,INVALID_ALARM);
         }
         if(!port->connectedOld && port->connected){
-           adsReadVersion(port);
+          adsReadVersion(port);
         }
       }
-      connectedAds_=oneAmsConnectionOK;
     }
 
     //Printout state status
@@ -488,9 +485,11 @@ void adsAsynPortDriver::cyclicThread()
     }
 
 
-    if(!oneAmsConnectionOK && notConnectedCounter_<100){
+    if(!oneAmsConnectionOK){
       notConnectedCounter_++;
-      asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Not connected counter: %d.\n",driverName,functionName,notConnectedCounter_);
+      if (notConnectedCounter_ < 100 || notConnectedCounter_ % 100 == 0) {
+	asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Not connected counter: %d.\n",driverName,functionName,notConnectedCounter_);
+      }
     }
     if(oneAmsConnectionOK){
       notConnectedCounter_=0;
@@ -501,11 +500,9 @@ void adsAsynPortDriver::cyclicThread()
         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,"%s:%s: No connection! Try to reconnect...\n",driverName,functionName);
       }
       connectedAds_=0;
-      if(notConnectedCounter_==0){ //Only disconnect once
+      if((notConnectedCounter_&2)==2){
+	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "cyclicThread: forcing disconnect.\n");
         disconnectLock(pasynUserSelf);
-      }
-      if(notConnectedCounter_>2){
-        connectLock(pasynUserSelf);
       }
     }
     oneAmsConnectionOKold_=oneAmsConnectionOK;
@@ -780,7 +777,6 @@ asynStatus adsAsynPortDriver::refreshParams(uint16_t amsPort)
     }
   }
   bulkOK = 1;
-  printf("refreshParams done\n");
   return asynSuccess;
 }
 
@@ -807,7 +803,6 @@ asynStatus adsAsynPortDriver::invalidateParams(uint16_t amsPort)
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   bulkOK = 0;
-  printf("invalidateParams\n");
   if(adsParamArrayCount_>1){
     for(int i=1; i<adsParamArrayCount_;i++){  //Skip first param since used for motorrecord or stream device
       if(!pAdsParamArray_[i]){
@@ -1627,7 +1622,7 @@ bool adsAsynPortDriver::isCallbackAllowed(uint16_t amsPort)
   return false;
 }
 
-/** Overrides asynPortDriver:asynPrint(pasynUser, ASYN_TRACE_FLOWtet.
+/** Overrides asynPortDriver:readOctet.
  * This method, together with writeOctet, implements an ASCII command parser.
  * Mainly used for motor record and stream device access. pasynUser->reason==0
  * is reserved for this interface (and also pAdsParamArray_[0]).
@@ -1645,10 +1640,10 @@ bool adsAsynPortDriver::isCallbackAllowed(uint16_t amsPort)
  *      Read a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition?;"\n
  *  2. Symbolic write: "option1/option2/symbolicname=<value>;":\n
  *      Write to a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition=10;"\n
- *  3: Abs adress read: "option1/.ADR.16#<group>,<offset>,<size>,<type>?;"\n
+ *  3: Abs address read: "option1/.ADR.16#<group>,<offset>,<size>,<type>?;"\n
  *      Read low soflimit position in TwinCAT NC for axis 1:\n
  *      "ADSPORT=501/.ADR.16#5001,D,8,5?;"\n
- *  4: Abs adress write: "option1/.ADR.16#<group>,<offset>,<size>,<type>=<value>;"\n
+ *  4: Abs address write: "option1/.ADR.16#<group>,<offset>,<size>,<type>=<value>;"\n
  *      Set low soflimit position in TwinCAT NC for axis 1 to 100:\n
  *      "ADSPORT=501/.ADR.16#5001,D,8,5=100;"\n
  */
@@ -1751,10 +1746,10 @@ int adsAsynPortDriver::octetCMDreadIt(char *outbuf, size_t outlen)
  *  2. Symbolic write: "option1/option2/symbolicname=<value>;":\n
  *      Write to a var on ams-port 851: "ADSPORT=851/Main.M1.fPosition=10;"\n
  *  3: Abs adress read: "option1/.ADR.16#<group>,<offset>,<size>,<type>?;"\n
- *      Read low soflimit position in TwinCAT NC for axis 1:\n
+ *      Read low softlimit position in TwinCAT NC for axis 1:\n
  *      "ADSPORT=501/.ADR.16#5001,D,8,5?;"\n
  *  4: Abs adress write: "option1/.ADR.16#<group>,<offset>,<size>,<type>=<value>;"\n
- *      Set low soflimit position in TwinCAT NC for axis 1 to 100:\n
+ *      Set low softlimit position in TwinCAT NC for axis 1 to 100:\n
  *      "ADSPORT=501/.ADR.16#5001,D,8,5=100;"\n
  */
 asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars,size_t *nActual)
@@ -1779,7 +1774,7 @@ asynStatus adsAsynPortDriver::writeOctet(asynUser *pasynUser, const char *value,
   //lock();
   int errorCode=octetCMDwriteIt(value, maxChars);
   if (errorCode){
-    /*Return asyn error if communication is down (all client errors) otherwise asynSucces
+    /*Return asyn error if communication is down (all client errors) otherwise asynSuccess
      * but error message in buffer*/
     if (errorCode>=ADSERR_CLIENT_ERROR){
       return asynError;
@@ -3267,7 +3262,7 @@ asynStatus adsAsynPortDriver::adsConnect()
  */
 asynStatus adsAsynPortDriver::adsReadVersion(amsPortInfo *port)
 {
-  const char* functionName = "adsDisconnect";
+  const char* functionName = "adsReadVersion";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Ams-port %u\n", driverName, functionName,port->amsPort);
 
   AmsAddr amsServer;
