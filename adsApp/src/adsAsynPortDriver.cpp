@@ -250,6 +250,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      0) /* Default stack size*/
 {
   const char* functionName = "adsAsynPortDriver";
+  //Extra Debugging from the beginning: pasynTrace->setTraceMask(pasynUserSelf, 0x11);
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
   pAdsParamArray_= new adsParamInfo*[paramTableSize];
@@ -362,6 +363,7 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   bulkdatasize = 4 * 1024 * 1024; // This is excessive!
   bulkdata = (uint8_t *) malloc(bulkdatasize);
   bulkOK = 0;
+  bulk_elapsed_us = 0;
 
   //* Create the thread that does the bulk reads */
   status = (asynStatus)(epicsThreadCreate("adsAsynPortDriverBulkReadThread",
@@ -373,8 +375,31 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
     printf("%s:%s: epicsThreadCreate failure\n", driverName, functionName);
     return;
   }
-  //try connect
-  connect(pasynUserSelf);
+  //try to connect, and hang until we succeed!
+  for (;;) {
+      if (connect(pasynUserSelf) != asynSuccess) {
+	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
+		    "%s:%s: connect failed for port %s.\n", 
+		    driverName, functionName, portName);
+	  epicsThreadSleep(1.0);
+	  continue;
+      }
+      long error = 0;
+      uint16_t adsState = 0;
+      if (adsReadStateLock(amsport,&adsState,true,&error) != asynSuccess) {
+	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
+		    "%s:%s: adsReadStateLock failed for port %s.\n", 
+		    driverName, functionName, portName);
+	  disconnect(pasynUserSelf);
+	  continue;
+      }
+      if (adsState == ADSSTATE_RUN) {
+	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
+		    "%s:%s: connection established for port %s.\n", 
+		    driverName, functionName, portName);
+	  return;
+      }
+  }
 }
 
 /** Destructor for the adsAsynPortDriver class.
@@ -460,6 +485,10 @@ void adsAsynPortDriver::cyclicThread()
           invalidateParamsLock(port->amsPort);
           port->refreshNeeded=true;
           setAlarmPortLock(port->amsPort,COMM_ALARM,INVALID_ALARM);
+	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
+		    "%s:%s: connection failed for port %s.\n", 
+		    driverName, functionName, portName);
+	  exit(-1);
         }
         if(!port->connectedOld && port->connected){
           adsReadVersion(port);
@@ -509,6 +538,7 @@ void adsAsynPortDriver::cyclicThread()
   }
 }
 
+/* TBD - Poll at different rates depending on pollClass! */
 void adsAsynPortDriver::bulkReadThread()
 {
     const char* functionName = "bulkReadThread";
@@ -591,13 +621,13 @@ void adsAsynPortDriver::bulkReadThread()
         }
         adsUnlock();
         gettimeofday(&now, NULL);
-        int us_elapsed = (now.tv_sec - start.tv_sec) * 1000000 + 
-                         (now.tv_usec - start.tv_usec);
+        bulk_elapsed_us = (now.tv_sec - start.tv_sec) * 1000000 + 
+	                  (now.tv_usec - start.tv_usec);
 #ifdef MCB_DEBUG
-        printf("ELAPSED: %g\n", us_elapsed / 1000000.0);
+        printf("ELAPSED: %g\n", bulk_elapsed_us / 1000000.0);
 #endif
-        if (us_elapsed < bulk_delay_us) {
-            usleep(bulk_delay_us - us_elapsed);
+        if (bulk_elapsed_us < bulk_delay_us) {
+            usleep(bulk_delay_us - bulk_elapsed_us);
             gettimeofday(&now, NULL);
         }
     }
@@ -847,7 +877,7 @@ asynStatus adsAsynPortDriver::connectLock(asynUser *pasynUser)
 asynStatus adsAsynPortDriver::connect(asynUser *pasynUser)
 {
   const char* functionName = "connect";
-  asynPrint(pasynUser, ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUser, ASYN_TRACE_FLOW, "%s:%s: %s\n", driverName, functionName, epicsThreadGetNameSelf());
 
   bool err=false;
   asynStatus stat = adsConnect();
@@ -1102,15 +1132,15 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   }
 
   if(paramInfo->isIOIntr){
-      /* If we specify a sample rate or it's big, just subscribe to it! */
-      if (paramInfo->hasSampleRate || paramInfo->plcSize > 1024*1024) {
+      /* If it's not a bulk read or if it's really big, just subscribe to it! */
+      if (!paramInfo->isBulkRead || paramInfo->plcSize > 1024*1024) {
           adsDelDataCallback(paramInfo,true);   //try to delete
           status=adsAddDataCallback(paramInfo);
           if(status!=asynSuccess){
               return asynError;
           }
       } else { /* Otherwise, put it in a bulk read! */
-          status=adsAddToBulkRead(paramInfo);
+	  status=adsAddToBulkRead(paramInfo);
           if(status!=asynSuccess){
               return asynError;
           }
@@ -1133,6 +1163,35 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
   return asynSuccess;
 }
 
+void adsAsynPortDriver::poll_info(char *name)
+{
+    int i;
+    printf("Bulk read loop: desired period = %gs, last loop time = %gs\n", bulk_delay_us / 1000000.0, bulk_elapsed_us / 1000000.0);
+    for (i = 0; bulk[i].cnt && i < MAXBULK; i++);
+    printf("Bulk read count = %d\n", i);
+    if (name[0] == 0)
+        name = 0;
+    for (i = 0; bulk[i].cnt && i < MAXBULK; i++) {
+      printf("Bulk Read #%d:\n", i);
+      if (!name) {
+	  printf("    0: MAIN.fbSystemTime.timeLoDW (G=0x%x, O=0x%x, S=%d)\n",
+		 bulk[i].sum[0].iGroup, bulk[i].sum[0].iOffset, bulk[i].sum[0].iSize);
+	  printf("    1: MAIN.fbSystemTime.timeHiDW (G=0x%x, O=0x%x, S=%d)\n",
+		 bulk[i].sum[1].iGroup, bulk[i].sum[1].iOffset, bulk[i].sum[1].iSize);
+      }
+      for (int j = 2; j < bulk[i].cnt; j++) {
+        adsParamInfo *paramInfo=getAdsParamInfo(bulk[i].paramID[j]);
+	if (!paramInfo)
+	  continue;
+	if (!name || strstr(paramInfo->plcAdrStr, name))
+	    printf("  %3d: %s (G=0x%x, O=0x%x, S=%d, TS=%d.%09d)\n", j, paramInfo->plcAdrStr,
+		   bulk[i].sum[j].iGroup, bulk[i].sum[j].iOffset, bulk[i].sum[j].iSize,
+		   paramInfo->epicsTimestamp.secPastEpoch, paramInfo->epicsTimestamp.nsec);
+      }
+    }
+}
+
+/* TBD - Use paramInfo->pollClass to separate into different poll rates!! */
 asynStatus adsAsynPortDriver::adsAddToBulkRead(adsParamInfo* paramInfo)
 {
     adsLock(); // Prevent reads while we change this!
@@ -1444,7 +1503,6 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
   //Check if ADS_OPTION_T_SAMPLE_RATE_MS option
   option=ADS_OPTION_T_SAMPLE_RATE_MS;
   paramInfo->sampleTimeMS=defaultSampleTimeMS_;
-  paramInfo->hasSampleRate = false;
   isThere=strstr(drvInfo,option);
   if(isThere){
     if(strlen(isThere)<(strlen(option)+strlen("=0/"))){
@@ -1459,7 +1517,27 @@ asynStatus adsAsynPortDriver::parsePlcInfofromDrvInfo(const char* drvInfo,adsPar
       asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
       return asynError;
     }
-    paramInfo->hasSampleRate = true;
+  }
+
+  //Check if ADS_OPTION_POLLRATE option
+  option=ADS_OPTION_POLLRATE;
+  paramInfo->isBulkRead = false;
+  paramInfo->pollClass = 1.0;
+  isThere=strstr(drvInfo,option);
+  if(isThere){
+    if(strlen(isThere)<(strlen(option)+strlen("=0/"))){
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). String to short.\n", driverName, functionName,option,drvInfo);
+      return asynError;
+    }
+    paramInfo->isBulkRead = true;
+
+    int nvals = sscanf(isThere+strlen(option),"=%lf/",&paramInfo->pollClass);
+
+    if(nvals!=1){
+      paramInfo->pollClass = 1.0;
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Failed to parse %s option from drvInfo (%s). Wrong format.\n", driverName, functionName,option,drvInfo);
+      return asynError;
+    }
   }
 
   //Check if ADS_OPTION_TIMEBASE option
@@ -3143,6 +3221,12 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *v
 
   if (infoStatus) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (0x%lx)\n", driverName, functionName,varName,adsErrorToString(infoStatus),infoStatus);
+    if (infoStatus == GLOBALERR_TARGET_PORT) {
+	/* Sigh.  It was up, now it's down.  Let's go home. */
+	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Port error, giving up!\n", 
+		  driverName, functionName);
+	exit(1);
+    }
     return asynError;
   }
 
@@ -3214,7 +3298,6 @@ asynStatus adsAsynPortDriver::adsConnect()
   const char* functionName = "adsConnect";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
-
   adsDelRoute(1);
   // add local route to your ADS Master
   if(!routeAdded_){
@@ -3222,18 +3305,26 @@ asynStatus adsAsynPortDriver::adsConnect()
 
     if (stat!=asynSuccess) {
       adsDelRoute(1);
-      adsPort_=0;
-      return asynError;
+      if (adsPort_) {
+	  adsLock();
+	  AdsPortCloseEx(adsPort_);
+	  adsPort_=0;
+	  adsUnlock();
+	  return asynError;
+      }
     }
   }
+
   // open a new ADS port
   adsLock();
-  adsPort_ = AdsPortOpenEx();
+  if (!adsPort_)
+      adsPort_ = AdsPortOpenEx();
   adsUnlock();
   if (!adsPort_) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s:Open ADS port failed.\n", driverName, functionName);
     return asynError;
   }
+  asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s:Open ADS port = %ld.\n", driverName, functionName, adsPort_);
   // Update timeout
   uint32_t defaultTimeout=0;
   adsLock();
@@ -3290,17 +3381,16 @@ asynStatus adsAsynPortDriver::adsReadVersion(amsPortInfo *port)
 asynStatus adsAsynPortDriver::adsDisconnect()
 {
   const char* functionName = "adsDisconnect";
-  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
+  asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: adsPort_=%ld\n", driverName, functionName, adsPort_);
 
   adsLock();
   const long closeStatus = AdsPortCloseEx(adsPort_);
+  adsPort_ = 0;
   adsUnlock();
   if (closeStatus) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Close ADS port failed with: %s (0x%lx)\n", driverName, functionName,adsErrorToString(closeStatus),closeStatus);
     return asynError;
   }
-
-  adsPort_=0;
 
   return asynSuccess;
 }
@@ -4381,7 +4471,7 @@ asynStatus adsAsynPortDriver::adsAddRouteLock()
 
   // add local route to your ADS Master
   adsLock();
-  const long addRouteStatus =AdsAddRoute(remoteNetId_, ipaddr_);
+  const long addRouteStatus = AdsAddRoute(remoteNetId_, ipaddr_);
   adsUnlock();
   if(addRouteStatus){
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Adding ADS route failed with: %s (0x%lx).\n", driverName, functionName,adsErrorToString(addRouteStatus),addRouteStatus);
@@ -4576,6 +4666,18 @@ extern "C" {
   }
 
   /*
+   * adsPollInfo("name")
+   */
+  static const iocshArg adsPollInfoArg0 = {"name", iocshArgString};
+  static const iocshArg *adsPollInfoArgs[] = {&adsPollInfoArg0};
+  static const iocshFuncDef adsPollInfoFuncDef = {"adsPollInfo",1,adsPollInfoArgs};
+
+  static void adsPollInfoCallFunc(const iocshArgBuf *args)
+  {
+    adsAsynPortObj->poll_info(args[0].sval);
+  }
+
+  /*
    * This routine is called before multitasking has started, so there's
    * no race condition in the test/set of firstTime.
    */
@@ -4584,6 +4686,7 @@ extern "C" {
   {
     iocshRegister(&adsAsynPortDriverConfigureFuncDef,adsAsynPortDriverConfigureCallFunc);
     iocshRegister(&adsSetLocalAddressFuncDef,adsSetLocalAddressCallFunc);
+    iocshRegister(&adsPollInfoFuncDef, adsPollInfoCallFunc);
   }
 
   epicsExportRegistrar(adsAsynPortDriverRegister);

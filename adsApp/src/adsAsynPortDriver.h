@@ -99,6 +99,7 @@ public:
 
   void cyclicThread();
   void bulkReadThread();
+  void poll_info(char *name);
 protected:
 
 private:
@@ -276,6 +277,7 @@ private:
   int bulkdatasize;          // Size of the read buffer.
  public:
   int bulkOK;                // OK to process bulk reads!
+  int bulk_elapsed_us;       // Time of last bulk read loop.
 };
 
 #endif /* ADSASYNPORTDRIVER_H_ */
