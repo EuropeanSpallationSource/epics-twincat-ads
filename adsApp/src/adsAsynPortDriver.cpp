@@ -928,10 +928,12 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
     }
   }
 
-  adsReleaseSymbolicHandle(paramInfo,true); //try to delete
-  status=adsGetSymHandleByName(paramInfo);
-  if(status!=asynSuccess){
-    return asynError;
+  if (!paramInfo->isAdrCommand) {
+      adsReleaseSymbolicHandle(paramInfo,true); //try to delete
+      status=adsGetSymHandleByName(paramInfo);
+      if(status!=asynSuccess){
+	  return asynError;
+      }
   }
 
   if(paramInfo->isIOIntr){
