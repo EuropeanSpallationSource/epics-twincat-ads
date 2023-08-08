@@ -242,7 +242,6 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   defaultTimeSource_=defaultTimeSource;
   routeAdded_=0;
   oneAmsConnectionOKold_=0;
-  adsUnlock();
 
   //Octet interface
   octetAsciiBuffer_.bufferSize = ADS_CMD_BUFFER_SIZE;
