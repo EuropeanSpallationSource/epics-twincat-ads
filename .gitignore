@@ -1,10 +1,13 @@
-\#*#
-*~
-*.pyc
 *.bak
+*.pyc
+*~
+TwinCAT/demo_project/MCAG_Base_Project/MCAG_PLC_Project/_CompileInfo*
+TwinCAT/demo_project/MCAG_Base_Project/_Boot*
+TwinCAT/demo_project/MCAG_Base_Project/_Configure*
+\#*#
 adsApp/Db/O.*
-adsApp/src/O.*
 adsApp/src/Debug
+adsApp/src/O.*
 adsExApp/Db/O.*
 adsExApp/src/O.*
 bin/
@@ -16,7 +19,3 @@ db/
 dbd/
 iocBoot/
 lib/
-TwinCAT/demo_project/MCAG_Base_Project/_Boot*
-TwinCAT/demo_project/MCAG_Base_Project/_Configure*
-TwinCAT/demo_project/MCAG_Base_Project/MCAG_PLC_Project/_CompileInfo*
-
