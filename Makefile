@@ -2,7 +2,7 @@
 # If ESS EPICS ENVIRONMENT is set up, Makefile.EEE is used
 # Otherwise use Makefile
 
-ADSSOURCES = \
+ADS_FROM_BECKHOFF_SOURCES = \
   BeckhoffADS/AdsLib/AdsDef.cpp \
   BeckhoffADS/AdsLib/AdsLib.cpp \
   BeckhoffADS/AdsLib/AmsConnection.cpp \
@@ -12,18 +12,24 @@ ADSSOURCES = \
   BeckhoffADS/AdsLib/NotificationDispatcher.cpp \
   BeckhoffADS/AdsLib/Sockets.cpp \
   BeckhoffADS/AdsLib/Frame.cpp \
-  BeckhoffADS/AdsLib/AdsLib.h
+
+
 
 # download ADS if needed
-build: ${ADSSOURCES} checkws
+build: adsApp/src/ADS_FROM_BECKHOFF_SUPPORTSOURCES.mak checkws
 
-install: ${ADSSOURCES} checkws
+install: adsApp/src/ADS_FROM_BECKHOFF_SUPPORTSOURCES.mak checkws
+
 
 checkws:
 	./checkws.sh
 
-${ADSSOURCES}:
-	${PWD}/tools/downloadADS.sh
+adsApp/src/ADS_FROM_BECKHOFF_SUPPORTSOURCES.mak: Makefile $(ADS_FROM_BECKHOFF_SOURCES)
+	${PWD}/tools/downloadADS.sh build ${ADS_FROM_BECKHOFF_SOURCES}
+
+
+${ADS_FROM_BECKHOFF_SOURCES}:
+	${PWD}/tools/downloadADS.sh build ${ADS_FROM_BECKHOFF_SOURCES}
 
 ifdef EPICS_ENV_PATH
 ifeq ($(EPICS_MODULES_PATH),/opt/epics/modules)
