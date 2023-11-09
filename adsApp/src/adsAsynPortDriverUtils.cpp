@@ -354,7 +354,7 @@ const char *adsStateToString(long state)
        break;
 
   }
-  return "UNKOWN ADSSTATE";
+  return "UNKNOWN ADSSTATE";
 }
 
 /** Get size of ADS data type.
