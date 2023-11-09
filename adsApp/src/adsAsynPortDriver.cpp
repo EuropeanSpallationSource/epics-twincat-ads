@@ -932,7 +932,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
       adsReleaseSymbolicHandle(paramInfo,true); //try to delete
       status=adsGetSymHandleByName(paramInfo);
       if(status!=asynSuccess){
-	  return asynError;
+          return asynError;
       }
   }
 
