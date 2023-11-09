@@ -71,7 +71,7 @@ static void getEpicsState(initHookState state)
     case initHookAfterInitDatabase:
         gettimeofday(&now, NULL);
         timersub(&now, &start, &diff);
-        printf("Database initialization took %ld.%05ld seconds.\n", diff.tv_sec, diff.tv_usec);
+        printf("Database initialization took %ld.%05ld seconds.\n", diff.tv_sec, (long)diff.tv_usec);
         break;
     case initHookAfterScanInit:
       allowCallbackEpicsState=1;
