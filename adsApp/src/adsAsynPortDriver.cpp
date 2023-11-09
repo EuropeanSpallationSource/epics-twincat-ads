@@ -378,26 +378,26 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
   //try to connect, and hang until we succeed!
   for (;;) {
       if (connect(pasynUserSelf) != asynSuccess) {
-	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
-		    "%s:%s: connect failed for port %s.\n", 
-		    driverName, functionName, portName);
-	  epicsThreadSleep(1.0);
-	  continue;
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                    "%s:%s: connect failed for port %s.\n",
+                    driverName, functionName, portName);
+          epicsThreadSleep(1.0);
+          continue;
       }
       long error = 0;
       uint16_t adsState = 0;
       if (adsReadStateLock(amsport,&adsState,true,&error) != asynSuccess) {
-	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
-		    "%s:%s: adsReadStateLock failed for port %s.\n", 
-		    driverName, functionName, portName);
-	  disconnect(pasynUserSelf);
-	  continue;
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                    "%s:%s: adsReadStateLock failed for port %s.\n",
+                    driverName, functionName, portName);
+          disconnect(pasynUserSelf);
+          continue;
       }
       if (adsState == ADSSTATE_RUN) {
-	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
-		    "%s:%s: connection established for port %s.\n", 
-		    driverName, functionName, portName);
-	  return;
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                    "%s:%s: connection established for port %s.\n",
+                    driverName, functionName, portName);
+          return;
       }
   }
 }
@@ -485,10 +485,10 @@ void adsAsynPortDriver::cyclicThread()
           invalidateParamsLock(port->amsPort);
           port->refreshNeeded=true;
           setAlarmPortLock(port->amsPort,COMM_ALARM,INVALID_ALARM);
-	  asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, 
-		    "%s:%s: connection failed for port %s.\n", 
-		    driverName, functionName, portName);
-	  exit(-1);
+          asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                    "%s:%s: connection failed for port %s.\n",
+                    driverName, functionName, portName);
+          exit(-1);
         }
         if(!port->connectedOld && port->connected){
           adsReadVersion(port);
@@ -517,7 +517,7 @@ void adsAsynPortDriver::cyclicThread()
     if(!oneAmsConnectionOK){
       notConnectedCounter_++;
       if (notConnectedCounter_ < 100 || notConnectedCounter_ % 100 == 0) {
-	asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Not connected counter: %d.\n",driverName,functionName,notConnectedCounter_);
+        asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s: Not connected counter: %d.\n",driverName,functionName,notConnectedCounter_);
       }
     }
     if(oneAmsConnectionOK){
@@ -530,7 +530,7 @@ void adsAsynPortDriver::cyclicThread()
       }
       connectedAds_=0;
       if((notConnectedCounter_&2)==2){
-	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "cyclicThread: forcing disconnect.\n");
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "cyclicThread: forcing disconnect.\n");
         disconnectLock(pasynUserSelf);
       }
     }
@@ -576,7 +576,7 @@ void adsAsynPortDriver::bulkReadThread()
                 printf("Sum read %d failed: status %ld\n", i, status);
                 continue;
             }
-            
+
             uint32_t *stat = (uint32_t *)bulkdata;
             uint8_t  *srd  = bulkdata + cnt * sizeof(uint32_t);
             uint64_t nTimeStamp = 0;
@@ -621,8 +621,8 @@ void adsAsynPortDriver::bulkReadThread()
         }
         adsUnlock();
         gettimeofday(&now, NULL);
-        bulk_elapsed_us = (now.tv_sec - start.tv_sec) * 1000000 + 
-	                  (now.tv_usec - start.tv_usec);
+        bulk_elapsed_us = (now.tv_sec - start.tv_sec) * 1000000 +
+                          (now.tv_usec - start.tv_usec);
 #ifdef MCB_DEBUG
         printf("ELAPSED: %g\n", bulk_elapsed_us / 1000000.0);
 #endif
@@ -1140,7 +1140,7 @@ asynStatus adsAsynPortDriver::updateParamInfoWithPLCInfo(adsParamInfo *paramInfo
               return asynError;
           }
       } else { /* Otherwise, put it in a bulk read! */
-	  status=adsAddToBulkRead(paramInfo);
+          status=adsAddToBulkRead(paramInfo);
           if(status!=asynSuccess){
               return asynError;
           }
@@ -1174,19 +1174,19 @@ void adsAsynPortDriver::poll_info(char *name)
     for (i = 0; bulk[i].cnt && i < MAXBULK; i++) {
       printf("Bulk Read #%d:\n", i);
       if (!name) {
-	  printf("    0: MAIN.fbSystemTime.timeLoDW (G=0x%x, O=0x%x, S=%d)\n",
-		 bulk[i].sum[0].iGroup, bulk[i].sum[0].iOffset, bulk[i].sum[0].iSize);
-	  printf("    1: MAIN.fbSystemTime.timeHiDW (G=0x%x, O=0x%x, S=%d)\n",
-		 bulk[i].sum[1].iGroup, bulk[i].sum[1].iOffset, bulk[i].sum[1].iSize);
+          printf("    0: MAIN.fbSystemTime.timeLoDW (G=0x%x, O=0x%x, S=%d)\n",
+                 bulk[i].sum[0].iGroup, bulk[i].sum[0].iOffset, bulk[i].sum[0].iSize);
+          printf("    1: MAIN.fbSystemTime.timeHiDW (G=0x%x, O=0x%x, S=%d)\n",
+                 bulk[i].sum[1].iGroup, bulk[i].sum[1].iOffset, bulk[i].sum[1].iSize);
       }
       for (int j = 2; j < bulk[i].cnt; j++) {
         adsParamInfo *paramInfo=getAdsParamInfo(bulk[i].paramID[j]);
-	if (!paramInfo)
-	  continue;
-	if (!name || strstr(paramInfo->plcAdrStr, name))
-	    printf("  %3d: %s (G=0x%x, O=0x%x, S=%d, TS=%d.%09d)\n", j, paramInfo->plcAdrStr,
-		   bulk[i].sum[j].iGroup, bulk[i].sum[j].iOffset, bulk[i].sum[j].iSize,
-		   paramInfo->epicsTimestamp.secPastEpoch, paramInfo->epicsTimestamp.nsec);
+        if (!paramInfo)
+          continue;
+        if (!name || strstr(paramInfo->plcAdrStr, name))
+            printf("  %3d: %s (G=0x%x, O=0x%x, S=%d, TS=%d.%09d)\n", j, paramInfo->plcAdrStr,
+                   bulk[i].sum[j].iGroup, bulk[i].sum[j].iOffset, bulk[i].sum[j].iSize,
+                   paramInfo->epicsTimestamp.secPastEpoch, paramInfo->epicsTimestamp.nsec);
       }
     }
 }
@@ -1273,14 +1273,14 @@ int adsAsynPortDriver::adsFindBulkTimeStamp(uint16_t amsPort)
                                        ADSIGRP_SYM_HNDBYNAME,
                                        0,
                                        sizeof(uint32_t), &bulkTS[i].iHandleH,
-                                       strlen(TSHI), TSHI, 
+                                       strlen(TSHI), TSHI,
                                        nullptr);
         statL = AdsSyncReadWriteReqEx2(adsPort_,
                                        &amsServer,
                                        ADSIGRP_SYM_HNDBYNAME,
                                        0,
                                        sizeof(uint32_t), &bulkTS[i].iHandleL,
-                                       strlen(TSLO), TSLO, 
+                                       strlen(TSLO), TSLO,
                                        nullptr);
         if (!statH && !statL)
             bulkTS[i].refreshNeeded = 0;
@@ -3222,10 +3222,10 @@ asynStatus adsAsynPortDriver::adsGetSymInfoByName(uint16_t amsPort,const char *v
   if (infoStatus) {
     asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Get symbolic information failed for %s with: %s (0x%lx)\n", driverName, functionName,varName,adsErrorToString(infoStatus),infoStatus);
     if (infoStatus == GLOBALERR_TARGET_PORT) {
-	/* Sigh.  It was up, now it's down.  Let's go home. */
-	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Port error, giving up!\n", 
-		  driverName, functionName);
-	exit(1);
+        /* Sigh.  It was up, now it's down.  Let's go home. */
+        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Port error, giving up!\n",
+                  driverName, functionName);
+        exit(1);
     }
     return asynError;
   }
@@ -3306,11 +3306,11 @@ asynStatus adsAsynPortDriver::adsConnect()
     if (stat!=asynSuccess) {
       adsDelRoute(1);
       if (adsPort_) {
-	  adsLock();
-	  AdsPortCloseEx(adsPort_);
-	  adsPort_=0;
-	  adsUnlock();
-	  return asynError;
+          adsLock();
+          AdsPortCloseEx(adsPort_);
+          adsPort_=0;
+          adsUnlock();
+          return asynError;
       }
     }
   }
