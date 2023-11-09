@@ -1,1 +1,0 @@
-../../BeckhoffADS/AdsLib/AmsConnection.cpp
