@@ -3,23 +3,23 @@
 # Otherwise use Makefile
 
 ADS_FROM_BECKHOFF_SOURCES = \
-  BeckhoffADS/AdsLib/AdsDef.cpp \
-  BeckhoffADS/AdsLib/AdsDevice.cpp \
-  BeckhoffADS/AdsLib/AdsFile.cpp \
-  BeckhoffADS/AdsLib/standalone/AdsLib.cpp \
-  BeckhoffADS/AdsLib/standalone/AmsConnection.cpp \
-  BeckhoffADS/AdsLib/standalone/AmsNetId.cpp \
-  BeckhoffADS/AdsLib/standalone/AmsPort.cpp \
-  BeckhoffADS/AdsLib/standalone/AmsRouter.cpp \
-  BeckhoffADS/AdsLib/Frame.cpp \
-  BeckhoffADS/AdsLib/LicenseAccess.cpp \
-  BeckhoffADS/AdsLib/Log.cpp \
-  BeckhoffADS/AdsLib/standalone/NotificationDispatcher.cpp \
-  BeckhoffADS/AdsLib/RegistryAccess.cpp \
-  BeckhoffADS/AdsLib/RouterAccess.cpp \
-  BeckhoffADS/AdsLib/RTimeAccess.cpp \
-  BeckhoffADS/AdsLib/Sockets.cpp \
-  BeckhoffADS/AdsLib/SymbolAccess.cpp \
+  ADS/AdsLib/AdsDef.cpp \
+  ADS/AdsLib/AdsDevice.cpp \
+  ADS/AdsLib/AdsFile.cpp \
+  ADS/AdsLib/standalone/AdsLib.cpp \
+  ADS/AdsLib/standalone/AmsConnection.cpp \
+  ADS/AdsLib/standalone/AmsNetId.cpp \
+  ADS/AdsLib/standalone/AmsPort.cpp \
+  ADS/AdsLib/standalone/AmsRouter.cpp \
+  ADS/AdsLib/Frame.cpp \
+  ADS/AdsLib/LicenseAccess.cpp \
+  ADS/AdsLib/Log.cpp \
+  ADS/AdsLib/standalone/NotificationDispatcher.cpp \
+  ADS/AdsLib/RegistryAccess.cpp \
+  ADS/AdsLib/RouterAccess.cpp \
+  ADS/AdsLib/RTimeAccess.cpp \
+  ADS/AdsLib/Sockets.cpp \
+  ADS/AdsLib/SymbolAccess.cpp \
 
 
 

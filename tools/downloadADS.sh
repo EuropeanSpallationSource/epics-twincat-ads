@@ -1,9 +1,9 @@
 #!/bin/sh
 #echo "$0 PWD=$PWD" "$@"
 
-if ! test -e BeckhoffADS/AdsLib/AdsLib.h; then
+if ! test -e ADS/AdsLib/AdsLib.h; then
   (
-    git submodule init BeckhoffADS && git submodule update BeckhoffADS
+    git submodule init ADS && git submodule update ADS
   )
 fi
 action=$1
