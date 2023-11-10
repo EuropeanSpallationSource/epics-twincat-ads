@@ -4,14 +4,22 @@
 
 ADS_FROM_BECKHOFF_SOURCES = \
   BeckhoffADS/AdsLib/AdsDef.cpp \
-  BeckhoffADS/AdsLib/AdsLib.cpp \
-  BeckhoffADS/AdsLib/AmsConnection.cpp \
-  BeckhoffADS/AdsLib/AmsPort.cpp \
-  BeckhoffADS/AdsLib/AmsRouter.cpp \
-  BeckhoffADS/AdsLib/Log.cpp \
-  BeckhoffADS/AdsLib/NotificationDispatcher.cpp \
-  BeckhoffADS/AdsLib/Sockets.cpp \
+  BeckhoffADS/AdsLib/AdsDevice.cpp \
+  BeckhoffADS/AdsLib/AdsFile.cpp \
+  BeckhoffADS/AdsLib/standalone/AdsLib.cpp \
+  BeckhoffADS/AdsLib/standalone/AmsConnection.cpp \
+  BeckhoffADS/AdsLib/standalone/AmsNetId.cpp \
+  BeckhoffADS/AdsLib/standalone/AmsPort.cpp \
+  BeckhoffADS/AdsLib/standalone/AmsRouter.cpp \
   BeckhoffADS/AdsLib/Frame.cpp \
+  BeckhoffADS/AdsLib/LicenseAccess.cpp \
+  BeckhoffADS/AdsLib/Log.cpp \
+  BeckhoffADS/AdsLib/standalone/NotificationDispatcher.cpp \
+  BeckhoffADS/AdsLib/RegistryAccess.cpp \
+  BeckhoffADS/AdsLib/RouterAccess.cpp \
+  BeckhoffADS/AdsLib/RTimeAccess.cpp \
+  BeckhoffADS/AdsLib/Sockets.cpp \
+  BeckhoffADS/AdsLib/SymbolAccess.cpp \
 
 
 
