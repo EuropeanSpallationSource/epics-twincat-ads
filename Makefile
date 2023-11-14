@@ -29,7 +29,7 @@ cleanadssources:
 	${PWD}/tools/downloadADS.sh clean ${ADS_FROM_BECKHOFF_SOURCES}
 
 
-adsApp/src/ADS_FROM_BECKHOFF_SUPPORTSOURCES.mak: Makefile $(ADS_FROM_BECKHOFF_SOURCES)
+adsApp/src/ADS_FROM_BECKHOFF_SUPPORTSOURCES.mak: Makefile
 	${PWD}/tools/downloadADS.sh build ${ADS_FROM_BECKHOFF_SOURCES}
 
 ifdef EPICS_ENV_PATH
