@@ -3432,18 +3432,19 @@ asynStatus adsAsynPortDriver::adsReleaseSymbolicHandle(adsParamInfo *paramInfo, 
   const char* functionName = "adsReleaseHandle";
   asynPrint(pasynUserSelf,ASYN_TRACE_FLOW, "%s:%s:\n", driverName, functionName);
 
-  paramInfo->bSymbolicHandleValid=false;
+  if (paramInfo->bSymbolicHandleValid) {
+    AmsAddr amsServer;
+    amsServer={remoteNetId_,paramInfo->amsPort};
 
-  AmsAddr amsServer;
-  amsServer={remoteNetId_,paramInfo->amsPort};
-
-  adsLock();
-  const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
-  adsUnlock();
-  paramInfo->hSymbolicHandle=-1;
-  if (releaseStatus && !blockErrorMsg) {
-    asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %s (0x%lx)\n", driverName, functionName,paramInfo->hSymbolicHandle,adsErrorToString(releaseStatus),releaseStatus);
-    return asynError;
+    adsLock();
+    const long releaseStatus = AdsSyncWriteReqEx(adsPort_, &amsServer, ADSIGRP_SYM_RELEASEHND, 0, sizeof(paramInfo->hSymbolicHandle), &paramInfo->hSymbolicHandle);
+    adsUnlock();
+    paramInfo->hSymbolicHandle=-1;
+    paramInfo->bSymbolicHandleValid=false;
+    if (releaseStatus && !blockErrorMsg) {
+      asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Release of handle 0x%x failed with: %s (0x%lx)\n", driverName, functionName,paramInfo->hSymbolicHandle,adsErrorToString(releaseStatus),releaseStatus);
+      return asynError;
+    }
   }
 
   return asynSuccess;
