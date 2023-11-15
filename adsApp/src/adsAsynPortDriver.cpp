@@ -242,7 +242,13 @@ adsAsynPortDriver::adsAsynPortDriver(const char *portName,
                                      ADSTIMESOURCE defaultTimeSource)
                      :asynPortDriver(portName,
                                      1, /* maxAddr */
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+                                     asynInt64Mask |
+#endif
                                      asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask, /* Interface mask */
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+                                     asynInt64Mask |
+#endif
                                      asynInt32Mask | asynFloat64Mask | asynFloat32ArrayMask | asynFloat64ArrayMask | asynDrvUserMask | asynOctetMask | asynInt8ArrayMask | asynInt16ArrayMask | asynInt32ArrayMask,  /* Interrupt mask */
                                      ASYN_CANBLOCK, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
                                      autoConnect, /* Autoconnect */
@@ -1018,6 +1024,11 @@ asynStatus adsAsynPortDriver::drvUserCreate(asynUser *pasynUser,const char *drvI
     case asynParamFloat64:
       setDoubleParam(index,0);
       break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+    case asynParamInt64:
+      setInteger64Param(index,0);
+      break;
+#endif
     default:
       break;
   }
@@ -3902,6 +3913,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT8Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_INT8Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT8Var));
           break;
@@ -3924,6 +3940,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT16Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(int)(*ADST_INT16Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT16Var));
           break;
@@ -3945,6 +3966,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT32Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(int)(*ADST_INT32Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT32Var));
           break;
@@ -3966,10 +3992,14 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_INT64Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_INT64Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_INT64Var));
           break;
-        // No 64 bit int array callback type (also no 64bit int in EPICS)
         default:
           asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Type combination not supported. PLC type = %s, ASYN type= %s\n", driverName, functionName,adsTypeToString(paramInfo->plcDataType),asynTypeToString(paramInfo->asynType));
           return asynError;
@@ -3984,6 +4014,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT8Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_UINT8Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT8Var));
           break;
@@ -4002,6 +4037,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT16Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_UINT16Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT16Var));
           break;
@@ -4020,6 +4060,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT32Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_UINT32Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT32Var));
           break;
@@ -4037,6 +4082,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_UINT64Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_UINT64Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_UINT64Var));
           break;
@@ -4054,6 +4104,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL32Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_REAL32Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL32Var));
           break;
@@ -4074,6 +4129,11 @@ asynStatus adsAsynPortDriver::adsUpdateParameter(adsParamInfo* paramInfo,const v
         case asynParamInt32:
           ret=setIntegerParam(paramInfo->paramIndex,(int)(*ADST_REAL64Var));
           break;
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+        case asynParamInt64:
+          ret=setInteger64Param(paramInfo->paramIndex,(epicsInt64)(*ADST_REAL64Var));
+          break;
+#endif
         case asynParamFloat64:
           ret=setDoubleParam(paramInfo->paramIndex,(double)(*ADST_REAL64Var));
           break;

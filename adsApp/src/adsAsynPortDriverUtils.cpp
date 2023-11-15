@@ -257,6 +257,10 @@ const char *asynTypeToString(long type)
   switch (type) {
     case asynParamInt32:
       return "asynParamInt32";
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+    case asynParamInt64:
+      return "asynParamInt64";
+#endif
     case asynParamFloat64:
       return "asynParamFloat64";
     case asynParamUInt32Digital:
@@ -419,6 +423,11 @@ asynParamType dtypStringToAsynType(char *dtype)
   if(strcmp("asynInt32",dtype)==0){
     return asynParamInt32;
   }
+#ifndef NO_ADS_ASYN_ASYNPARAMINT64
+  if(strcmp("asynInt64",dtype)==0){
+    return asynParamInt64;
+  }
+#endif
   if(strcmp("asynInt8ArrayIn",dtype)==0 || strcmp("asynInt8ArrayOut",dtype)==0){
     return asynParamInt8Array;
   }
