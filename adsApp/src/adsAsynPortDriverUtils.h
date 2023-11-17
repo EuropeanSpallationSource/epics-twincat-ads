@@ -27,6 +27,7 @@
 #define ADS_OPTION_T_MAX_DLY_MS "T_DLY_MS"
 #define ADS_OPTION_T_SAMPLE_RATE_MS "TS_MS"
 #define ADS_OPTION_TIMEBASE "TIMEBASE"  //PLC or EPICS
+#define ADS_OPTION_POLLRATE "POLL_RATE"
 #define ADS_OPTION_TIMEBASE_EPICS "EPICS"
 #define ADS_OPTION_TIMEBASE_PLC "PLC"
 #define ADS_OPTION_ADSPORT "ADSPORT"
@@ -66,6 +67,8 @@ typedef struct adsParamInfo{
   int            paramIndex;  //also used as hUser for ads callback
   bool           plcAbsAdrValid;  //Symbolic address converted to abs address or .ADR. command parsed
   bool           isAdrCommand;
+  bool           isBulkRead;
+  double         pollClass;
   char           *plcAdrStr;
   uint32_t       plcAbsAdrGroup;
   uint32_t       plcAbsAdrOffset;
@@ -90,6 +93,8 @@ typedef struct adsParamInfo{
   int            alarmStatus;
   int            alarmSeverity;
   bool           firstReadDone;
+  int            bulkIndex;
+  int            bulkOffset;
 }adsParamInfo;
 
 typedef struct amsPortInfo{

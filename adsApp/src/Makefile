@@ -17,21 +17,11 @@ LIBRARY_IOC = ads
 DBD += ads.dbd
 
 # Add source files
-ADSSUPPORTSOURCES = \
-  AdsDef.cpp \
-  AdsLib.cpp \
-  AmsConnection.cpp \
-  AmsPort.cpp \
-  AmsRouter.cpp \
-  Log.cpp \
-  NotificationDispatcher.cpp \
-  Sockets.cpp \
-  Frame.cpp
-
+-include $(TOP)/adsApp/src/ADS_FROM_BECKHOFF_SUPPORTSOURCES.mak
 
 ads_SRCS += adsAsynPortDriver.cpp
 ads_SRCS += adsAsynPortDriverUtils.cpp
-ads_SRCS += ${ADSSUPPORTSOURCES}
+ads_SRCS += ${ADS_FROM_BECKHOFF_SUPPORTSOURCES}
 
 ads_LIBS += asyn
 ads_LIBS += $(EPICS_BASE_IOC_LIBS)
